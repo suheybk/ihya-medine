@@ -165,22 +165,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 /* ============ QUEST DATA (mekândaki nesnelere bağlı) ============ */
 const QUESTS = [
-  // ===== HÂNE (ev) — sabah rutini: tahâret -> ibadet, soldan sağa =====
-  { id:'tuvalet', model:'door',     pos:[-4.5,0,0],   rot:1.57, scale:1.0, ic:'🚪',
-    nm:'Tuvalet âdâbı', rem:'Girerken sol ayak + besmele; çıkarken sağ ayak + "gufrâneke".',
-    refs:[{tag:'Hadis',txt:'Peygamber tuvaletten çıkınca "Gufrâneke" (bağışlamanı dilerim) derdi.',cite:'Tirmizî, Tahâret 5'}]},
-  { id:'abdest',  model:'fountain', pos:[-2,0,2.6],   rot:-0.3, scale:1.1, ic:'💧',
-    nm:'Abdest al', rem:'Temizlik imanın yarısı; her uzuvla günahlar dökülür.',
-    refs:[{tag:'Hadis',txt:'Müslüman abdest alırken, yıkadığı uzuvlardan günahları su ile dökülür.',cite:'Müslim, Tahâret 32'}]},
-  { id:'sabah',   model:'prayer',   pos:[0.6,0,-2.6], rot:0,    scale:1.6, ic:'🌅',
-    nm:'Sabah namazını kıl', rem:'Günü farzla aç; bereket fecirde başlar.',
-    refs:[{tag:'Hadis',txt:'İki rekât sabah sünneti, dünya ve içindeki her şeyden hayırlıdır.',cite:'Müslim, Müsâfirîn 96'}]},
-  { id:'kuran',   model:'rahle',    pos:[3,0,2.6],    rot:0,    scale:1.5, ic:'📖',
-    nm:'Bir sayfa Kur\'an oku', rem:'Her gün bir damla; yıl boyunca derya olur.',
-    refs:[{tag:'Hadis',txt:'Sizin en hayırlınız Kur\'an\'ı öğrenen ve öğretendir.',cite:'Buhârî, Fedâilü\'l-Kur\'an 21'}]},
-  { id:'dua',     model:'book',     pos:[5,0,-2.6],   rot:0,    scale:2.2, ic:'🤲',
-    nm:'Sabah dualarını oku', rem:'Güne zikirle gir; gönlün gün boyu korunsun.',
-    refs:[{tag:'Ayet',txt:'Kalpler ancak Allah\'ı anmakla huzura erer.',cite:'Ra\'d 13/28'}]},
   // ===== BAHÇE =====
   { id:'fidan',  model:'plot', pos:[14.8,0,2],  rot:0, scale:1.4, ic:'🌱',
     nm:'Bir fidan dik', rem:'Kıyamet kopsa bile elindeki fidanı dik.',
@@ -221,6 +205,51 @@ const QUESTS = [
 ];
 const MODELS = ['player','prayer','rahle','book','door','tree','plot','plot_sprout','fountain','mosque','island_tile','bridge'];
 
+/* ===== HÂNE (ev) — VAKTE GÖRE DEĞİŞEN GÜNLÜK İBADET =====
+   Seccadeye gidince o vaktin namazı; vakit ilerleyince set yenilenir. */
+const EVSLOTS=[[-4.5,0,0],[-2,0,2.6],[0.6,0,-2.6],[3,0,2.6],[5,0,-2.6]];
+const P=(model,ic,nm,rem,refs,rot,scale)=>({model,ic,nm,rem,refs,rot:rot||0,scale:scale||1.6});
+const VAKIT_SETS={
+  'Fecir':[
+    P('door','🚪','Tuvalet âdâbı','Girerken sol ayak + besmele; çıkarken sağ ayak + "gufrâneke".',[{tag:'Hadis',txt:'Peygamber tuvaletten çıkınca "Gufrâneke" derdi.',cite:'Tirmizî, Tahâret 5'}],1.57,1.0),
+    P('fountain','💧','Abdest al','Temizlik imanın yarısı; her uzuvla günahlar dökülür.',[{tag:'Hadis',txt:'Abdest alırken yıkanan uzuvlardan günahlar su ile dökülür.',cite:'Müslim, Tahâret 32'}],-0.3,1.1),
+    P('prayer','🌅','Sabah namazını kıl','Günü farzla aç; bereket fecirde başlar.',[{tag:'Hadis',txt:'İki rekât sabah sünneti, dünya ve içindeki her şeyden hayırlıdır.',cite:'Müslim, Müsâfirîn 96'}]),
+    P('book','🤲','Sabah dualarını oku','Güne zikirle gir; gönlün gün boyu korunsun.',[{tag:'Ayet',txt:'Kalpler ancak Allah\'ı anmakla huzura erer.',cite:'Ra\'d 13/28'}],0,2.2),
+  ],
+  'Kuşluk':[
+    P('prayer','☀️','Kuşluk (duhâ) namazı kıl','Güneş yükselince 2 rekât; günün şükür secdesi.',[{tag:'Hadis',txt:'Kuşluğun iki rekâtı her eklem için sadakaya yeter.',cite:'Müslim, Müsâfirîn 84'}]),
+    P('rahle','📖','Bir sayfa Kur\'an oku','Her gün bir damla; yıl boyunca derya olur.',[{tag:'Hadis',txt:'En hayırlınız Kur\'an\'ı öğrenen ve öğretendir.',cite:'Buhârî, Fedâilü\'l-Kur\'an 21'}],0,1.5),
+  ],
+  'Öğle':[
+    P('fountain','💧','Abdesti tazele','Abdest üstüne abdest, nûr üstüne nûrdur.',[{tag:'Hadis',txt:'Abdestli iken abdest alana on hasene yazılır.',cite:'İbn Mâce'}],-0.3,1.1),
+    P('prayer','🕌','Öğle namazını kıl','Gün ortasında Rabbine dur.',[{tag:'Ayet',txt:'Namazı dosdoğru kılın.',cite:'Bakara 2/43'}]),
+  ],
+  'İkindi':[
+    P('prayer','🕌','İkindi namazını kıl','Orta namazı koru; en çok tembellik edilen vakittir.',[{tag:'Ayet',txt:'Namazlara ve orta namaza devam edin.',cite:'Bakara 2/238'}]),
+    P('book','📿','İkindi zikri / istiğfar','Gün biterken tövbe tazele.',[{tag:'Hadis',txt:'İstiğfara devam edene Allah her sıkıntıdan çıkış verir.',cite:'Ebû Dâvûd'}],0,2.2),
+  ],
+  'Akşam':[
+    P('prayer','🌇','Akşam namazını kıl','Günü şükürle kapat.',[{tag:'Ayet',txt:'Güneşin kaymasından gecenin karanlığına kadar namaz kıl.',cite:'İsrâ 17/78'}]),
+    P('book','🤲','Akşam dualarını oku','Akşam-sabah zikirleri güne kalkandır.',[{tag:'Tavsiye',txt:'Âyetü\'l-Kürsî, İhlâs ve Muavvizeteyn oku.'}],0,2.2),
+  ],
+  'Yatsı':[
+    P('prayer','🌙','Yatsı namazını kıl','Geceyi namazla mühürle.',[{tag:'Hadis',txt:'Yatsıyı cemaatle kılan gecenin yarısını ihyâ etmiş gibidir.',cite:'Müslim'}]),
+    P('rahle','📖','Mülk sûresini oku','Uyumadan önce; kabir azabına siperdir.',[{tag:'Hadis',txt:'Mülk sûresi okuyanı kabir azabından korur.',cite:'Tirmizî'}],0,1.5),
+  ],
+  'Gece':[
+    P('prayer','🌌','Teheccüd namazı kıl','Gecenin sonu, duaların kabul vaktidir.',[{tag:'Ayet',txt:'Gecenin bir kısmında sana mahsus nafile olarak teheccüd kıl.',cite:'İsrâ 17/79'}]),
+    P('prayer','🤲','Vitir namazı kıl','Geceyi vitirle bitir.',[{tag:'Hadis',txt:'Vitir haktır; geceyi vitirle bitirin.',cite:'Ebû Dâvûd'}],0,1.4),
+    P('book','✨','Seherde istiğfar & tefekkür','Seher vakti istiğfar edenlerden ol.',[{tag:'Ayet',txt:'Onlar seher vakitlerinde istiğfar ederlerdi.',cite:'Zâriyât 51/18'}],0,2.2),
+  ],
+};
+let evQuests=[];
+function setVakitQuests(vname){
+  const defs=VAKIT_SETS[vname]||VAKIT_SETS['Kuşluk'];
+  evQuests=defs.map((d,i)=>Object.assign({}, d, {id:'ev_'+vname+'_'+i, pos:EVSLOTS[i]||[0,0,0]}));
+}
+function allQuests(){ return evQuests.concat(QUESTS); }
+
+
 /* ============ STATE ============ */
 let S = { nur:0, done:{}, conquered:{}, lastDay:null };
 try{ const r=localStorage.getItem('ihya3d_v1'); if(r) S=Object.assign(S,JSON.parse(r)); }catch(e){}
@@ -259,7 +288,7 @@ const moonMesh=new THREE.Mesh(new THREE.SphereGeometry(2.0,16,12), new THREE.Mes
 scene.add(moonMesh);
 
 // ---- GÜN/GECE DÖNGÜSÜ (Kur'an 10:5: güneş ve ay vakitlerin ölçüsü) ----
-let gameTime=0.30;          // sabah kuşluk civarı başla
+let gameTime=0.24;          // sabah kuşluk civarı başla
 const DAY_LEN=600;          // sn: tam gün-gece 10 dk
 const SKY=[
   {t:0.00, sky:0x0b1230, hemi:0.30, sun:0x3a4670, sunI:0.20},
@@ -294,7 +323,7 @@ function updateDayNight(dt){
   const v=vakitOf(gameTime);
   if(v!==lastVakit){ const prev=lastVakit; lastVakit=v; const el2=document.getElementById('vakit'); if(el2) el2.textContent=v[2]+' '+v[1]; if(prev) onVakitChange(v); }
 }
-function onVakitChange(v){ /* vakit değişince: gece ibadetleri / yenileme (sonraki adım) */ }
+function onVakitChange(v){ rebuildEvQuests(v[1]); toast('🕌 '+v[1]+' vakti girdi'); }
 
 // ---- ADA DÜNYASI (yükseltili adalar + köprüler + kilit) ----
 const WORLD={
@@ -318,14 +347,14 @@ const GRASS0=new THREE.Color(0x8fce58), CLIFF0=new THREE.Color(0xcf9a72);
 // --- kilit mantığı: bir ada, öncekinin tüm görevleri bitince açılır ---
 function islandOf(x,z){ for(const is of WORLD.islands){ if(Math.hypot(x-is.c[0],z-is.c[1])<is.r) return is.id; } return null; }
 function questIslandId(q){ return islandOf(q.pos[0],q.pos[2]); }
-function islandQuests(id){ return QUESTS.filter(q=>questIslandId(q)===id); }
+function islandQuests(id){ return allQuests().filter(q=>questIslandId(q)===id); }
 function islandDone(id){ const qs=islandQuests(id); return qs.length>0 && qs.every(q=>!!S.done[q.id]); }
 function isUnlocked(id){ const i=WORLD.islands.findIndex(o=>o.id===id); if(i<=0) return true; return !!S.conquered[WORLD.islands[i-1].id]; }
 // eski kayıt göçü: bugün tamamlanmış adaları kalıcı fethe işle
 function migrateConquered(){ for(const is of WORLD.islands){ if(islandDone(is.id)) S.conquered[is.id]=true; } }
 function bridgeOpen(b){ return b.isl.every(id=>isUnlocked(id)); }
 // ada içinde görevler SIRAYLA yapılır (önce abdest sonra namaz vb.)
-function islandSeq(id){ return QUESTS.filter(q=>questIslandId(q)===id); }
+function islandSeq(id){ return allQuests().filter(q=>questIslandId(q)===id); }
 function prereqOf(q){ const seq=islandSeq(questIslandId(q)); const i=seq.indexOf(q); return i>0?seq[i-1]:null; }
 function questAvailable(q){ if(!isUnlocked(questIslandId(q))) return false; const p=prereqOf(q); return !p || !!S.done[p.id]; }
 let waterMesh=null;
@@ -419,6 +448,21 @@ function setAlive(meshes,alive){ meshes.forEach(x=>x.m.material.color.copy(alive
 /* ============ BUILD WORLD ============ */
 const interactables=[]; // {q, g, meshes, done}
 let player, PP=null, walkPhase=0;
+function addInteractable(q){
+  const it=instance(q.model);
+  it.g.position.set(q.pos[0],0,q.pos[2]); it.g.rotation.y=q.rot||0; it.g.scale.setScalar(q.scale||1);
+  scene.add(it.g);
+  const rec={q,g:it.g,meshes:it.meshes,done:!!S.done[q.id]};
+  setAlive(it.meshes, rec.done);
+  interactables.push(rec); return rec;
+}
+function rebuildEvQuests(vname){
+  near=null;
+  for(let i=interactables.length-1;i>=0;i--){ if(questIslandId(interactables[i].q)==='ev'){ scene.remove(interactables[i].g); interactables.splice(i,1); } }
+  setVakitQuests(vname);
+  for(const q of evQuests) addInteractable(q);
+  applyIslandLock(); refreshHUD();
+}
 function buildWorld(){
   buildIslands();
   const islById=id=>WORLD.islands.find(i=>i.id===id);
@@ -448,14 +492,7 @@ function buildWorld(){
   }
 
   // interactable quests
-  for(const q of QUESTS){
-    const it=instance(q.model);
-    it.g.position.set(q.pos[0],0,q.pos[2]); it.g.rotation.y=q.rot||0; it.g.scale.setScalar(q.scale||1);
-    scene.add(it.g);
-    const rec={q,g:it.g,meshes:it.meshes,done:!!S.done[q.id]};
-    setAlive(it.meshes, rec.done);
-    interactables.push(rec);
-  }
+  for(const q of allQuests()) addInteractable(q);
 
   // player
   const pl=instance('player');
@@ -590,9 +627,9 @@ actBtn.onclick=()=>{ if(!near) return;
 
 function refreshHUD(){
   document.getElementById('nur').textContent=S.nur;
-  const total=QUESTS.length, done=interactables.filter(r=>r.done).length;
+  const total=WORLD.islands.length, done=WORLD.islands.filter(i=>S.conquered[i.id]).length;
   document.getElementById('prog').style.width=(done/total*100)+'%';
-  document.getElementById('cntPill').textContent=done+'/'+total;
+  document.getElementById('cntPill').textContent=done+'/'+total+' ada';
 }
 
 /* ============ LOOP ============ */
@@ -667,6 +704,7 @@ addEventListener('resize',resize); resize();
 (async()=>{
   let n=0;
   for(const m of MODELS){ await load(m); loadBar.style.width=(++n/MODELS.length*100)+'%'; }
+  setVakitQuests(vakitOf(gameTime)[1]);   // vakte göre ev ibadetlerini kur
   migrateConquered();               // eski kayıt: tamamlanmış adaları kalıcı fethe işle
   const newDay=rollDay();           // yeni günse görevleri sıfırla (fetihler kalır)
   buildWorld(); refreshHUD(); applyIslandLock();
