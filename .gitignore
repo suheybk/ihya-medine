@@ -1,0 +1,13 @@
+# geliştirme / hata ayıklama render çıktıları
+models/_*.png
+
+# yedek blend
+*.blend1
+
+# geçici
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Claude yerel ayarları (makineye özel)
+.claude/settings.local.json
