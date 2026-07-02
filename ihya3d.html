@@ -430,6 +430,7 @@ const QBANK={
   ],
   canli:[
     {s:'Hadis',q:'Susuz bir köpeğe su veren kişiye ne oldu?',o:['Allah onu bağışladı','Cezalandırıldı','Bir şey olmadı'],c:0,cite:'Buhârî, Şirb 9'},
+    {s:'Hadis',q:'Her canlıya (ciğer sahibine) yapılan iyilikte ne vardır?',o:['Ecir (sevap)','Ceza','Hiçbir şey'],c:0,cite:'Buhârî, Şirb 9'},
   ],
   selam:[
     {s:'Hadis',q:'"Birbirinizi sevmedikçe ... giremezsiniz." Nereye?',o:['Cennete','Camiye','Huzura'],c:0,cite:'Müslim, Îmân 93'},
@@ -437,9 +438,11 @@ const QBANK={
   ],
   komsu:[
     {s:'Hadis',q:'Cebrâil (a.s.) mirasçı kılacak sandıracak kadar kimin hakkını tavsiye etti?',o:['Komşu','Tüccar','Yolcu'],c:0,cite:'Buhârî, Edeb 28'},
+    {s:'Hadis',q:'"Komşusu şerrinden emin olmayan kişi ..." Hadis nasıl tamamlanır?',o:['(Kâmil) iman etmiş olmaz','Zengin olur','Uzun yaşar'],c:0,cite:'Buhârî, Edeb 29'},
   ],
   sadaka:[
     {s:'Hadis',q:'"Sadaka maldan bir şey ..." Hadis nasıl biter?',o:['eksiltmez','götürür','saklar'],c:0,cite:'Müslim, Birr 69'},
+    {s:'Hadis',q:'Kardeşine tebessüm etmek de bir ... sayılır.',o:['sadaka','borç','vazife'],c:0,cite:'Tirmizî, Birr 36'},
   ],
   cemaat:[
     {s:'Hadis',q:'Cemaatle namaz, tek başına kılınandan kaç derece faziletlidir?',o:['27','7','17'],c:0,cite:'Buhârî, Ezân 30'},
@@ -447,25 +450,30 @@ const QBANK={
   ],
   ilim:[
     {s:'Hadis',q:'İlim öğrenmek için yola çıkana Allah neyi kolaylaştırır?',o:['Cennetin yolunu','Zenginliği','Şöhreti'],c:0,cite:'Müslim, Zikir 38'},
+    {s:'Hadis',q:'Âlimler kimlerin vârisleridir?',o:['Peygamberlerin','Meliklerin','Zenginlerin'],c:0,cite:'Ebû Dâvûd, İlim 1'},
   ],
   davet:[
     {s:'Hadis',q:'Senin vesilenle bir kişinin hidayete ermesi neden hayırlıdır?',o:['Kızıl develerden (dünyadan)','Bir aylık ibadetten','Bir yıllık oruçtan'],c:0,cite:'Buhârî, Cihâd 102'},
+    {s:'Hadis',q:'"Hayra vesile olan, onu ..." Hadis nasıl tamamlanır?',o:['bizzat yapan gibidir','borçlu kalır','bir şey kazanmaz'],c:0,cite:'Müslim, İmâre 133'},
   ],
   adalet:[
     {s:'Ayet',q:'"Adaletli olun; bu, ...\'ya daha yakındır." (Mâide 8)',o:['Takvâ','Zenginlik','Şöhret'],c:0,cite:'Mâide 5/8'},
+    {s:'Ayet',q:'Bir topluluğa olan kininiz sizi neye sevk etmesin? (Mâide 8)',o:['Adaletsizliğe','Cömertliğe','Sabra'],c:0,cite:'Mâide 5/8'},
   ],
   emanet:[
     {s:'Ayet',q:'"Allah size, emanetleri kime vermenizi emreder?" (Nisâ 58)',o:['Ehline','Zengine','Âlime'],c:0,cite:'Nisâ 4/58'},
+    {s:'Hadis',q:'Münafığın alâmetlerinden biri: emanete ...',o:['hıyanet etmek','sahip çıkmak','değer vermek'],c:0,cite:'Buhârî, Îmân 24'},
   ],
   hayir:[
     {s:'Hadis',q:'"İnsanların en hayırlısı kimdir?"',o:['İnsanlara en faydalı olan','En zengin olan','En âlim olan'],c:0,cite:'Taberânî, el-Mu\'cemü\'l-Evsat'},
+    {s:'Hadis',q:'Bir hayra öncülük edene ne vardır?',o:['Yapanın ecri kadar sevap','Ceza','Hiçbir şey'],c:0,cite:'Müslim, İmâre 133'},
   ],
 };
 // bir adanın konuları (o adadaki derslerden türetilir)
 function islandTopics(id){ const t=[]; for(const q of islandQuests(id)){ const tp=questTopic(q); if(QBANK[tp]&&!t.includes(tp)) t.push(tp); } return t; }
 // ilk ada (öğrenme temeli) için sınavda mutlaka bulunması istenenler
 const EXAM_MUST={ ev:['abdest','namaz'] };
-const EXAM_N=3;   // sınavdaki soru sayısı (yeterince konu varsa)
+const EXAM_N=4;   // sınavdaki soru sayısı (yeterince konu varsa)
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 // bir ada için sınav sorularını kur (okul karışık, şıklar karışık)
 function buildExam(islId){
