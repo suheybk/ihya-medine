@@ -229,7 +229,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.2 (kıble·tente·hayvan-Y)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.3 (hayvan güvenlik-ağı)</div>
 
 <div id="prompt"></div>
 <div id="joy"><div id="knob"></div></div>
@@ -972,6 +972,7 @@ function makeAnimal(def){
   const it=instance(def.model);
   const a0=Math.random()*6.283, r0=Math.random()*is.r*0.4, x=is.c[0]+Math.cos(a0)*r0, z=is.c[1]+Math.sin(a0)*r0;
   it.g.position.set(x,0,z); it.g.scale.setScalar(def.scale); it.g.rotation.y=Math.random()*6.28;
+  it.g.userData.anIsl=def.islId;   // güvenlik ağı etiketi (groundAnimals her kare bunları tabana/adaya sıkıştırır)
   scene.add(it.g);
   const rec={ q:{id:'anim_'+def.id, animal:true, def, pos:[x,0,z], nm:def.label, ic:def.ic}, g:it.g, meshes:it.meshes, animal:true, def, islId:def.islId };
   interactables.push(rec);
@@ -982,7 +983,22 @@ function makeAnimal(def){
   const an={rec, def, is, tx:x, tz:z, pause:Math.random()*3, ph:Math.random()*6.28, spd:def.spd, legs:hasLegs?legs:null};
   animals.push(an); return an;
 }
-function buildAnimals(){ animals=[]; for(const d of ANIMAL_DEFS) makeAnimal(d); }
+function buildAnimals(){
+  // eski hayvan klonlarını sahneden temizle (çift-build'de orphan/uçan kalmasın)
+  for(let i=scene.children.length-1;i>=0;i--){ const c=scene.children[i]; if(c.userData&&c.userData.anIsl!=null){ scene.remove(c); } }
+  animals=[]; for(const d of ANIMAL_DEFS) makeAnimal(d);
+}
+// GÜVENLİK AĞI: sahnedeki TÜM hayvan klonlarını (takip edilse de edilmese de) her kare ada+tabana sıkıştır.
+// updateAnimals yalnız `animals` dizisini işler; bu, herhangi bir orphan/kopya uçan/yüzen hayvanı da yakalar.
+function groundAnimals(){
+  const ch=scene.children;
+  for(let i=0;i<ch.length;i++){ const g=ch[i]; const uid=g.userData&&g.userData.anIsl; if(uid==null) continue;
+    const isl=WORLD.islands.find(x=>x.id===uid); if(!isl) continue;
+    const c=isl.c, rmax=(isl.r||8)-2.5, ddx=g.position.x-c[0], ddz=g.position.z-c[1], dd=ddx*ddx+ddz*ddz;
+    if(!(dd<=rmax*rmax)){ const dl=Math.sqrt(dd)||1, k=(rmax*0.85)/dl; g.position.x=c[0]+ddx*k; g.position.z=c[1]+ddz*k; }
+    if(!(g.position.y>=0 && g.position.y<=0.1)) g.position.y=0;   // uçamaz/batamaz
+  }
+}
 function setLeg(o,t){ if(o) o.rotation.x += (t-o.rotation.x)*0.3; }
 function restLegs(L){ if(L){ setLeg(L.FL,0); setLeg(L.FR,0); setLeg(L.BL,0); setLeg(L.BR,0); } }
 function updateAnimals(dt){
@@ -1899,7 +1915,11 @@ function addInteractable(q){
 }
 function rebuildEvQuests(vname){
   near=null;
-  for(let i=interactables.length-1;i>=0;i--){ if(!interactables[i].exam && questIslandId(interactables[i].q)==='ev'){ scene.remove(interactables[i].g); interactables.splice(i,1); } }
+  // SADECE ev DERS quest'lerini kaldır — hayvan/gather/NPC/pazar/seccade/mescid/muâhât/exam'e DOKUNMA
+  // (eski bug: geniş 'ev' filtresi ev hayvanlarını da siliyordu → vakit değişince hayvanlar "yok" oluyordu)
+  for(let i=interactables.length-1;i>=0;i--){ const r=interactables[i];
+    if(r.exam||r.animal||r.gather||r.npc||r.market||r.muahat||r.mosque||r.seccadePickup) continue;
+    if(questIslandId(r.q)==='ev'){ scene.remove(r.g); interactables.splice(i,1); } }
   setVakitQuests(vname);
   for(const q of evQuests) addInteractable(q);
   applyIslandLock(); refreshHUD();
@@ -2465,6 +2485,7 @@ function tick(){
   if(examNodes.length) animateExamNodes(dt, clock.elapsedTime);
   animateAtmosphere(dt, clock.elapsedTime);
   if(animals.length) updateAnimals(dt);
+  groundAnimals();   // güvenlik ağı: her kare tüm hayvan klonlarını ada+tabana sıkıştır (orphan/uçan dahil)
   if(npcWander.length) updateNpcs(dt);
   updateSceneAmbient(dt);
   updateNeeds(dt);
@@ -2480,7 +2501,7 @@ function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect
 addEventListener('resize',resize); resize();
 
 /* ============ BOOT ============ */
-console.log('%cİHYA sürüm: Faz 11.2 — tente-şeffaf + hayvan/NPC Y-kilit (uçmaz) + kıble','color:#8fce58;font-weight:bold');
+console.log('%cİHYA sürüm: Faz 11.3 — hayvan güvenlik-ağı (groundAnimals) + orphan temizliği','color:#8fce58;font-weight:bold');
 (async()=>{
   let n=0;
   for(const m of MODELS){ await load(m); loadBar.style.width=(++n/MODELS.length*100)+'%'; }
@@ -2526,6 +2547,14 @@ console.log('%cİHYA sürüm: Faz 11.2 — tente-şeffaf + hayvan/NPC Y-kilit (u
     displaceAnimal:(i,x,z)=>{ const a=animals[i]; if(!a) return null; a.rec.g.visible=true; a.rec.g.position.x=x; a.rec.g.position.z=z; a.pause=0; return {isl:a.def.islId, at:[x,z], center:a.is.c, r:a.is.r}; },
     animalDist:(i)=>{ const a=animals[i]; if(!a) return null; const c=a.is.c; return {isl:a.def.islId, pos:[+a.rec.g.position.x.toFixed(1),+a.rec.g.position.z.toFixed(1)], dist:+Math.hypot(a.rec.g.position.x-c[0],a.rec.g.position.z-c[1]).toFixed(2), r:a.is.r}; },
     animalLegs:()=>animals.map(a=>({id:a.def.id, rigged:!!a.legs, legRot:a.legs?['FL','FR','BL','BR'].map(k=>a.legs[k]?+a.legs[k].rotation.x.toFixed(3):null):null})),
+    // TEŞHİS: sahnede dünya-Y'si yüksek (uçan) her mesh'i bildir + kök etiketi
+    scanFlying:(thr)=>{ const t=thr||0.3; let sc=player; while(sc.parent) sc=sc.parent; sc.updateMatrixWorld(true); const out=[];
+      sc.traverse(o=>{ if(o.isMesh){ const e=o.matrixWorld.elements; if(e[13]>t){ let r=o; while(r.parent&&r.parent!==sc) r=r.parent;
+        out.push({mesh:o.name||'?', worldY:+e[13].toFixed(2), wx:+e[12].toFixed(1), wz:+e[14].toFixed(1), rootTaggedAnimal:!!(r.userData&&r.userData.anIsl!=null), rootIsl:r.userData?r.userData.anIsl:null}); } } });
+      return {count:out.length, flying:out.slice(0,40)}; },
+    groundNow:()=>groundAnimals(),
+    animalRoots:()=>{ let sc=player; while(sc.parent) sc=sc.parent; const roots=sc.children.filter(c=>c.userData&&c.userData.anIsl!=null);
+      return {taggedInScene:roots.length, trackedInArray:animals.length, positions:roots.map(r=>({isl:r.userData.anIsl,y:+r.position.y.toFixed(2),x:+r.position.x.toFixed(1),z:+r.position.z.toFixed(1),vis:r.visible}))}; },
     gatherDefs:()=>GATHER_DEFS.map(d=>({id:d.id,isl:d.islId})), animalDefs:()=>ANIMAL_DEFS.map(d=>({id:d.id,isl:d.islId,model:d.model})),
     giveInv:(k,n)=>{ invAdd(k,n); save(); refreshHUD(); checkZekat(); return S.inv; },
     craftSeccade:()=>craftSeccade(), pray:()=>prayNamaz(), hasSeccade:()=>S.hasSeccade,

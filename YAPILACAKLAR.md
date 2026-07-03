@@ -136,6 +136,15 @@ Bu oyun manipülasyonla değil, **anlamla** bağ kurar. Kırmızı çizgiler:
   NOT: temiz kodda zaten uçmuyordu; kullanıcının gördüğü büyük ihtimalle eski cache. (c) **Görünür sürüm
   rozeti** (#verBadge, alt-orta "İhya · Faz 11.2") + `index.html` → `ihya3d.html?v=112` cache-bust →
   hard-refresh'te taze sürüm garantisi, cache belirsizliği biter.
+- [x] **11.3 — GERÇEK KÖK SEBEP bulundu (Suheyb 11.2'de hâlâ görünce)**: (a) **"Hayvanlar yok" bug'ı**:
+  `rebuildEvQuests` vakit değişiminde `questIslandId==='ev'` olan **her** interactable'ı siliyordu —
+  ders quest'leri (istenen) + **ev hayvanları + gather + NPC** (bug). Canlıda her ~1.4dk hayvanlar
+  sahneden siliniyordu. Filtre `if(r.exam||r.animal||r.gather||r.npc||r.market||r.muahat||r.mosque||
+  r.seccadePickup) continue` ile sadece ders quest'lerini silecek şekilde daraltıldı. Test: 9 vakit
+  döngüsü → 13 hayvan + 15 gather KORUNDU (önce 10'a düşüyordu). (b) **"Uçuyor" güvenlik ağı**:
+  `groundAnimals()` her kare sahnedeki TÜM `userData.anIsl` etiketli hayvan klonlarını (tracked/orphan)
+  ada+tabana sıkıştırır; makeAnimal etiketler, buildAnimals eski klonları temizler. Test: 13 kökü
+  (300,777,-300)'e attım → groundNow 1 çağrıda hepsi ada içinde y=0. Teşhis: `__ihya3d.scanFlying()`.
 
 ## 📌 3D Modeller ✅ (2026-07-02)
 Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi
