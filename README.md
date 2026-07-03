@@ -1,6 +1,9 @@
 # İhya — Evden Dünyaya
 
 > 🎮 **Hemen oyna:** https://suheybk.github.io/ihya-oyun/
+> 🏁 **Bölüm 1** (git etiketi `bolum-1`): 5 ada, imtihan meydanı, çobanlık/hasat,
+> zekât, seccade, gün/Cuma. Bitirince **"İhya Etmeye Devam Et"** → yaş/cinsiyet
+> profiline göre **kişiselleştirilmiş** (mükellefiyete uygun) devam.
 
 Mobil tarayıcıda **indirmeden** oynanan, 3D İslami "ihyâ" oyunu. Kendi nefsinden başlayarak
 hâneyi, bahçeyi, mahalleyi, camiyi ve şehri Allah'ın rızâsıyla ihyâ etme şuurunu oyunlaştırır.

@@ -269,6 +269,17 @@
   </div>
 </div>
 
+<div class="veil" id="profile">
+  <div class="sheet">
+    <div class="grip"></div>
+    <h3 style="text-align:center;margin:2px 0 2px">🌱 İhyâ Yolculuğun</h3>
+    <div class="sub" style="text-align:center;margin-bottom:14px">Sana özel bir yolculuk için birkaç soru. İslâm'da yükümlülükler kişiye göre değişir.</div>
+    <div id="profQuestions"></div>
+    <div class="sub" id="profSummary" style="margin:4px 0 12px;line-height:1.5"></div>
+    <button class="do" id="profStart" disabled>Başla ➤</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <div id="banner"></div>
 
@@ -527,7 +538,8 @@ for(const k of ['agac','kandil','cesme','ilim']) if(!S.hayir[k]) S.hayir[k]=[];
 if(!S.inv) S.inv={};        // KALICI envanter: {hurma:n, dut:n, ...}
 if(!S.gather) S.gather={};  // KALICI hasat cooldown'ları: {nodeId: nextReadyTimestamp}
 if(!S.zekat) S.zekat={};    // hangi malda nisab hatırlatması yapıldı
-if(S.hasSeccade===undefined) S.hasSeccade=false;  // yünden örülen seccade (her yerde namaz)   // KALICI: bir dersi ilk kez adım adım öğrenince işaretlenir (günlük sıfırlamadan etkilenmez)
+if(S.hasSeccade===undefined) S.hasSeccade=false;  // yünden örülen seccade (her yerde namaz)
+if(!S.profile) S.profile={ set:false, ageGroup:null, gender:null, quran:null };  // kişisel mükellefiyet profili   // KALICI: bir dersi ilk kez adım adım öğrenince işaretlenir (günlük sıfırlamadan etkilenmez)
 const save=()=>{ try{ localStorage.setItem('ihya3d_v1',JSON.stringify(S)); }catch(e){} };
 const today=()=>new Date().toISOString().slice(0,10);
 const yesterday=()=>new Date(Date.now()-86400000).toISOString().slice(0,10);
@@ -619,7 +631,7 @@ function updateDayNight(dt){
   skyAcc+=dt; if(dt===0 || skyAcc>=0.15){ skyAcc=0; updateSkyWidget(); }
 }
 function onVakitChange(v){ rebuildEvQuests(v[1]); toast('🕌 '+v[1]+' vakti girdi'); sndVakit();
-  if(v[1]==='Öğle' && isFriday()){ setTimeout(()=>{ banner('🕌 Bugün Cuma — Camiye Git'); toast('Cuma namazı vakti: Cami adasına geç, cemaatle namaz kıl 🕌'); sndVakit(); },1600); }
+  if(v[1]==='Öğle' && isFriday() && cumaActive()){ setTimeout(()=>{ banner('🕌 Bugün Cuma — Camiye Git'); toast('Cuma namazı vakti: Cami adasına geç, cemaatle namaz kıl 🕌'); sndVakit(); },1600); }
 }
 /* ---- NAMAZ VAKTİ ÇIKIYOR UYARISI ---- */
 const FARZ_VAKIT=['Fecir','Öğle','İkindi','Akşam','Yatsı'];
@@ -633,7 +645,7 @@ function checkVakitWarning(){
   const idx=VAKIT.indexOf(v), start=idx>0?VAKIT[idx-1][0]:0, end=v[0];
   if((gameTime-start)/((end-start)||1) < 0.72) return; // vaktin son ~%28'i
   vakitWarned=true;
-  const cuma=(name==='Öğle' && isFriday());
+  const cuma=(name==='Öğle' && isFriday() && cumaActive());
   const nm=NAMAZ_LABEL[name]||name;
   toast(cuma?'⏳ Cuma namazının vakti çıkmak üzere — camiye git!':'⏳ '+nm+' namazının vakti çıkmak üzere!');
   banner(cuma?'⏳ Cuma vakti çıkıyor':'⏳ '+nm+' vakti çıkıyor');
@@ -874,6 +886,7 @@ const ZEKAT={
 };
 // koyun nisabı (bilgi): 40 koyunda 1 koyun zekât. Educational.
 function checkZekat(){
+  if(!zekatMukellef()) return;   // çocuk zekâtla mükellef değil
   for(const k in ZEKAT){ const z=ZEKAT[k], have=S.inv[k]||0;
     if(have>=z.nisab && !S.zekat[k]){ S.zekat[k]=true;
       const g=GOODS[k]; banner('🕌 Zekât vakti: '+g.ic+' '+g.nm);
@@ -926,6 +939,52 @@ function updateSeccadeBtn(){ const b=document.getElementById('prayBtn'); if(b) b
 /* ============ ÇALIŞMA ANİMASYONU (toplama/sağma/kırpma) ============ */
 let actionT=0;
 function playAction(dur){ actionT=dur||0.9; }
+
+/* ============ KİŞİSEL PROFİL / MÜKELLEFİYET ============
+   "İhya Etmeye Devam Et" → yaş/cinsiyet/… sorulur; oyun ona göre yönlendirir.
+   Profil YOKKEN (Bölüm 1) her şey varsayılan (yetişkin gibi) çalışır. */
+function isChild(){ return S.profile.set && S.profile.ageGroup==='cocuk'; }
+function isAdult(){ return !S.profile.set || S.profile.ageGroup==='yetiskin'; }
+function isMale(){ return !S.profile.set || S.profile.gender==='erkek'; }
+function cumaActive(){ return !S.profile.set || (isAdult() && isMale()); }     // Cuma erkeğe farz
+function zekatMukellef(){ return !S.profile.set || S.profile.ageGroup!=='cocuk'; }  // çocuk zekâtla mükellef değil
+const PROFILE_Q=[
+  {key:'ageGroup', q:'Yaşın hangisine yakın?', opts:[{v:'cocuk',l:'Çocuk (buluğ öncesi)'},{v:'yetiskin',l:'Genç / Yetişkin (bâliğ)'}]},
+  {key:'gender',   q:'Cinsiyet?', opts:[{v:'erkek',l:'Erkek'},{v:'kadin',l:'Kadın'}]},
+  {key:'quran',    q:'Kur\'an okuyabiliyor musun?', opts:[{v:'evet',l:'Okuyabiliyorum'},{v:'ogreniyor',l:'Öğreniyorum'}]},
+];
+let profSel={};
+function openProfile(){ profSel = S.profile.set ? {ageGroup:S.profile.ageGroup,gender:S.profile.gender,quran:S.profile.quran} : {}; renderProfile(); document.getElementById('profile').classList.add('show'); }
+function renderProfile(){
+  const w=document.getElementById('profQuestions'); w.innerHTML='';
+  for(const q of PROFILE_Q){
+    const g=document.createElement('div'); g.style.marginBottom='13px';
+    const t=document.createElement('div'); t.className='exq'; t.style.margin='0 0 7px'; t.textContent=q.q; g.appendChild(t);
+    const opts=document.createElement('div'); opts.className='exopts';
+    for(const o of q.opts){ const b=document.createElement('button'); b.className='exOpt'+(profSel[q.key]===o.v?' correct':''); b.textContent=o.l;
+      b.onclick=()=>{ profSel[q.key]=o.v; renderProfile(); }; opts.appendChild(b); }
+    g.appendChild(opts); w.appendChild(g);
+  }
+  const all=PROFILE_Q.every(q=>profSel[q.key]);
+  document.getElementById('profStart').disabled=!all;
+  document.getElementById('profStart').style.opacity=all?'1':'0.5';
+  document.getElementById('profSummary').innerHTML = all ? obligationsText(profSel) : 'Üç soruyu da yanıtla.';
+}
+function obligationsText(p){
+  if(p.ageGroup==='cocuk') return '🌱 <b>Henüz mükellef değilsin</b> — ama alışman için oyun seni <b>namaza, sûre ve dualara</b> yönlendirir. Seccaden hazır olur, hemen kılabilirsin.'+(p.quran==='ogreniyor'?' Önce Kur\'an okumayı öğrenmeye çalış.':'');
+  const cuma = p.gender==='erkek' ? ' <b>Cuma namazı</b> (cemaatle),' : '';
+  const cumaNot = p.gender==='kadin' ? ' <i>(Cuma sana farz değil; öğleni kılarsın.)</i>' : '';
+  return '🕌 Sana farz olanlardan: <b>5 vakit namaz</b>,'+cuma+' oruç, <b>zekât</b> (nisaba ulaşınca), hac. Oyun; namaz, kesb-i helâl, zekât ve hayır konularında seni yönlendirir ve uyarır.'+cumaNot+(p.quran==='ogreniyor'?' Kur\'an okumaya da ağırlık ver.':'');
+}
+function applyProfile(){ if(isChild()){ S.hasSeccade=true; } save(); updateSeccadeBtn(); refreshHUD(); }
+function startProfile(){
+  S.profile={ set:true, ageGroup:profSel.ageGroup, gender:profSel.gender, quran:profSel.quran };
+  applyProfile();
+  document.getElementById('profile').classList.remove('show');
+  document.getElementById('endscreen').classList.remove('show');
+  banner('🌱 Kişisel ihyâ yolculuğun başladı');
+  setTimeout(()=>toast(isChild()?'Haydi: namazını kıl, sûre ve dualarını öğren 📖🧎':'İbadet, kesb-i helâl ve infak — a\'dan z\'ye seninle 🕌'),800);
+}
 /* ============ ATMOSFER: yıldızlar + bulutlar + nûr zerreleri (gece) ============ */
 let starField=null, dayMotes=null, dayMoteData=[], fireflies=null, fireflyData=[], nightF=0;
 const WORLD_X0=-12, WORLD_X1=78;   // dünya x aralığı (adalar -8..72)
@@ -1063,8 +1122,8 @@ function renderInv(){
     const d=document.createElement('div'); d.className='sub'; d.style.textAlign='center'; d.style.marginBottom='8px'; d.textContent='🧎 Seccaden var — her yerde namaz kılabilirsin'; cw.appendChild(d);
   }
   w.appendChild(cw);
-  // --- zekât ver (nisaba ulaşan mallar) ---
-  const zk=Object.keys(ZEKAT).filter(k=>(S.inv[k]||0)>=ZEKAT[k].nisab);
+  // --- zekât ver (nisaba ulaşan mallar) — çocuk mükellef değil ---
+  const zk=zekatMukellef()?Object.keys(ZEKAT).filter(k=>(S.inv[k]||0)>=ZEKAT[k].nisab):[];
   if(zk.length){
     const zt=document.createElement('div'); zt.className='sub'; zt.innerHTML='🕌 <b>Zekât</b> — nisaba ulaşan mallar (öşür 1/10). Koyun nisabı: 40 baş.'; w.appendChild(zt);
     for(const k of zk){ const z=ZEKAT[k], have=S.inv[k], amt=Math.max(1,Math.ceil(have*z.rate));
@@ -1228,7 +1287,9 @@ function showEnd(){
   if(st) st.innerHTML='Rütbe: <b>'+rankName(S.nur)+'</b> · Nûr: <b>'+S.nur+'</b>'+(S.streak>0?' · İstikamet: <b>'+S.streak+' gün 🔥</b>':'');
   document.getElementById('endscreen').classList.add('show');
 }
-document.getElementById('endCont').onclick=()=>document.getElementById('endscreen').classList.remove('show');
+document.getElementById('endCont').onclick=()=>{ if(!S.profile.set){ openProfile(); } else { document.getElementById('endscreen').classList.remove('show'); } };
+document.getElementById('profStart').onclick=startProfile;
+document.getElementById('profile').addEventListener('click',e=>{ if(e.target.id==='profile') document.getElementById('profile').classList.remove('show'); });
 document.getElementById('endRestart').onclick=()=>{ localStorage.removeItem('ihya3d_v1'); location.reload(); };
 
 /* ---- SES (Web Audio ile sentez, harici dosya yok) ---- */
@@ -1598,6 +1659,11 @@ addEventListener('resize',resize); resize();
     giveInv:(k,n)=>{ invAdd(k,n); save(); refreshHUD(); checkZekat(); return S.inv; },
     craftSeccade:()=>craftSeccade(), pray:()=>prayNamaz(), hasSeccade:()=>S.hasSeccade,
     giveZekat:(k)=>giveZekat(k), zekat:()=>Object.assign({},S.zekat), day:()=>dayName(), friday:()=>isFriday(),
+    openProfile:()=>openProfile(),
+    setProfile:(age,gen,q)=>{ profSel={ageGroup:age,gender:gen,quran:q}; startProfile(); return Object.assign({},S.profile); },
+    profile:()=>Object.assign({},S.profile),
+    rules:()=>({isChild:isChild(),isAdult:isAdult(),isMale:isMale(),cumaActive:cumaActive(),zekatMukellef:zekatMukellef(),hasSeccade:S.hasSeccade}),
+    showEnd:()=>showEnd(),
     hayirMeshes:()=>hayirGroups.length,
     warnState:()=>({warned:vakitWarned, urgent:document.getElementById('vakit').classList.contains('urgent'), vakit:vakitOf(gameTime)[1]}),
     learn:(id)=>{ for(const q of islandQuests(id)) S.done[q.id]=true; interactables.forEach(r=>{ if(!r.exam) r.done=!!S.done[r.q.id]; }); save(); applyIslandLock(); refreshHUD(); } };
