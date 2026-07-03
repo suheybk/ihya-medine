@@ -107,6 +107,17 @@ Bu oyun manipülasyonla değil, **anlamla** bağ kurar. Kırmızı çizgiler:
 - [x] **Zikir Meclisi** (mescide): Hamdele/Salvele/İstiğfâr/Esmâü'l-Hüsnâ (vakit başına bir) + namaz sonrası **tesbihât** (33+33+33 + dua + Âyetü'l-Kürsî); kerahat/namaz-kılınmayan vakitlerde de
 - [x] **Hayvan grid/yükseklik**: çim yüzeyi y=0'a hizalandı (tüm nesneler taban üstünde), clamp sıkılaştırıldı, taban altına inmez; boot'ta build marker
 
+### Faz 11 — Ezan, Cila, Stabilizasyon (2026-07-03)
+- [x] **Ezan**: her farz vaktinde (Fecir/Öğle/İkindi/Akşam/Yatsı) *derinden*, sadece
+  "Allâhu ekber ×2" + "Hayye ale's-salâh" — Web Speech API (Arapça, kalın+ağır: pitch 0.5,
+  rate 0.68) ile seslendirilir; Arapça ses yoksa mevcut saygılı Hicaz tonuna düşer (regresyon yok).
+  Gerçek müezzin kaydı değil. Mute'a basınca konuşma da susar. Diğer vakitler (Kuşluk/Gece) nazik ton.
+- [x] **Kapsamlı test**: gather/çobanlık/pazar/namaz/mescid/sınav/oruç/ihtiyaç/ezber/hayır/NPC/muâhât
+  eval ile doğrulandı; konsol temiz, regresyon yok.
+- [x] **Hayvan stabilite**: 13 hayvanın tümü kendi adası içinde (3000 karede periyodik zorla-kaçış
+  denendi, maxOver=-3.18); "suda hayvan" temiz state'te tekrarlanamadı → sebep eski tarayıcı cache'i
+  (hard-refresh + cache-bust çözer). Hayvan koduna dokunulmadı.
+
 ## 📌 3D Modeller ✅ (2026-07-02)
 Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi
 (hayvanlar, hurma/dut ağaçları, eşya/pickup, pazar, yapılar, Mescid-i Nebevî, NPC'ler).

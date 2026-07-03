@@ -729,12 +729,13 @@ function onVakitChange(v){
   rebuildEvQuests(v[1]);
   const rn=interactables.find(x=>x.q.id==='ev_namaz'); if(rn) rn.done=false;
   save();
-  toast('🕌 '+v[1]+' vakti girdi'); sndVakit();
+  toast('🕌 '+v[1]+' vakti girdi');
+  if(FARZ_VAKIT.includes(v[1])) sndEzan(); else sndVakit();  // farz vakti → ezan (derinden), diğerleri nazik ton
   if(FARZ_VAKIT.includes(v[1])){
     const cuma=(v[1]==='Öğle' && isFriday() && cumaActive());
     setTimeout(()=>toast(cuma?'🕌 Cuma namazı henüz kılınmadı — Mescide git':'🧎 '+(NAMAZ_LABEL[v[1]]||v[1])+' namazı henüz kılınmadı'),1100);
   }
-  if(v[1]==='Öğle' && isFriday() && cumaActive()){ setTimeout(()=>{ banner('🕌 Bugün Cuma — Mescide Git'); toast('Cuma namazı vakti: Cami adasına geç, mescide gir, cemaatle kıl 🕌'); sndVakit(); },1900); }
+  if(v[1]==='Öğle' && isFriday() && cumaActive()){ setTimeout(()=>{ banner('🕌 Bugün Cuma — Mescide Git'); toast('Cuma namazı vakti: Cami adasına geç, mescide gir, cemaatle kıl 🕌'); },1900); }
   // oruç: iftar hatırlatması (Akşam) + buton güncelle
   if(v[1]==='Akşam' && S.fastNiyet===(S.dayNum||0) && S.fastDone!==(S.dayNum||0)) setTimeout(()=>toast('🌅 Akşam oldu — iftar vakti, orucunu aç (🌅)'),1300);
   updateFastBtn();
@@ -1991,6 +1992,7 @@ function audio(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioC
   if(AC&&AC.state==='suspended') AC.resume(); return AC; }
 function setMuted(m){ muted=m; try{ localStorage.setItem('ihya3d_mute', m?'1':'0'); }catch(e){}
   if(masterGain) masterGain.gain.value=m?0:1;
+  if(m && ('speechSynthesis' in window)){ try{ speechSynthesis.cancel(); }catch(e){} } // ezan konuşmasını da sustur
   const b=document.getElementById('muteBtn'); if(b) b.textContent=m?'🔇':'🔊'; }
 function beep(freq,t0,dur,type,gain){ if(!AC||muted)return; const o=AC.createOscillator(),g=AC.createGain();
   o.type=type||'sine'; o.frequency.value=freq; o.connect(g); g.connect(masterGain||AC.destination);
@@ -2002,6 +2004,42 @@ function sndFanfare(){ audio(); [523.25,659.25,783.99,1046.5].forEach((f,i)=>bee
 function sndVakit(){ audio(); const notes=[293.66,311.13,369.99,392.0];
   notes.forEach((f,i)=>{ beep(f, i*0.4, 1.15, 'sine', 0.085); beep(f*2, i*0.4+0.02, 0.7, 'triangle', 0.02); });
   beep(587.33, 1.7, 1.6, 'sine', 0.05); }
+// ---- EZAN: farz vakti girince derinden, sadece iki cümle (Allâhu ekber ×2 + Hayye ale's-salâh) ----
+// Web Speech API (Arapça) ile seslendirilir; Arapça ses yoksa saygılı tona düşer. Müezzin kaydı DEĞİL.
+let ezanVoice; // undefined=aranmadı, null=yok, else SpeechSynthesisVoice
+function pickEzanVoice(){
+  try{ if(!('speechSynthesis' in window)){ ezanVoice=null; return; }
+    const vs=speechSynthesis.getVoices()||[];
+    ezanVoice = vs.find(v=>/(^|[-_])ar([-_]|$)/i.test(v.lang||'')) || null;
+  }catch(e){ ezanVoice=null; }
+}
+if(typeof window!=='undefined' && 'speechSynthesis' in window){
+  try{ speechSynthesis.onvoiceschanged=pickEzanVoice; pickEzanVoice(); }catch(e){}
+}
+function sayPhrase(text, delay){
+  try{ const u=new SpeechSynthesisUtterance(text);
+    if(ezanVoice) u.voice=ezanVoice;
+    u.lang = ezanVoice ? ezanVoice.lang : 'ar-SA';
+    u.pitch=0.5;    // derinden (kalın)
+    u.rate=0.68;    // ağır, tefekkürle
+    u.volume=0.9;
+    setTimeout(()=>{ try{ speechSynthesis.speak(u); }catch(e){} }, delay);
+  }catch(e){}
+}
+function sndEzan(){ audio(); if(muted) return;
+  if('speechSynthesis' in window){
+    if(ezanVoice===undefined) pickEzanVoice();
+    if(ezanVoice){
+      try{ speechSynthesis.cancel(); }catch(e){}
+      sayPhrase('اللَّهُ أَكْبَر', 0);         // Allâhu ekber
+      sayPhrase('اللَّهُ أَكْبَر', 1500);       // Allâhu ekber
+      sayPhrase('حَيَّ عَلَى الصَّلَاة', 3200); // Hayye ale's-salâh
+      beep(146.83, 0, 4.6, 'sine', 0.028);      // altta çok hafif derinlik droneu
+      return;
+    }
+  }
+  sndVakit(); // Arapça ses yok → saygılı Hicaz tonu (regresyon yok)
+}
 function startAmbient(){ if(ambientOn||!audio())return; ambientOn=true; const ac=AC;
   const buf=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate), d=buf.getChannelData(0); let last=0;
   for(let i=0;i<d.length;i++){ const w=Math.random()*2-1; last=(last+0.02*w)/1.02; d[i]=last*3.0; }
@@ -2394,7 +2432,7 @@ function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect
 addEventListener('resize',resize); resize();
 
 /* ============ BOOT ============ */
-console.log('%cİHYA sürüm: Faz 10 — gölgelik-şeffaf · zikir · grid/Y fix','color:#8fce58;font-weight:bold');
+console.log('%cİHYA sürüm: Faz 11 — ezan (derinden) · cila · stabilizasyon','color:#8fce58;font-weight:bold');
 (async()=>{
   let n=0;
   for(const m of MODELS){ await load(m); loadBar.style.width=(++n/MODELS.length*100)+'%'; }
@@ -2480,6 +2518,7 @@ console.log('%cİHYA sürüm: Faz 10 — gölgelik-şeffaf · zikir · grid/Y fi
     showEnd:()=>showEnd(),
     hayirMeshes:()=>hayirGroups.length,
     warnState:()=>({warned:vakitWarned, urgent:document.getElementById('vakit').classList.contains('urgent'), vakit:vakitOf(gameTime)[1]}),
+    ezan:()=>sndEzan(), ezanVoice:()=>({has:!!ezanVoice, lang:ezanVoice?ezanVoice.lang:null, name:ezanVoice?ezanVoice.name:null, voices:(('speechSynthesis' in window)?(speechSynthesis.getVoices()||[]).map(v=>v.lang):[])}),
     learn:(id)=>{ for(const q of islandQuests(id)) S.done[q.id]=true; interactables.forEach(r=>{ if(!r.exam) r.done=!!S.done[r.q.id]; }); save(); applyIslandLock(); refreshHUD(); } };
   tick();
 })();
