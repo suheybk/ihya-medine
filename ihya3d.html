@@ -229,6 +229,8 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.2 (kıble·tente·hayvan-Y)</div>
+
 <div id="prompt"></div>
 <div id="joy"><div id="knob"></div></div>
 <button id="act">Yaptım ✓</button>
@@ -986,12 +988,13 @@ function restLegs(L){ if(L){ setLeg(L.FL,0); setLeg(L.FR,0); setLeg(L.BL,0); set
 function updateAnimals(dt){
   for(const an of animals){
     const g=an.rec.g;
-    const c=an.is.c, rmax=an.is.r-2.5;   // KENDİ adasının güvenli iç yarıçapı (geniş pay)
-    // KOŞULSUZ SINIR: her kare, görünür/görünmez/duraklamış fark etmeksizin ada içine sıkıştır → kaçış imkânsız
+    const isl=an.is||{c:[0,0],r:8}, c=isl.c, rmax=(isl.r||8)-2.5;   // KENDİ adası (geçersizse ev'e düş)
+    // KOŞULSUZ SINIR: her kare ada içine sıkıştır — NaN/geçersiz konum da (!(<=)) sıkıştırılır → kaçış imkânsız
     { const ddx=g.position.x-c[0], ddz=g.position.z-c[1], dd=ddx*ddx+ddz*ddz;
-      if(dd>rmax*rmax){ const dl=Math.sqrt(dd)||1, k=(rmax*0.85)/dl;
+      if(!(dd<=rmax*rmax)){ const dl=Math.sqrt(dd)||1, k=(rmax*0.85)/dl;
         g.position.x=c[0]+ddx*k; g.position.z=c[1]+ddz*k; an.tx=g.position.x; an.tz=g.position.z; an.pause=Math.min(an.pause,0.2); } }
-    if(g.position.y<0) g.position.y=0;   // taban altına inme (grid üstünde yürü)
+    // Y'yi TABANA kilitle: uçamaz/batamaz (yalnız ufak adım bob'u serbest). NaN/yüksek/negatif → 0
+    if(!(g.position.y>=0 && g.position.y<=0.1)) g.position.y=0;
     if(!g.visible) continue;
     const L=an.legs;
     if(an.pause>0){ an.pause-=dt; g.position.y*=0.85; restLegs(L); continue; }
@@ -1598,10 +1601,11 @@ function npcRest(g,k){ g.position.y*=0.85; g.rotation.x+=-g.rotation.x*k; g.rota
 function updateNpcs(dt){
   for(const n of npcWander){
     const rec=n.rec, g=rec.g;
-    const c=n.is.c, rmax=n.is.r-1.6;   // KENDİ adasının güvenli iç yarıçapı
-    // KOŞULSUZ SINIR: her kare, ne olursa olsun ada içine sıkıştır → kaçış imkânsız
+    const isl=n.is||{c:[0,0],r:8}, c=isl.c, rmax=(isl.r||8)-1.6;   // KENDİ adası (geçersizse ev'e düş)
+    // KOŞULSUZ SINIR: her kare ada içine sıkıştır — NaN/geçersiz de → eve ışınla → kaçış imkânsız
     { const ddx=g.position.x-c[0], ddz=g.position.z-c[1], dd=ddx*ddx+ddz*ddz;
-      if(dd>rmax*rmax){ g.position.x=n.hx; g.position.z=n.hz; pickNpcTarget(n); n.pause=Math.min(n.pause,0.2); } }
+      if(!(dd<=rmax*rmax)){ g.position.x=n.hx; g.position.z=n.hz; pickNpcTarget(n); n.pause=Math.min(n.pause,0.2); } }
+    if(!(g.position.y>=0 && g.position.y<=0.1)) g.position.y=0;   // Y tabana kilit: NPC uçamaz/batamaz
     if(!g.visible) continue;
     if(near===rec){ // oyuncu yanındayken dur ve ona dön (etkileşim için)
       g.rotation.y=Math.atan2(player.position.x-g.position.x, player.position.z-g.position.z);
@@ -1929,7 +1933,7 @@ function buildIlimMeclisi(){
     add(new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.085,H,8), mat(0x8a6a3a)), IM[0]+dx, H/2, IM[2]+dz);
   const roof=new THREE.Mesh(new THREE.ConeGeometry(P*1.55,0.55,4), mat(0xe6d6a8)); roof.rotation.y=Math.PI/4;
   add(roof, IM[0], H+0.22, IM[2]);
-  meclisRoof=roof; MECLIS_C=[IM[0],IM[2]]; MECLIS_R=P*1.55*0.92;   // oyuncu altına girince saydamlaşır
+  meclisRoof=roof; MECLIS_C=[IM[0],IM[2]]; MECLIS_R=P*1.55*1.25;   // oyuncu altına/yakınına girince saydamlaşır (cömert kapsam)
   // 6 sahabe çember, merkeze (rahleye) dönük
   const robes=[0x7a8b5a,0x8a6f4a,0x6f7d8a,0x9a7b5a,0x6a8a6a,0x8a5a5a];
   const turbans=[0xe8e2d0,0xd8cbb0,0xeeeee6,0xd0c4a8,0xe4dcc8,0xdccfae];
@@ -2466,8 +2470,8 @@ function tick(){
   updateNeeds(dt);
   // ilim meclisi gölgeliği: oyuncu altına girince saydamlaş (altı görünsün)
   if(meclisRoof && player){ const under=Math.hypot(player.position.x-MECLIS_C[0],player.position.z-MECLIS_C[1])<MECLIS_R;
-    const m=meclisRoof.material, tgt=under?0.22:1; m.transparent=under||m.opacity<0.99;
-    m.opacity += (tgt-m.opacity)*0.15; m.depthWrite=m.opacity>0.9; if(m.opacity>0.995){m.opacity=1;m.transparent=false;} }
+    const m=meclisRoof.material, tgt=under?0.14:1; m.transparent=under||m.opacity<0.99;
+    m.opacity += (tgt-m.opacity)*0.18; m.depthWrite=m.opacity>0.9; if(m.opacity>0.995){m.opacity=1;m.transparent=false;} }
   renderer.render(scene,camera);
   requestAnimationFrame(tick);
 }
@@ -2476,7 +2480,7 @@ function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect
 addEventListener('resize',resize); resize();
 
 /* ============ BOOT ============ */
-console.log('%cİHYA sürüm: Faz 11 — ezan · kıble · offline-gömme · cila','color:#8fce58;font-weight:bold');
+console.log('%cİHYA sürüm: Faz 11.2 — tente-şeffaf + hayvan/NPC Y-kilit (uçmaz) + kıble','color:#8fce58;font-weight:bold');
 (async()=>{
   let n=0;
   for(const m of MODELS){ await load(m); loadBar.style.width=(++n/MODELS.length*100)+'%'; }

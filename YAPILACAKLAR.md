@@ -128,6 +128,14 @@ Bu oyun manipülasyonla değil, **anlamla** bağ kurar. Kırmızı çizgiler:
   gömüldü (`window.IHYA_WORLD`'e Object.assign; ~839KB base64, HTML ~1.9MB). Artık **33/33 model
   gömülü, 0 fetch** → `file://` çift-tıkla model sunucusu gerektirmez. (three.js hâlâ CDN'den; tam
   offline için o da gömülebilir — ayrı iş.) Script: `scratchpad/embed_medine.py` (idempotent).
+- [x] **11.2 rötuş (Suheyb geri bildirimi, 5/5 ada açıkken)**: (a) **Tente şeffaflığı** güçlendirildi —
+  MECLIS_R tetik yarıçapı cömertleştirildi (P·1.55·0.92→1.25, tüm tente altını kapsar), opacity
+  0.22→0.14 (daha net saydam). (b) **Hayvan/NPC uçma-yüzme yapısal olarak imkânsız**: clamp NaN-güvenli
+  (`!(dd<=rmax²)`) + geçersiz ada guard'ı + **sıkı Y-kilidi** (`!(y>=0 && y<=0.1)→0`). Test: 13 hayvanı
+  (200,**999**,200)'e zorladım → 1 karede hepsi ada içinde, y=0 (canlı her kare çalıştığından uçamaz).
+  NOT: temiz kodda zaten uçmuyordu; kullanıcının gördüğü büyük ihtimalle eski cache. (c) **Görünür sürüm
+  rozeti** (#verBadge, alt-orta "İhya · Faz 11.2") + `index.html` → `ihya3d.html?v=112` cache-bust →
+  hard-refresh'te taze sürüm garantisi, cache belirsizliği biter.
 
 ## 📌 3D Modeller ✅ (2026-07-02)
 Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi
