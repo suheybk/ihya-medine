@@ -123,6 +123,11 @@ Bu oyun manipülasyonla değil, **anlamla** bağ kurar. Kırmızı çizgiler:
   Toolbar **🧭 kıble düğmesi** → yerde 3B kıble oku (uçta Kâbe simgesi) belirir. **Yöneliş/yönelmeyiş
   farkı**: `facingQibla()` ±23°; kıbleye dönükse "✓ yüzün kıbleye dönük", değilse "ok yönüne dön" —
   delil: "Yüzünü Mescid-i Harâm tarafına çevir." (Bakara 144); kıbleye dönmek namazın şartı.
+- [x] **Offline base64 gömme**: Faz 1-7'de fetch ile gelen 21 Medine modeli (hurma/dut ağaçları,
+  item'lar, kuyu, koyun/keçi/deve, seccade, pazar takımı, NPC'ler, imam/çoban) HTML içine base64
+  gömüldü (`window.IHYA_WORLD`'e Object.assign; ~839KB base64, HTML ~1.9MB). Artık **33/33 model
+  gömülü, 0 fetch** → `file://` çift-tıkla model sunucusu gerektirmez. (three.js hâlâ CDN'den; tam
+  offline için o da gömülebilir — ayrı iş.) Script: `scratchpad/embed_medine.py` (idempotent).
 
 ## 📌 3D Modeller ✅ (2026-07-02)
 Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi
