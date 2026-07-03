@@ -74,9 +74,11 @@ Bu oyun manipülasyonla değil, **anlamla** bağ kurar. Kırmızı çizgiler:
 - [ ] Hayvan sesleri (koyun/deve), pazar uğultusu ambient
 - [ ] Genel denge ve sadelik gözden geçirmesi (bağımlılık ilkelerine sadâkat)
 
-## 📌 Önce Ne Lazım?
-Faz 1–2 için **3D modeller** ön şart (hayvanlar, meyve ağaçları, mallar). Bunun için ayrı
-**`MODEL_PROMPTLARI.md`** dosyasını çıkardık — Suheyb modelleri üretecek, sonra kodu inşa edeceğiz.
+## 📌 3D Modeller ✅ (2026-07-02)
+Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi
+(hayvanlar, hurma/dut ağaçları, eşya/pickup, pazar, yapılar, Mescid-i Nebevî, NPC'ler).
+Referans render'lar `models/*.glb.jpg` (yerelde, gitignore). **Sıra artık entegrasyon +
+mekanik**: modelleri `MODELS` dizisine ekle → Faz 1'den başla.
 
 ## ⚠️ Dinî İçerik Notu
 Oyundaki âyet/hadîs/sîret bilgileri dikkatle seçiliyor; yine de yeni eklenen metinler
