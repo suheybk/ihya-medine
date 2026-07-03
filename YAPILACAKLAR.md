@@ -95,6 +95,13 @@ Bu oyun manipülasyonla değil, **anlamla** bağ kurar. Kırmızı çizgiler:
 - [x] Delil: "ameller Pazartesi-Perşembe arz olunur, oruçlu olmayı severim" (Tirmizî), "oruç kalkandır" (Buhârî), iftar sevinci (Buhârî)
 - [x] Mükellefiyet: yetişkine (bâliğ) özel; çocukta gizli (çocuk sûre-dua odaklı kalır)
 
+### Faz 9 — İlim Meclisi, Kuyu/İhtiyaç, Çocuk Ezberi (2026-07-03)
+- [x] **İlim meclisi**: Cami adasında 6 sahabe bağdaş kurup çember, üzerlerinde gölgelik (Suffa); ilim düğümü merkezde (prosedürel)
+- [x] **Haftalık cami namazı → imam sohbeti**: 7 gün ardışık, her vakti (5) camide kılınca imam/cemaatle sohbet + ilim açılır
+- [x] **Kuyu**: her adada su çekme düğümü (bol, kısa cooldown)
+- [x] **Susuzluk/açlık** (nazik, cezalandırmayan): yavaş biriker; 🥤 su iç / 🍽️ ye (şükür nûru); oruçluyken iftara kadar yeme-içme yok; kaynaklar oyuncu lehine
+- [x] **Çocuk sûre-dua ezberi**: Fâtiha/İhlâs/Felak/Nâs/Kevser + 5 günlük dua; 📖 Ezber Defteri (çocuk profilinde), adım adım âyet + sırala testi + nûr
+
 ## 📌 3D Modeller ✅ (2026-07-02)
 Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi
 (hayvanlar, hurma/dut ağaçları, eşya/pickup, pazar, yapılar, Mescid-i Nebevî, NPC'ler).

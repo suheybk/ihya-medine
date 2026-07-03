@@ -28,6 +28,22 @@
     display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:800;
     background:var(--panel);color:var(--muted);box-shadow:0 4px 14px #0002;border:1px solid #0000}
   .woolhint.ready{color:#33240a;background:linear-gradient(135deg,#e9c478,#d9a441);cursor:pointer;animation:pop .3s}
+  #needs{position:fixed;top:52px;left:12px;z-index:6;display:flex;flex-direction:column;gap:4px;pointer-events:none}
+  .need{display:flex;align-items:center;gap:5px;font-size:13px;filter:drop-shadow(0 1px 2px #0004)}
+  .nbar{width:60px;height:7px;background:#00000033;border-radius:5px;overflow:hidden;box-shadow:0 1px 3px #0002}
+  .nbar>i{display:block;height:100%;width:0%;border-radius:5px;transition:width .35s}
+  .ezsec{font-weight:800;font-size:13px;color:var(--muted);margin:10px 2px 6px}
+  .ezgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ezcard{padding:12px 10px;border:none;border-radius:14px;background:var(--panel);font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 3px 10px #0002;text-align:left}
+  .ezcard.done{background:linear-gradient(135deg,#bfe0a8,#8fce7a);color:#20401d}
+  .ezview{display:flex;flex-direction:column;gap:10px}
+  .ezname{font-weight:800;font-size:15px}
+  .ezar{font-size:18px;font-weight:800;line-height:1.5;color:#1d3a2f;background:#f3ead2;border-radius:12px;padding:14px}
+  .ezmean{font-size:13.5px;color:var(--muted);line-height:1.5}
+  .ezrow{display:flex;gap:8px}
+  .eztest{display:flex;flex-direction:column;gap:7px}
+  .eztbtn{text-align:left;padding:11px 12px;border:none;border-radius:12px;background:var(--panel);font-weight:700;font-size:13.5px;cursor:pointer;box-shadow:0 2px 8px #0002}
+  .eztbtn.placed{background:#cfe9c0;color:#2b5323;opacity:.85;cursor:default}
   .skyclock{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 4px 3px;border-radius:16px;background:var(--panel);box-shadow:0 4px 14px #0002}
   #skySvg{width:124px;height:auto;display:block;border-radius:12px}
   .vakitlbl{font-weight:800;color:var(--ink);font-size:12.5px;line-height:1;padding:1px 2px 2px;border-radius:8px}
@@ -196,9 +212,17 @@
 
 <div class="woolhint" id="woolHint" style="display:none"></div>
 
+<div id="needs" style="display:none">
+  <div class="need"><span>💧</span><div class="nbar"><i id="thirstBar"></i></div></div>
+  <div class="need"><span>🍞</span><div class="nbar"><i id="hungerBar"></i></div></div>
+</div>
+
 <div class="toolbar" id="toolbar">
   <button class="iconbtn" id="prayBtn" title="Namaz kıl (seccadeni ser)" style="display:none">🧎</button>
   <button class="iconbtn" id="fastBtn" title="Oruç" style="display:none">🌙</button>
+  <button class="iconbtn" id="drinkBtn" title="Su iç" style="display:none">🥤</button>
+  <button class="iconbtn" id="eatBtn" title="Yemek ye" style="display:none">🍽️</button>
+  <button class="iconbtn" id="ezberBtn" title="Ezber Defteri (sûre & dua)" style="display:none">📖</button>
   <button class="iconbtn" id="invBtn" title="Dağarcık (envanter)">🎒</button>
   <button class="iconbtn" id="muteBtn" title="Ses aç/kapat">🔊</button>
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
@@ -298,6 +322,15 @@
 </div>
 <div id="mosqueFade" style="position:fixed;inset:0;background:#0a0e1a;opacity:0;pointer-events:none;z-index:15"></div>
 
+<div class="veil" id="ezber">
+  <div class="sheet">
+    <div class="grip"></div>
+    <div class="exhead"><h3>📖 Ezber Defteri</h3><span class="exprog" id="ezberProg"></span></div>
+    <div id="ezberBody"></div>
+    <button class="cl" id="ezberClose">Kapat</button>
+  </div>
+</div>
+
 <div class="veil" id="profile">
   <div class="sheet">
     <div class="grip"></div>
@@ -382,7 +415,7 @@ const QUESTS = [
   { id:'cemaat', model:'prayer', pos:[46.5,0,1.5], rot:0, scale:1.6, ic:'🕌',
     nm:'Cemaatle namaz kıl', rem:'Cemaat namazı, tek başına kılınandan 27 derece üstündür.',
     refs:[{tag:'Hadis',txt:'Cemaatle namaz, tek başına kılınan namazdan yirmi yedi derece daha faziletlidir.',cite:'Buhârî, Ezân 30'}]},
-  { id:'ilim',   model:'rahle',  pos:[49,0,2.5],   rot:0, scale:1.5, ic:'📚',
+  { id:'ilim',   model:'rahle',  pos:[49,0,3.9],   rot:0, scale:1.5, ic:'📚',
     nm:'İlim meclisine katıl', rem:'İlim yolunda yürüyene Allah cennet yolunu kolaylaştırır.',
     refs:[{tag:'Hadis',txt:'Kim ilim öğrenmek için bir yola girerse, Allah ona cennetin yolunu kolaylaştırır.',cite:'Müslim, Zikir 38'}]},
   { id:'davet',  model:'book',   pos:[51.5,0,1.5], rot:0, scale:2.2, ic:'💬',
@@ -400,8 +433,8 @@ const QUESTS = [
     refs:[{tag:'Hadis',txt:'İnsanların en hayırlısı, insanlara en faydalı olanıdır.',cite:'Taberânî, el-Mu\'cemü\'l-Evsat'}]},
 ];
 const MODELS = ['player','prayer','rahle','book','door','tree','plot','plot_sprout','fountain','mosque','island_tile','bridge',
-  // Medine — hasat/toplama (Faz 1)
-  'date_palm','date_palm_bare','mulberry_tree','mulberry_tree_bare','item_date','item_mulberry',
+  // Medine — hasat/toplama (Faz 1) + kuyu (Faz 9)
+  'date_palm','date_palm_bare','mulberry_tree','mulberry_tree_bare','item_date','item_mulberry','well',
   // Medine — çobanlık (Faz 2)
   'sheep','goat','camel',
   // Medine — seccade + pazar (Faz 3)
@@ -584,6 +617,16 @@ if(typeof S.dayNum!=='number') S.dayNum=0;      // oyun-içi gün sayacı (döng
 if(typeof S.streakDay!=='number') S.streakDay=-1;  // istikamet artık gün-sayacına (dayNum) bağlı
 if(typeof S.fastNiyet!=='number') S.fastNiyet=-1;  // oruç niyeti yapılan gün (dayNum) — Pazartesi/Perşembe sünnet
 if(typeof S.fastDone!=='number') S.fastDone=-1;    // orucun iftarla tamamlandığı gün (dayNum)
+// haftalık cami namazı → imam/cemaat sohbeti (7 gün ardışık, her vakti camide)
+if(typeof S.mosqueVDay!=='number') S.mosqueVDay=-1;      // bugünkü cami-vakit setinin günü
+if(!Array.isArray(S.mosqueVSet)) S.mosqueVSet=[];        // bugün camide kılınan farz vakitler
+if(typeof S.mosqueStreak!=='number') S.mosqueStreak=0;   // ardışık tam-cami gün sayısı
+if(typeof S.mosqueStreakDay!=='number') S.mosqueStreakDay=-1;
+if(typeof S.mosqueFullDay!=='number') S.mosqueFullDay=-1;
+if(S.mosqueUnlocked===undefined) S.mosqueUnlocked=false; // imam/cemaat sohbeti açıldı mı (KALICI)
+if(typeof S.thirst!=='number') S.thirst=0;   // susuzluk 0..100 (0=tok, oyuncu lehine yavaş biriker)
+if(typeof S.hunger!=='number') S.hunger=0;   // açlık 0..100
+if(!S.memorized) S.memorized={};   // KALICI: çocuk ezberi (sûre/dua id → true)
 const save=()=>{ try{ localStorage.setItem('ihya3d_v1',JSON.stringify(S)); }catch(e){} };
 const today=()=>new Date().toISOString().slice(0,10);
 const yesterday=()=>new Date(Date.now()-86400000).toISOString().slice(0,10);
@@ -859,6 +902,8 @@ const GATHER_DEFS=[];
 WORLD.islands.forEach(is=>{ const cx=is.c[0];
   GATHER_DEFS.push({id:'palm_'+is.id, islId:is.id, pos:[cx-3,0,5], full:'date_palm', bare:'date_palm_bare', item:'hurma', amount:3, cd:40000, scale:0.95});
   GATHER_DEFS.push({id:'mul_'+is.id, islId:is.id, pos:[cx+3,0,-5], full:'mulberry_tree', bare:'mulberry_tree_bare', item:'dut', amount:4, cd:30000, scale:1.0});
+  // KUYU: su çek (susuzluk için) — model değişmez, bol ve kısa cooldown (oyuncu lehine)
+  GATHER_DEFS.push({id:'well_'+is.id, islId:is.id, pos:[cx-4.5,0,-1.5], full:'well', bare:'well', item:'su', amount:3, cd:12000, scale:1.0});
 });
 let gatherNodes=[];
 function nodeReady(def){ const t=S.gather[def.id]; return !t || Date.now()>=t; }
@@ -1107,6 +1152,30 @@ function exitMosque(){
   if(player){ camera.position.copy(player.position).add(CAM_OFF); }   // uçuş yok: adaya geri snap
   mosqueFade();
 }
+// haftalık cami namazı: bir vakti camide kılınca kaydet; 7 gün ardışık tam → imam sohbeti açılır
+function recordMosquePrayer(vn){
+  if(!FARZ_VAKIT.includes(vn)) return;
+  const d=S.dayNum||0;
+  if(S.mosqueVDay!==d){ S.mosqueVDay=d; S.mosqueVSet=[]; }
+  if(!S.mosqueVSet.includes(vn)) S.mosqueVSet.push(vn);
+  if(S.mosqueVSet.length>=FARZ_VAKIT.length && S.mosqueFullDay!==d){
+    S.mosqueFullDay=d;
+    S.mosqueStreak = (S.mosqueStreakDay===d-1) ? (S.mosqueStreak+1) : 1;
+    S.mosqueStreakDay=d;
+    if(S.mosqueStreak>=7 && !S.mosqueUnlocked){ S.mosqueUnlocked=true;
+      setTimeout(()=>{ banner('🕌 İmam ve cemaatle tanıştın'); toast('7 gün her vakti camide kıldın — artık imam ve cemaatle sohbet edip ilim alabilirsin.'); sndFanfare(); },400); }
+    else if(!S.mosqueUnlocked) setTimeout(()=>toast('🕌 Bugün 5 vakti de camide kıldın — imam sohbetine '+S.mosqueStreak+'/7 gün'),400);
+  }
+}
+// imam sohbeti: ilim/hikmet havuzu (açıldıktan sonra)
+const IMAM_SOZ=[
+  '"Din nasihattır." dedik: "Kime yâ Rasûlallah?" "Allah\'a, Kitabına, Peygamberine, Müslümanların yöneticilerine ve umumuna." (Müslim)',
+  '"İki nimet vardır ki insanların çoğu bunda aldanmıştır: Sağlık ve boş vakit." (Buhârî)',
+  '"Kolaylaştırın, zorlaştırmayın; müjdeleyin, nefret ettirmeyin." (Buhârî)',
+  '"Sizin en hayırlınız Kur\'ân\'ı öğrenen ve öğretendir." (Buhârî)',
+  '"Kişi sevdiğiyle beraberdir." (Buhârî) — sâlihleri sev, meclislerine katıl.',
+  '"Müslüman, elinden ve dilinden diğer Müslümanların emin olduğu kimsedir." (Buhârî)',
+];
 function renderMosque(){
   const vn=vakitOf(gameTime)[1];
   const vl=document.getElementById('mosqueVakit'); if(vl) vl.textContent=(isFriday()?'🕌 Cuma':dayName())+' · '+vn;
@@ -1130,6 +1199,14 @@ function renderMosque(){
   const key=S.dayNum+'_'+vn;
   h+= (S.mosqueSat===key) ? '<div class="sub" style="opacity:.7;text-align:center;margin-top:8px">🤲 Bu vakit oturup dinledin</div>'
     : '<button class="do" style="background:#5a7d5a;margin-top:8px" onclick="__mosqueAct(\'sit\')">🤲 Sessizce otur, imamı dinle (+3 nûr)</button>';
+  // imam ve cemaatle sohbet — 7 gün her vakti camide kılınca açılır
+  if(S.mosqueUnlocked){
+    h+='<button class="do" style="background:#6a5a8a;margin-top:8px" onclick="__mosqueAct(\'sohbet\')">💬 İmam ve cemaatle sohbet et (ilim +5)</button>';
+  } else {
+    const cur=(S.mosqueStreakDay===S.dayNum||S.mosqueStreakDay===(S.dayNum-1))?(S.mosqueStreak||0):0;
+    const todayN=(S.mosqueVDay===S.dayNum)?S.mosqueVSet.length:0;
+    h+='<div class="sub" style="opacity:.8;margin-top:8px;text-align:center">💬 İmam sohbeti kilitli — 7 gün ardışık, her vakti (5) camide kıl<br><b>'+cur+'/7 gün</b> · bugün '+todayN+'/5 vakit</div>';
+  }
   h+='<button class="cl" onclick="__mosqueAct(\'exit\')">🚪 Mescidden çık</button>';
   body.innerHTML=h;
 }
@@ -1137,15 +1214,18 @@ window.__mosqueAct=function(kind){
   const vn=vakitOf(gameTime)[1];
   if(kind==='exit'){ exitMosque(); return; }
   if(kind==='cuma'){ if(S.cumaDone===S.dayNum){ renderMosque(); return; }
-    S.cumaDone=S.dayNum; S.done['ev_namaz']=true; addNur(30); sndFanfare();
+    S.cumaDone=S.dayNum; S.done['ev_namaz']=true; addNur(30); sndFanfare(); recordMosquePrayer('Öğle');
     const ev=document.getElementById('vakit'); if(ev) ev.classList.remove('urgent');
     banner('🕌 Cuma namazın kabul olsun'); setTimeout(()=>toast('Hutbeyi dinledin, cemaatle kıldın (+30 nûr)'),200); if(islandDone('ev')) checkStreak(); }
   else if(kind==='cemaat'){ if(S.done['ev_namaz']){ renderMosque(); return; }
-    S.done['ev_namaz']=true; addNur(12); sndChime();
+    S.done['ev_namaz']=true; addNur(12); sndChime(); recordMosquePrayer(vn);
     const rec=interactables.find(r=>r.q.id==='ev_namaz'); if(rec) rec.done=true;
     const ev=document.getElementById('vakit'); if(ev) ev.classList.remove('urgent');
     setTimeout(()=>toast('🤲 Cemaatle '+(NAMAZ_LABEL[vn]||vn)+' kıldın (+12 nûr)'),200); if(islandDone('ev')) checkStreak(); }
   else if(kind==='nafile'){ addNur(5); sndChime(); setTimeout(()=>toast('🤲 Nâfile kıldın (+5 nûr)'),150); }
+  else if(kind==='sohbet'){ if(!S.mosqueUnlocked){ renderMosque(); return; }
+    addNur(5); sndChime(); const soz=IMAM_SOZ[(S.dayNum*3+ (vakitOf(gameTime)[0]*7|0))%IMAM_SOZ.length];
+    banner('💬 İmam sohbeti'); setTimeout(()=>toast(soz+' (+5 nûr)'),200); }
   else if(kind==='sit'){ const key=S.dayNum+'_'+vn; if(S.mosqueSat===key){ renderMosque(); return; }
     S.mosqueSat=key; addNur(3); sndChime(); setTimeout(()=>toast('🤲 Sessizce oturup dinledin — huzur ve nûr (+3)'),150); }
   save(); refreshHUD(); applyIslandLock(); renderMosque();
@@ -1183,6 +1263,145 @@ function doFast(){
     banner('🌅 İftar — orucun kabul olsun');
     setTimeout(()=>toast('İftar ettin. "Oruçlunun iki sevinci: iftar ve Rabbine kavuşma." (Buhârî) — +25 nûr'),300); return; }
   if(p==='missed'){ toast('🌙 Bu günün niyet vakti geçti — oruca öğleden önce niyet edilir'); return; }
+}
+
+/* ============ SU/YEMEK İHTİYACI (Faz 9) — nazik, cezalandırmayan (şükür + empati) ============ */
+const THIRST_RATE=0.14, HUNGER_RATE=0.095;   // /sn (susuzluk ~12dk, açlık ~18dk dolar)
+let needsAcc=0, thirstWarned=false, hungerWarned=false;
+function fastingAbstain(){ return fastPhase()==='fasting'; }   // oruçluyken yeme/içme yok (iftara kadar)
+function updateNeeds(dt){
+  S.thirst=Math.min(100, S.thirst + THIRST_RATE*dt);
+  S.hunger=Math.min(100, S.hunger + HUNGER_RATE*dt);
+  if(S.thirst>70 && !thirstWarned && !fastingAbstain()){ thirstWarned=true; toast('💧 Susadın — kuyudan su çek, sonra 🥤 ile iç'); }
+  if(S.thirst<50) thirstWarned=false;
+  if(S.hunger>72 && !hungerWarned && !fastingAbstain()){ hungerWarned=true; toast('🍞 Karnın acıktı — hurma/ekmek topla, 🍽️ ile ye'); }
+  if(S.hunger<50) hungerWarned=false;
+  needsAcc+=dt; if(needsAcc>=0.4){ needsAcc=0; updateNeedsHud(); }
+}
+function updateNeedsHud(){
+  const nd=document.getElementById('needs'); if(!nd) return;
+  nd.style.display=(S.thirst>18||S.hunger>18)?'flex':'none';
+  const tb=document.getElementById('thirstBar'), hb=document.getElementById('hungerBar');
+  if(tb){ tb.style.width=S.thirst.toFixed(0)+'%'; tb.style.background=S.thirst>75?'#e05a5a':(S.thirst>45?'#e0a23e':'#4aa3d8'); }
+  if(hb){ hb.style.width=S.hunger.toFixed(0)+'%'; hb.style.background=S.hunger>75?'#e05a5a':(S.hunger>45?'#e0a23e':'#c98a3a'); }
+  updateNeedBtns();
+}
+function foodItem(){ for(const k of FOOD){ if((S.inv[k]||0)>0) return k; } return null; }
+function updateNeedBtns(){
+  const db=document.getElementById('drinkBtn'), eb=document.getElementById('eatBtn'), ab=fastingAbstain();
+  if(db){ const on=!ab && S.thirst>25 && (S.inv.su||0)>0; db.style.display=on?'block':'none'; db.classList.toggle('ready', on&&S.thirst>65); }
+  if(eb){ const on=!ab && S.hunger>25 && !!foodItem(); eb.style.display=on?'block':'none'; eb.classList.toggle('ready', on&&S.hunger>65); }
+}
+function drink(){
+  if(fastingAbstain()){ toast('🤍 Oruçlusun — iftara kadar sabret (Akşam)'); return; }
+  if((S.inv.su||0)<=0){ toast('💧 Suyun yok — kuyudan (💧) su çek'); return; }
+  S.inv.su--; if(S.inv.su<=0) delete S.inv.su;
+  S.thirst=Math.max(0,S.thirst-55); addNur(1); save(); refreshHUD(); if(typeof renderInv==='function') renderInv(); sndChime();
+  toast('💧 Su içtin — elhamdülillah (+1 nûr şükür)');
+}
+function eat(){
+  if(fastingAbstain()){ toast('🤍 Oruçlusun — iftara kadar sabret (Akşam)'); return; }
+  const k=foodItem(); if(!k){ toast('🍞 Yiyeceğin yok — hurma/dut/ekmek/süt topla'); return; }
+  S.inv[k]--; if(S.inv[k]<=0) delete S.inv[k];
+  S.hunger=Math.max(0,S.hunger-50); addNur(1); save(); refreshHUD(); if(typeof renderInv==='function') renderInv(); sndChime();
+  toast('🍞 '+GOODS[k].nm+' yedin — bismillah, elhamdülillah (+1 nûr şükür)');
+}
+
+/* ============ ÇOCUK SÛRE-DUA EZBERİ (Faz 9) — adım adım + sırala testi ============ */
+/* NOT: Metinler yaygın nakillerden; yayına almadan ehlinden teyit edilmeli. */
+const EZBER={
+  sureler:[
+    {id:'fatiha', ad:'Fâtiha', ic:'📖', ayet:[
+      ['Bismillâhirrahmânirrahîm','Rahmân ve Rahîm olan Allah\'ın adıyla.'],
+      ['Elhamdü lillâhi rabbil âlemîn','Hamd, âlemlerin Rabbi Allah\'a mahsustur.'],
+      ['Errahmânirrahîm','O, Rahmân ve Rahîm\'dir.'],
+      ['Mâliki yevmiddîn','Hesap gününün sahibidir.'],
+      ['İyyâke na\'budü ve iyyâke nesteîn','Yalnız sana kulluk eder, yalnız senden yardım isteriz.'],
+      ['İhdinâs sırâtal müstakîm','Bizi doğru yola ilet.'],
+      ['Sırâtallezîne en\'amte aleyhim, ğayril mağdûbi aleyhim ve laddâllîn','Nimet verdiklerinin yoluna; gazaba uğrayanların ve sapıtanların değil.'],
+    ]},
+    {id:'ihlas', ad:'İhlâs', ic:'📖', ayet:[
+      ['Kul hüvallâhü ehad','De ki: O Allah birdir.'],
+      ['Allâhüs samed','Allah sameddir; her şey O\'na muhtaç, O hiçbir şeye muhtaç değildir.'],
+      ['Lem yelid ve lem yûled','Doğurmamış ve doğmamıştır.'],
+      ['Ve lem yekün lehû küfüven ehad','Hiçbir şey O\'nun dengi değildir.'],
+    ]},
+    {id:'felak', ad:'Felak', ic:'📖', ayet:[
+      ['Kul eûzü birabbil felak','De ki: Sabahın Rabbine sığınırım.'],
+      ['Min şerri mâ halak','Yarattığı şeylerin şerrinden.'],
+      ['Ve min şerri ğâsikın izâ vekab','Karanlığı çöktüğünde gecenin şerrinden.'],
+      ['Ve min şerrin neffâsâti fil ukad','Düğümlere üfleyip büyü yapanların şerrinden.'],
+      ['Ve min şerri hâsidin izâ hased','Haset ettiğinde hasetçinin şerrinden.'],
+    ]},
+    {id:'nas', ad:'Nâs', ic:'📖', ayet:[
+      ['Kul eûzü birabbin nâs','De ki: İnsanların Rabbine sığınırım.'],
+      ['Melikin nâs','İnsanların hükümdarına.'],
+      ['İlâhin nâs','İnsanların İlâhına.'],
+      ['Min şerril vesvâsil hannâs','Sinsi vesvesecinin şerrinden.'],
+      ['Ellezî yüvesvisü fî sudûrin nâs','O ki insanların göğsüne vesvese verir.'],
+      ['Minel cinneti ven nâs','Cinlerden ve insanlardan.'],
+    ]},
+    {id:'kevser', ad:'Kevser', ic:'📖', ayet:[
+      ['İnnâ a\'taynâkel kevser','Şüphesiz sana Kevser\'i (pek çok nimeti) verdik.'],
+      ['Fesalli lirabbike venhar','Öyleyse Rabbin için namaz kıl ve kurban kes.'],
+      ['İnne şânieke hüvel ebter','Asıl soyu kesik olan, sana buğzedendir.'],
+    ]},
+  ],
+  dualar:[
+    {id:'d_yemek_once', ad:'Yemekten önce', ic:'🍽️', ayet:[['Bismillâhirrahmânirrahîm','Allah\'ın adıyla başlarım.']]},
+    {id:'d_yemek_sonra',ad:'Yemekten sonra',ic:'🤲', ayet:[['Elhamdü lillâhillezî et\'amenâ ve sekânâ ve cealenâ minel müslimîn','Bizi yediren, içiren ve Müslümanlardan kılan Allah\'a hamdolsun.']]},
+    {id:'d_uyku', ad:'Uyumadan', ic:'🌙', ayet:[['Allâhümme bismike emûtü ve ahyâ','Allah\'ım, senin adınla uyur ve uyanırım.']]},
+    {id:'d_uyanma', ad:'Uyanınca', ic:'☀️', ayet:[['Elhamdü lillâhillezî ahyânâ ba\'de mâ emâtenâ ve ileyhin nüşûr','Bizi uyuttuktan sonra dirilten Allah\'a hamdolsun; dönüş O\'nadır.']]},
+    {id:'d_tuvalet', ad:'Tuvalete girerken', ic:'🚪', ayet:[['Allâhümme innî eûzü bike minel hubsi vel habâis','Allah\'ım! Pislikten ve kötülüklerden sana sığınırım.']]},
+  ],
+};
+function ezberAll(){ return EZBER.sureler.concat(EZBER.dualar); }
+function updateEzberBtn(){ const b=document.getElementById('ezberBtn'); if(b) b.style.display=isChild()?'block':'none'; }
+function openEzber(){ document.getElementById('ezber').classList.add('show'); ezItem=null; renderEzberList(); }
+function closeEzber(){ document.getElementById('ezber').classList.remove('show'); }
+function renderEzberList(){
+  const all=ezberAll(), done=all.filter(x=>S.memorized[x.id]).length;
+  document.getElementById('ezberProg').textContent='✅ '+done+'/'+all.length;
+  const card=x=>'<button class="ezcard'+(S.memorized[x.id]?' done':'')+'" onclick="__ezOpen(\''+x.id+'\')">'+x.ic+' '+x.ad+(S.memorized[x.id]?' ✓':'')+'</button>';
+  document.getElementById('ezberBody').innerHTML=
+    '<div class="ezsec">Sûreler</div><div class="ezgrid">'+EZBER.sureler.map(card).join('')+'</div>'+
+    '<div class="ezsec">Günlük Dualar</div><div class="ezgrid">'+EZBER.dualar.map(card).join('')+'</div>';
+}
+let ezItem=null, ezIdx=0, ezTestPos=0, ezTestOrder=[];
+window.__ezOpen=function(id){ ezItem=ezberAll().find(x=>x.id===id); ezIdx=0; renderEzberStep(); };
+window.__ezList=function(){ ezItem=null; renderEzberList(); };
+function renderEzberStep(){
+  const a=ezItem.ayet[ezIdx], n=ezItem.ayet.length, last=ezIdx>=n-1;
+  let h='<div class="ezview"><div class="ezname">'+ezItem.ic+' '+ezItem.ad+(n>1?' — âyet '+(ezIdx+1)+'/'+n:'')+'</div>';
+  h+='<div class="ezar">'+a[0]+'</div><div class="ezmean">'+a[1]+'</div><div class="ezrow">';
+  if(ezIdx>0) h+='<button class="do" style="flex:1;margin-top:0" onclick="__ezStep(-1)">◀ Önceki</button>';
+  h+='<button class="do" style="flex:1;margin-top:0" onclick="__ezStep(1)">'+(last?(n>1?'Teste geç ▶':'Ezberledim ✓'):'Sonraki ▶')+'</button>';
+  h+='</div><button class="cl" onclick="__ezList()">↩ Listeye dön</button></div>';
+  document.getElementById('ezberBody').innerHTML=h;
+}
+window.__ezStep=function(d){
+  if(d>0 && ezIdx>=ezItem.ayet.length-1){ if(ezItem.ayet.length>1) startEzberTest(); else ezberFinish(); return; }
+  ezIdx=Math.max(0,Math.min(ezItem.ayet.length-1,ezIdx+d)); renderEzberStep();
+};
+function startEzberTest(){ ezTestPos=0; ezTestOrder=ezItem.ayet.map((a,i)=>i).sort(()=>Math.random()-0.5); drawEzberTest(); }
+function drawEzberTest(){
+  let h='<div class="ezview"><div class="ezname">📝 '+ezItem.ad+' — sırala</div>'+
+    '<div class="ezmean">Âyetleri baştan sona sırayla dokun ('+ezTestPos+'/'+ezItem.ayet.length+')</div><div class="eztest">';
+  for(const i of ezTestOrder){ const placed=i<ezTestPos; h+='<button class="eztbtn'+(placed?' placed':'')+'"'+(placed?' disabled':'')+' onclick="__ezPick('+i+')">'+(placed?'✓ ':'')+ezItem.ayet[i][0]+'</button>'; }
+  h+='</div><button class="cl" onclick="__ezList()">↩ Vazgeç</button></div>';
+  document.getElementById('ezberBody').innerHTML=h;
+}
+window.__ezPick=function(i){
+  if(i===ezTestPos){ ezTestPos++; beep(560+ezTestPos*40,0,0.09,'sine',0.05);
+    if(ezTestPos>=ezItem.ayet.length){ ezberFinish(); return; } drawEzberTest(); }
+  else { toast('Sıra şaştı — baştan hatırla'); ezTestPos=0; drawEzberTest(); }
+};
+function ezberFinish(){
+  const first=!S.memorized[ezItem.id]; S.memorized[ezItem.id]=true; save();
+  const gain=ezItem.ayet.length>1?12:6;
+  if(first){ addNur(gain); sndFanfare(); banner('📖 '+ezItem.ad+' ezberlendi'); setTimeout(()=>toast('Mâşâallah! Ezberledin. "Sizin en hayırlınız Kur\'ân\'ı öğrenen ve öğretendir." (Buhârî) — +'+gain+' nûr'),250); }
+  else { sndChime(); toast('📖 '+ezItem.ad+' tekrarladın — ne güzel, tekrar ezberi pekiştirir'); }
+  refreshHUD(); __ezList();
 }
 // yün → seccade küçük ipucu (köşede)
 function updateWoolHint(){
@@ -1610,6 +1829,41 @@ function rebuildEvQuests(vname){
   for(const q of evQuests) addInteractable(q);
   applyIslandLock(); refreshHUD();
 }
+/* ---- İLİM MECLİSİ: 6 sahabe bağdaş kurup çember, üzerlerinde gölgelik (Suffa) ---- */
+function seatedSahabe(deco, cx, cz, face, robe, turban){
+  const g=new THREE.Group();
+  const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:0.92});
+  const skin=0x9c6b4a;
+  const add=(geo,c,y,z,sy)=>{ const m=new THREE.Mesh(geo,mat(c)); m.position.set(0,y,z||0); if(sy) m.scale.y=sy; g.add(m); return m; };
+  add(new THREE.CylinderGeometry(0.30,0.44,0.5,12), robe, 0.25);      // cübbe tabanı (bağdaş kurmuş)
+  add(new THREE.CylinderGeometry(0.19,0.30,0.34,12), robe, 0.62);     // gövde
+  add(new THREE.SphereGeometry(0.13,12,10), skin, 0.90);              // baş
+  add(new THREE.SphereGeometry(0.145,12,8), turban, 1.00, 0, 0.68);  // sarık
+  const h=add(new THREE.SphereGeometry(0.10,8,6), skin, 0.52, 0.20); h.scale.set(1.5,0.5,0.9);  // eller kucakta
+  g.position.set(cx,0,cz); g.rotation.y=face; scene.add(g);
+  g.traverse(o=>{ if(o.isMesh){ o.frustumCulled=false; deco.push(...wrapMesh(o)); } });
+}
+function buildIlimMeclisi(){
+  const IM=[49,0,3.9], R=1.45;              // ilim düğümüyle (rahle) aynı merkez
+  const cam=WORLD.islands.find(i=>i.id==='cami'); if(!cam) return;
+  const deco=[];
+  const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:0.95});
+  const add=(m,x,y,z)=>{ m.position.set(x,y,z); m.frustumCulled=false; scene.add(m); deco.push(...wrapMesh(m)); return m; };
+  // hasır/kilim zemin
+  add(new THREE.Mesh(new THREE.CylinderGeometry(R+0.55,R+0.55,0.06,22), mat(0xba8a4e)), IM[0],0.035,IM[2]);
+  // gölgelik: 4 direk + tente (hafif çadır)
+  const H=2.35, P=R+0.75;
+  for(const [dx,dz] of [[-P,-P],[P,-P],[-P,P],[P,P]])
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.085,H,8), mat(0x8a6a3a)), IM[0]+dx, H/2, IM[2]+dz);
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(P*1.55,0.55,4), mat(0xe6d6a8)); roof.rotation.y=Math.PI/4;
+  add(roof, IM[0], H+0.22, IM[2]);
+  // 6 sahabe çember, merkeze (rahleye) dönük
+  const robes=[0x7a8b5a,0x8a6f4a,0x6f7d8a,0x9a7b5a,0x6a8a6a,0x8a5a5a];
+  const turbans=[0xe8e2d0,0xd8cbb0,0xeeeee6,0xd0c4a8,0xe4dcc8,0xdccfae];
+  for(let i=0;i<6;i++){ const a=i*Math.PI/3, cx=IM[0]+Math.cos(a)*R, cz=IM[2]+Math.sin(a)*R;
+    seatedSahabe(deco, cx, cz, Math.atan2(IM[0]-cx, IM[2]-cz), robes[i], turbans[i]); }
+  cam.deco.push(...deco);
+}
 function buildWorld(){
   buildIslands();
   buildAtmosphere();
@@ -1633,6 +1887,7 @@ function buildWorld(){
   const mqRec={ q:{id:'mosque_enter', mosque:true, pos:[49,0,-4.4], nm:'Mescid', ic:'🕌'}, g:mq.g, meshes:mq.meshes, mosque:true, islId:'cami' };
   interactables.push(mqRec);
   buildMosqueInterior();   // gizli iç mekân (girişte kamera oraya zoom yapar)
+  buildIlimMeclisi();      // Cami adasında Suffa: 6 sahabe çember + gölgelik (ilim düğümü merkezde)
   // ağaç süsleri (adaların kenarlarında, z ~ ±4-5; görev/yol hattından uzak)
   for(const [x,z,s] of [[-5,4,1.1],[5,-4,1.0],[-6,-3,1.1],
                         [13,4,1.0],[20,-4,1.1],[16,4.5,1.0],
@@ -1962,6 +2217,11 @@ document.getElementById('invClose').onclick=closeInv;
 document.getElementById('inv').addEventListener('click',e=>{ if(e.target.id==='inv') closeInv(); });
 document.getElementById('prayBtn').onclick=prayNamaz;
 document.getElementById('fastBtn').onclick=doFast;
+document.getElementById('drinkBtn').onclick=drink;
+document.getElementById('eatBtn').onclick=eat;
+document.getElementById('ezberBtn').onclick=openEzber;
+document.getElementById('ezberClose').onclick=closeEzber;
+document.getElementById('ezber').addEventListener('click',e=>{ if(e.target.id==='ezber') closeEzber(); });
 document.getElementById('woolHint').onclick=()=>{ if((S.inv.yun||0)>=SECCADE_YUN && !S.hasSeccade && !S.laidSeccade) craftSeccade(); };
 document.getElementById('mktClose').onclick=closeMarket;
 document.getElementById('market').addEventListener('click',e=>{ if(e.target.id==='market') closeMarket(); });
@@ -1986,6 +2246,8 @@ function refreshHUD(){
   if(sp){ if(S.streak>0){ sp.style.display='flex'; sp.innerHTML='🔥 <b>'+S.streak+'</b>'; } else sp.style.display='none'; }
   if(typeof updateWoolHint==='function') updateWoolHint();
   if(typeof updateFastBtn==='function') updateFastBtn();
+  if(typeof updateNeedsHud==='function') updateNeedsHud();
+  if(typeof updateEzberBtn==='function') updateEzberBtn();
 }
 
 /* ============ LOOP ============ */
@@ -2090,6 +2352,7 @@ function tick(){
   if(animals.length) updateAnimals(dt);
   if(npcWander.length) updateNpcs(dt);
   updateSceneAmbient(dt);
+  updateNeeds(dt);
   renderer.render(scene,camera);
   requestAnimationFrame(tick);
 }
@@ -2156,10 +2419,18 @@ addEventListener('resize',resize); resize();
     marketBuilt:()=>!!marketRec,
     enterMosque:()=>enterMosque(), exitMosque:()=>exitMosque(), mosqueAct:(k)=>window.__mosqueAct(k),
     mosqueState:()=>({mode:mosqueMode, cumaDone:S.cumaDone, sat:S.mosqueSat, interiorNodes:mosqueGroup?mosqueGroup.children.length:0}),
+    mosqueWeek:()=>({vDay:S.mosqueVDay, vSet:S.mosqueVSet.slice(), streak:S.mosqueStreak, streakDay:S.mosqueStreakDay, unlocked:S.mosqueUnlocked}),
+    recordMosque:(vn)=>{ recordMosquePrayer(vn); save(); return {streak:S.mosqueStreak, unlocked:S.mosqueUnlocked, todaySet:S.mosqueVSet.length}; },
     obstacles:()=>OBSTACLES.length, blocked:(x,z)=>blocked(x,z),
     dayNum:()=>S.dayNum, setDayNum:(n)=>{ S.dayNum=n; save(); },
     fastPhase:()=>fastPhase(), doFast:()=>doFast(),
     fastState:()=>({niyet:S.fastNiyet, done:S.fastDone, day:S.dayNum, dow:dow(), fastingDay:isFastingDay(), mukellef:orucMukellef(), btn:document.getElementById('fastBtn').style.display}),
+    needs:()=>({thirst:+S.thirst.toFixed(1), hunger:+S.hunger.toFixed(1), su:S.inv.su||0, food:foodItem(), drinkBtn:document.getElementById('drinkBtn').style.display, eatBtn:document.getElementById('eatBtn').style.display}),
+    setNeeds:(t,h)=>{ S.thirst=t; S.hunger=h; updateNeedsHud(); return {thirst:S.thirst,hunger:S.hunger}; },
+    stepNeeds:(sec)=>{ updateNeeds(sec); return {thirst:+S.thirst.toFixed(1),hunger:+S.hunger.toFixed(1)}; },
+    drinkT:()=>drink(), eatT:()=>eat(),
+    openEzber:()=>openEzber(), ezOpen:(id)=>window.__ezOpen(id), ezStep:(d)=>window.__ezStep(d), ezPick:(i)=>window.__ezPick(i),
+    memorized:()=>Object.assign({},S.memorized), ezberBtnDisp:()=>document.getElementById('ezberBtn').style.display,
     npcs:()=>npcNodes.map(r=>({id:r.def.id,isl:r.def.islId,ready:r.muahat?true:npcReady(r.def),vis:r.g.visible,mesh:r.meshes.length,pos:[Math.round(r.g.position.x*10)/10,Math.round(r.g.position.z*10)/10]})),
     giveNpc:(id)=>{ const r=npcNodes.find(x=>x.def.id===id); if(r) doGiveHayir(r); return r?{food:foodCount()}:null; },
     stepNpcs:(n)=>{ for(let i=0;i<(n||20);i++) updateNpcs(0.05); return npcWander.map(w=>[w.rec.def.id,Math.round(w.rec.g.position.x*10)/10,Math.round(w.rec.g.position.z*10)/10]); },
