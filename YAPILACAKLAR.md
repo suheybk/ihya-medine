@@ -78,6 +78,16 @@ Bu oyun manipülasyonla değil, **anlamla** bağ kurar. Kırmızı çizgiler:
 - [x] Sadelik ilkelerine sadâkat: yapay sayaç yok, sesler nazik, hikâye anlam odaklı
 - [x] Hayvan/deve **yürüme animasyonu**: koyun/keçi/deve Blender'da uzuv-ayrımlı (kök empty + gövde + 4 bacak, kalça pivotu) re-export edildi; kodda prosedürel **tırıs** (çapraz bacak çiftleri zıt fazda) + `?v=` cache-bust
 
+### Faz 7 — Oynanış Düzeltmeleri + Cami (2026-07-03)
+- [x] **Gün Cumartesi başlar** (gerçek takvimden bağımsız); her gün/gece döngüsü tamamlanınca ilerler → birkaç gün keşfet, sonra Cuma gelince camiye
+- [x] **Oyun gece başlar** (gameTime 0.05); sabah namazı hemen çıkmaz, oyuncu vakti anlar
+- [x] **Namaz her yerde nâfile** (kerahat hariç): farz vakti+kılınmadıysa farz(+10), değilse nâfile(+5) — "eve gidip iptal" bug'ı bitti. Kerahat (doğuş/istivâ/batış) bloke
+- [x] **Her vakit girişinde** namaz sıfırlanır → "namaz henüz kılınmadı" hatırlatması
+- [x] **Cuma günü öğle: sadece camide** (seccade + ev namazı bloke). Camiye gir → **Cuma namazı + hutbe** (+30), diğer vakit **cemaat namazı** (+12), her vakit **sessizce otur/imamı dinle** (+3)
+- [x] **Mescide giriş**: kamera iç mekâna zoom + gerçek 3B iç mekân (mihrap, kandiller, imam, cemaat safları), fade geçiş
+- [x] **Çarpışma**: ağaç/bina/pazar katı engel — etrafından dolan, etkileşimle mescide gir
+- [x] **Hayvan yok-olma fix** (`frustumCulled=false`) + hayvan/NPC ada içinde kalır (margin sıkılaştırıldı)
+
 ## 📌 3D Modeller ✅ (2026-07-02)
 Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi
 (hayvanlar, hurma/dut ağaçları, eşya/pickup, pazar, yapılar, Mescid-i Nebevî, NPC'ler).
