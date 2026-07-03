@@ -75,7 +75,7 @@ Bu oyun manipülasyonla değil, **anlamla** bağ kurar. Kırmızı çizgiler:
 - [x] **Hayvan sesleri** (koyun/keçi/deve, perde kayışı + vibrato) ve **pazar uğultusu** (Sûk yakınında bandpass gürültü + insan uğultusu) — yakınlığa göre çalar
 - [x] Ada açılınca kısa **sîret/hikâye** satırı (Hicret → hurmalık → muâhât → mescid → sûk akışı)
 - [x] Sadelik ilkelerine sadâkat: yapay sayaç yok, sesler nazik, hikâye anlam odaklı
-- [ ] (İLERİDE — Blender) Hayvan/deve **yürüme animasyonu**: uzuv-ayrımlı re-export + prosedürel bacak salınımı
+- [x] Hayvan/deve **yürüme animasyonu**: koyun/keçi/deve Blender'da uzuv-ayrımlı (kök empty + gövde + 4 bacak, kalça pivotu) re-export edildi; kodda prosedürel **tırıs** (çapraz bacak çiftleri zıt fazda) + `?v=` cache-bust
 
 ## 📌 3D Modeller ✅ (2026-07-02)
 Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi

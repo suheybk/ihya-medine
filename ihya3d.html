@@ -875,21 +875,30 @@ function makeAnimal(def){
   scene.add(it.g);
   const rec={ q:{id:'anim_'+def.id, animal:true, def, pos:[x,0,z], nm:def.label, ic:def.ic}, g:it.g, meshes:it.meshes, animal:true, def, islId:def.islId };
   interactables.push(rec);
-  const an={rec, def, is, tx:x, tz:z, pause:Math.random()*3, ph:Math.random()*6.28, spd:def.spd};
+  // uzuv-ayrımlı yeni modeller: bacak düğümlerini yakala (yürüme animasyonu için)
+  const gob=n=>it.g.getObjectByName(n);
+  const legs={FL:gob('legFL'),FR:gob('legFR'),BL:gob('legBL'),BR:gob('legBR')};
+  const hasLegs=!!(legs.FL||legs.FR||legs.BL||legs.BR);
+  const an={rec, def, is, tx:x, tz:z, pause:Math.random()*3, ph:Math.random()*6.28, spd:def.spd, legs:hasLegs?legs:null};
   animals.push(an); return an;
 }
 function buildAnimals(){ animals=[]; for(const d of ANIMAL_DEFS) makeAnimal(d); }
+function setLeg(o,t){ if(o) o.rotation.x += (t-o.rotation.x)*0.3; }
+function restLegs(L){ if(L){ setLeg(L.FL,0); setLeg(L.FR,0); setLeg(L.BL,0); setLeg(L.BR,0); } }
 function updateAnimals(dt){
   for(const an of animals){
     const g=an.rec.g; if(!g.visible) continue;
-    if(an.pause>0){ an.pause-=dt; g.position.y*=0.85; continue; }
+    const L=an.legs;
+    if(an.pause>0){ an.pause-=dt; g.position.y*=0.85; restLegs(L); continue; }
     const dx=an.tx-g.position.x, dz=an.tz-g.position.z, d=Math.hypot(dx,dz);
-    if(d<0.3){ an.pause=1.5+Math.random()*3.5; pickAnimalTarget(an); continue; }
+    if(d<0.3){ an.pause=1.5+Math.random()*3.5; pickAnimalTarget(an); restLegs(L); continue; }
     const nx=g.position.x+dx/d*an.spd*dt, nz=g.position.z+dz/d*an.spd*dt;
     if(inIsland(nx,g.position.z,0.7)) g.position.x=nx;
     if(inIsland(g.position.x,nz,0.7)) g.position.z=nz;
     g.rotation.y=Math.atan2(dx,dz)+Math.PI;   // baş öne gelsin (model başı +Y=-Z) — geri geri gitmesin
     an.ph+=dt*8; g.position.y=Math.abs(Math.sin(an.ph))*0.04;
+    // tırıs: çapraz bacak çiftleri karşı fazda salınır (FL+BR / FR+BL)
+    if(L){ const sw=Math.sin(an.ph)*0.5; setLeg(L.FL,sw); setLeg(L.BR,sw); setLeg(L.FR,-sw); setLeg(L.BL,-sw); }
     an.rec.q.pos[0]=g.position.x; an.rec.q.pos[2]=g.position.z;
   }
 }
@@ -1335,14 +1344,15 @@ const loader=new GLTFLoader();
 const tpl={};
 const loadBar=document.getElementById('loadBar');
 function b64ToBuf(u){ const b=atob(u.split(',')[1]); const a=new Uint8Array(b.length); for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i); return a.buffer; }
+const MODELV='f6';   // model sürümü (hayvanlar uzuv-ayrımlı re-export edilince artır → cache-bust)
 function load(name){
   return new Promise(res=>{
     const data = window.IHYA_WORLD && window.IHYA_WORLD[name];
     if(data){ // gömülü base64 (file:// üzerinde fetch/CORS olmadan çalışır)
       try{ loader.parse(b64ToBuf(data),'',g=>{tpl[name]=g.scene;res();},e=>{console.warn('parse fail',name,e);res();}); }
       catch(e){ console.warn('decode fail',name,e); res(); }
-    } else { // yedek: relatif dosya (sunucudan açılırsa)
-      loader.load('models/'+name+'.glb', g=>{tpl[name]=g.scene;res();}, undefined, e=>{res();});
+    } else { // yedek: relatif dosya (sunucudan açılırsa) — ?v ile cache-bust (model güncellenince taze gelir)
+      loader.load('models/'+name+'.glb?v='+MODELV, g=>{tpl[name]=g.scene;res();}, undefined, e=>{res();});
     }
   });
 }
@@ -1922,6 +1932,7 @@ addEventListener('resize',resize); resize();
     animals:()=>animals.map(a=>({id:a.def.id, ready:animalReady(a.def), produce:a.def.produce, isl:a.def.islId, pos:[Math.round(a.rec.g.position.x),Math.round(a.rec.g.position.z)], visible:a.rec.g.visible})),
     tendId:(id)=>{ const a=animals.find(x=>x.def.id===id); if(a) doTend(a.rec); return a?a.def:null; },
     stepAnimals:(n)=>{ for(let i=0;i<n;i++) updateAnimals(0.05); return animals.map(a=>[Math.round(a.rec.g.position.x*10)/10,Math.round(a.rec.g.position.z*10)/10]); },
+    animalLegs:()=>animals.map(a=>({id:a.def.id, rigged:!!a.legs, legRot:a.legs?['FL','FR','BL','BR'].map(k=>a.legs[k]?+a.legs[k].rotation.x.toFixed(3):null):null})),
     gatherDefs:()=>GATHER_DEFS.map(d=>({id:d.id,isl:d.islId})), animalDefs:()=>ANIMAL_DEFS.map(d=>({id:d.id,isl:d.islId,model:d.model})),
     giveInv:(k,n)=>{ invAdd(k,n); save(); refreshHUD(); checkZekat(); return S.inv; },
     craftSeccade:()=>craftSeccade(), pray:()=>prayNamaz(), hasSeccade:()=>S.hasSeccade,
