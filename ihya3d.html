@@ -88,6 +88,13 @@
   .href{font-size:11px;color:var(--muted);line-height:1.4;margin-top:3px}
   .hbuy{flex-shrink:0;border:none;border-radius:12px;padding:10px 13px;font-weight:800;font-size:14px;cursor:pointer;background:linear-gradient(135deg,#e9c478,#d9a441);color:#33240a}
   .hbuy.off{background:#dfe4df;color:#9aa;cursor:default}
+  /* ---- DAĞARCIK (envanter) ---- */
+  .invgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:8px}
+  .invcell{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;border-radius:13px;background:#f3f7f3;border:1px solid #e3ece5}
+  .invcell .ii{font-size:26px}
+  .invcell .in{font-size:12px;color:var(--muted);font-weight:700}
+  .invcell .iq{font-size:16px;font-weight:800;color:var(--ink)}
+  .invempty{text-align:center;color:var(--muted);font-size:13px;padding:18px 0}
   /* ---- ADIM ADIM ÖĞRETİM ---- */
   .gstep{background:#f3f7f3;border:1px solid #e3ece5;border-radius:16px;padding:20px 18px;margin:4px 0 14px;text-align:center;min-height:150px;display:flex;flex-direction:column;justify-content:center}
   .gic{font-size:44px;margin-bottom:8px}
@@ -181,6 +188,7 @@
 </div>
 
 <div class="toolbar" id="toolbar">
+  <button class="iconbtn" id="invBtn" title="Dağarcık (envanter)">🎒</button>
   <button class="iconbtn" id="muteBtn" title="Ses aç/kapat">🔊</button>
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
@@ -246,6 +254,16 @@
     <div class="sub" style="margin-bottom:10px">Nûrunu sadaka-i câriyeye dönüştür; dünya güzelleşir, ecri devam eder.</div>
     <div id="hayirList"></div>
     <button class="cl" id="hayirClose">Kapat</button>
+  </div>
+</div>
+
+<div class="veil" id="inv">
+  <div class="sheet">
+    <div class="grip"></div>
+    <div class="exhead"><h3>🎒 Dağarcık</h3><span class="exprog">💰 <b id="invDirhem">0</b> dirhem</span></div>
+    <div class="sub" style="margin-bottom:10px">Kesb-i helâl ile topladıkların. Pazarda satılır, hayra dönüştürülür.</div>
+    <div id="invList"></div>
+    <button class="cl" id="invClose">Kapat</button>
   </div>
 </div>
 
@@ -339,7 +357,9 @@ const QUESTS = [
     nm:'Topluma faydalı bir iş yap', rem:'İnsanların en hayırlısı, insanlara faydalı olandır.',
     refs:[{tag:'Hadis',txt:'İnsanların en hayırlısı, insanlara en faydalı olanıdır.',cite:'Taberânî, el-Mu\'cemü\'l-Evsat'}]},
 ];
-const MODELS = ['player','prayer','rahle','book','door','tree','plot','plot_sprout','fountain','mosque','island_tile','bridge'];
+const MODELS = ['player','prayer','rahle','book','door','tree','plot','plot_sprout','fountain','mosque','island_tile','bridge',
+  // Medine — hasat/toplama (Faz 1)
+  'date_palm','date_palm_bare','mulberry_tree','mulberry_tree_bare','item_date','item_mulberry'];
 
 /* ===== HÂNE (ev) — SABİT GÜNLÜK ÖĞRENME MÜFREDATI =====
    5 temel ders SABİTTİR (vakit değişince SİLİNMEZ): tuvalet âdâbı → abdest → namaz →
@@ -494,12 +514,14 @@ function buildExam(islId){
 
 
 /* ============ STATE ============ */
-let S = { nur:0, done:{}, conquered:{}, learned:{}, lastDay:null, streak:0, streakDay:null, hayir:null };
+let S = { nur:0, done:{}, conquered:{}, learned:{}, lastDay:null, streak:0, streakDay:null, hayir:null, inv:null, gather:null, dirhem:0 };
 try{ const r=localStorage.getItem('ihya3d_v1'); if(r) S=Object.assign(S,JSON.parse(r)); }catch(e){}
 if(!S.conquered) S.conquered={};
 if(!S.learned) S.learned={};
 if(!S.hayir) S.hayir={ agac:[], kandil:[], cesme:[], ilim:[] };   // KALICI: nûr ile yapılan sadaka-i câriye (konumlar)
-for(const k of ['agac','kandil','cesme','ilim']) if(!S.hayir[k]) S.hayir[k]=[];   // KALICI: bir dersi ilk kez adım adım öğrenince işaretlenir (günlük sıfırlamadan etkilenmez)
+for(const k of ['agac','kandil','cesme','ilim']) if(!S.hayir[k]) S.hayir[k]=[];
+if(!S.inv) S.inv={};        // KALICI envanter: {hurma:n, dut:n, ...}
+if(!S.gather) S.gather={};  // KALICI hasat cooldown'ları: {nodeId: nextReadyTimestamp}   // KALICI: bir dersi ilk kez adım adım öğrenince işaretlenir (günlük sıfırlamadan etkilenmez)
 const save=()=>{ try{ localStorage.setItem('ihya3d_v1',JSON.stringify(S)); }catch(e){} };
 const today=()=>new Date().toISOString().slice(0,10);
 const yesterday=()=>new Date(Date.now()-86400000).toISOString().slice(0,10);
@@ -734,8 +756,50 @@ function applyIslandLock(){
   }
   for(const b of WORLD.bridges){ const open=bridgeOpen(b);
     (b.deco||[]).forEach(x=>x.m.material.color.copy(open?x.orig:x.gray)); }
-  for(const r of interactables){ if(r.exam) continue; const u=isUnlocked(questIslandId(r.q)); setAlive(r.meshes, u && r.done); }
+  for(const r of interactables){ if(r.exam||r.gather) continue; const u=isUnlocked(questIslandId(r.q)); setAlive(r.meshes, u && r.done); }
   updateExamNodes();
+  for(const rec of gatherNodes){ rec.g.visible=isUnlocked(rec.def.islId); }
+}
+
+/* ============ HASAT / TOPLAMA (Faz 1) — kesb-i helâl ============ */
+const GOODS={ hurma:{ic:'🌴',nm:'Hurma'}, dut:{ic:'🫐',nm:'Dut'}, sut:{ic:'🥛',nm:'Süt'}, yun:{ic:'🧶',nm:'Yün'}, ekmek:{ic:'🍞',nm:'Ekmek'}, su:{ic:'💧',nm:'Su'} };
+// Hurma Bahçesi'nde toplanabilir ağaçlar (tekrarlanır: topla → hasat hali → cooldown → yeniden dolar)
+const GATHER_DEFS=[
+  {id:'palm1', islId:'bahce', pos:[13.6,0,-3.4], full:'date_palm', bare:'date_palm_bare', item:'hurma', amount:3, cd:40000, scale:1.0},
+  {id:'palm2', islId:'bahce', pos:[19.8,0,3.4],  full:'date_palm', bare:'date_palm_bare', item:'hurma', amount:3, cd:40000, scale:0.95},
+  {id:'mul1',  islId:'bahce', pos:[15.6,0,4.4],  full:'mulberry_tree', bare:'mulberry_tree_bare', item:'dut', amount:4, cd:30000, scale:1.0},
+];
+let gatherNodes=[];
+function nodeReady(def){ const t=S.gather[def.id]; return !t || Date.now()>=t; }
+function makeGatherNode(def){
+  const ready=nodeReady(def);
+  const it=instance(ready?def.full:def.bare);
+  it.g.position.set(def.pos[0],0,def.pos[2]); it.g.rotation.y=def.pos[0]*1.3; it.g.scale.setScalar(def.scale||1);
+  scene.add(it.g);
+  const rec={ q:{id:'gather_'+def.id, gather:true, def, pos:def.pos, nm:GOODS[def.item].nm, ic:GOODS[def.item].ic}, g:it.g, meshes:it.meshes, gather:true, def, islId:def.islId, bareNow:!ready };
+  interactables.push(rec); gatherNodes.push(rec); return rec;
+}
+function buildGatherNodes(){ gatherNodes=[]; for(const d of GATHER_DEFS) makeGatherNode(d); }
+function swapGatherModel(rec, toFull){
+  const it=instance(toFull?rec.def.full:rec.def.bare);
+  it.g.position.copy(rec.g.position); it.g.rotation.copy(rec.g.rotation); it.g.scale.copy(rec.g.scale); it.g.visible=rec.g.visible;
+  scene.remove(rec.g); scene.add(it.g); rec.g=it.g; rec.meshes=it.meshes; rec.bareNow=!toFull;
+}
+function invAdd(item,n){ S.inv[item]=(S.inv[item]||0)+n; }
+function doGather(rec){
+  const def=rec.def;
+  if(!isUnlocked(def.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
+  if(!nodeReady(def)){ const s=Math.max(1,Math.ceil((S.gather[def.id]-Date.now())/1000)); toast('🌱 Olgunlaşıyor… '+s+' sn'); return; }
+  invAdd(def.item, def.amount);
+  S.gather[def.id]=Date.now()+def.cd;
+  swapGatherModel(rec,false);
+  save(); refreshHUD(); sndChime();
+  const g=GOODS[def.item]; toast('+'+def.amount+' '+g.ic+' '+g.nm+' topladın');
+}
+function updateGatherRegrow(){
+  for(const rec of gatherNodes){
+    if(rec.bareNow && nodeReady(rec.def)){ swapGatherModel(rec,true); banner(GOODS[rec.def.item].ic+' Ağaç yeniden verdi'); }
+  }
 }
 
 /* ============ ATMOSFER: yıldızlar + bulutlar + nûr zerreleri (gece) ============ */
@@ -851,6 +915,19 @@ function renderHayir(){
     w.appendChild(card);
   }
 }
+/* ---- DAĞARCIK (envanter) ---- */
+function openInv(){ renderInv(); document.getElementById('inv').classList.add('show'); }
+function closeInv(){ document.getElementById('inv').classList.remove('show'); }
+function renderInv(){
+  document.getElementById('invDirhem').textContent=S.dirhem||0;
+  const w=document.getElementById('invList'); w.innerHTML='';
+  const keys=Object.keys(GOODS).filter(k=>(S.inv[k]||0)>0);
+  if(!keys.length){ w.innerHTML='<div class="invempty">Henüz bir şey toplamadın. Hurma Bahçesi\'nde ağaçlardan hurma/dut topla 🌴</div>'; return; }
+  const grid=document.createElement('div'); grid.className='invgrid';
+  for(const k of keys){ const g=GOODS[k]; const c=document.createElement('div'); c.className='invcell';
+    c.innerHTML='<div class="ii">'+g.ic+'</div><div class="iq">'+(S.inv[k])+'</div><div class="in">'+g.nm+'</div>'; grid.appendChild(c); }
+  w.appendChild(grid);
+}
 const loader=new GLTFLoader();
 const tpl={};
 const loadBar=document.getElementById('loadBar');
@@ -961,6 +1038,7 @@ function buildWorld(){
   for(const q of allQuests()) addInteractable(q);
   // her adanın imtihan meydanı
   buildExamNodes();
+  buildGatherNodes();   // Medine: Hurma Bahçesi'nde toplanabilir ağaçlar
 
   // player
   const pl=instance('player');
@@ -1219,7 +1297,11 @@ setMuted(muted);  // ilk ikon durumu (kayıtlı tercih)
 document.getElementById('hayirBtn').onclick=openHayir;
 document.getElementById('hayirClose').onclick=closeHayir;
 document.getElementById('hayir').addEventListener('click',e=>{ if(e.target.id==='hayir') closeHayir(); });
+document.getElementById('invBtn').onclick=openInv;
+document.getElementById('invClose').onclick=closeInv;
+document.getElementById('inv').addEventListener('click',e=>{ if(e.target.id==='inv') closeInv(); });
 actBtn.onclick=()=>{ if(!near) return;
+  if(near.gather){ doGather(near); return; }
   if(near.exam){ openExam(near.islId); return; }
   interact(near.q); };
 
@@ -1277,15 +1359,18 @@ function tick(){
       if(dd<bd){ bd=dd; best=r; } }
     if(best!==near){ near=best;
       if(near){ actBtn.style.display='block';
-        if(near.exam){ actBtn.textContent = S.conquered[near.islId] ? 'Meydan ✓' : (examReady(near.islId) ? '📝 İmtihana Gir' : '🔒 Önce dersler'); }
+        if(near.gather){ actBtn.textContent = nodeReady(near.def) ? (near.q.ic+' Topla') : '🌱 Olgunlaşıyor'; }
+        else if(near.exam){ actBtn.textContent = S.conquered[near.islId] ? 'Meydan ✓' : (examReady(near.islId) ? '📝 İmtihana Gir' : '🔒 Önce dersler'); }
         else actBtn.textContent = S.done[near.q.id] ? 'Bak ✓'
           : (questAvailable(near.q) ? 'Etkileşim '+near.q.ic : '🔒 Sırası değil'); }
       else { actBtn.style.display='none'; promptEl.style.display='none'; }
     }
     if(near){ // prompt position
-      tmp.copy(near.g.position); tmp.y+=1.6; tmp.project(camera);
+      tmp.copy(near.g.position); tmp.y+=(near.gather?2.6:1.6); tmp.project(camera);
       promptEl.style.display='block';
-      promptEl.textContent = near.exam
+      promptEl.textContent = near.gather
+        ? ((nodeReady(near.def)?near.q.ic+' ':'🌱 ')+near.q.nm+(nodeReady(near.def)?' topla':' — olgunlaşıyor'))
+        : near.exam
         ? ((S.conquered[near.islId]?'✓ ':examReady(near.islId)?'📝 ':'🔒 ')+'İmtihan Meydanı')
         : (!S.done[near.q.id]&&!questAvailable(near.q)?'🔒 ':'')+near.q.nm;
       promptEl.style.left=(tmp.x*0.5+0.5)*innerWidth+'px';
@@ -1294,7 +1379,7 @@ function tick(){
   }
   // sıradaki yapılabilir görev parıldasın (yol gösterir)
   const glow=0.28+0.22*Math.sin(clock.elapsedTime*3);
-  for(const r of interactables){ const on=!r.done && questAvailable(r.q);
+  for(const r of interactables){ if(r.gather) continue; const on=!r.done && questAvailable(r.q);
     for(const x of r.meshes){ if(x.m.material.emissive){ x.m.material.emissive.setHex(on?0xffcf55:0x000000); x.m.material.emissiveIntensity=on?glow:0; } } }
   if(particles.length) updateParticles(dt);
   if(examNodes.length) animateExamNodes(dt, clock.elapsedTime);
@@ -1319,7 +1404,8 @@ addEventListener('resize',resize); resize();
   document.getElementById('load').style.display='none';
   if(newDay) setTimeout(()=>toast('🌅 Yeni gün — görevler yenilendi'),600);
   // oyun açıkken gece yarısını geçerse de sıfırla
-  setInterval(()=>{ if(rollDay()){ interactables.forEach(r=>{ r.done=false; }); applyIslandLock(); refreshHUD(); toast('🌅 Yeni gün — görevler yenilendi'); } }, 60000);
+  setInterval(()=>{ if(rollDay()){ interactables.forEach(r=>{ if(!r.exam&&!r.gather) r.done=false; }); applyIslandLock(); refreshHUD(); toast('🌅 Yeni gün — görevler yenilendi'); } }, 60000);
+  setInterval(updateGatherRegrow, 3000);   // hasat ağaçları yeniden verir
   window.__ihya3d={S, interactables, player:()=>player, move:(x,z)=>{jVec.x=x;jVec.y=z;},
     test:(id)=>{ near=interactables.find(x=>x.q.id===id); openSheet(near.q); },
     doTest:()=>doQuest(),
@@ -1338,6 +1424,10 @@ addEventListener('resize',resize); resize();
     setStreakDay:(d)=>{ S.streakDay=d; },
     openHayir:()=>openHayir(), donate:(id)=>donateHayir(id),
     hayirCounts:()=>({agac:S.hayir.agac.length,kandil:S.hayir.kandil.length,cesme:S.hayir.cesme.length,ilim:S.hayir.ilim.length}),
+    openInv:()=>openInv(), inv:()=>Object.assign({},S.inv),
+    gatherNodes:()=>gatherNodes.map(r=>({id:r.def.id, ready:nodeReady(r.def), bareNow:r.bareNow, item:r.def.item})),
+    gatherId:(id)=>{ const r=gatherNodes.find(x=>x.def.id===id); if(r) doGather(r); return r?r.def:null; },
+    forceRegrow:(id)=>{ delete S.gather[id]; updateGatherRegrow(); },
     hayirMeshes:()=>hayirGroups.length,
     warnState:()=>({warned:vakitWarned, urgent:document.getElementById('vakit').classList.contains('urgent'), vakit:vakitOf(gameTime)[1]}),
     learn:(id)=>{ for(const q of islandQuests(id)) S.done[q.id]=true; interactables.forEach(r=>{ if(!r.exam) r.done=!!S.done[r.q.id]; }); save(); applyIslandLock(); refreshHUD(); } };
