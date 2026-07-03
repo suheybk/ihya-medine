@@ -269,6 +269,16 @@
   </div>
 </div>
 
+<div class="veil" id="market">
+  <div class="sheet">
+    <div class="grip"></div>
+    <div class="exhead"><h3>🛒 Medine Pazarı</h3><span class="exprog">💰 <b id="mktDirhem">0</b> dirhem</span></div>
+    <div class="sub" style="margin-bottom:10px">Kesb-i helâlini sat. <i>"Bizi aldatan bizden değildir."</i> (Müslim) — ölçüde-tartıda dürüst ol.</div>
+    <div id="mktList"></div>
+    <button class="cl" id="mktClose">Kapat</button>
+  </div>
+</div>
+
 <div class="veil" id="profile">
   <div class="sheet">
     <div class="grip"></div>
@@ -374,7 +384,9 @@ const MODELS = ['player','prayer','rahle','book','door','tree','plot','plot_spro
   // Medine — hasat/toplama (Faz 1)
   'date_palm','date_palm_bare','mulberry_tree','mulberry_tree_bare','item_date','item_mulberry',
   // Medine — çobanlık (Faz 2)
-  'sheep','goat','camel'];
+  'sheep','goat','camel',
+  // Medine — seccade + pazar (Faz 3)
+  'seccade','market_stall','basket','scale','jar','sack'];
 
 /* ===== HÂNE (ev) — SABİT GÜNLÜK ÖĞRENME MÜFREDATI =====
    5 temel ders SABİTTİR (vakit değişince SİLİNMEZ): tuvalet âdâbı → abdest → namaz →
@@ -647,7 +659,8 @@ function checkVakitWarning(){
   vakitWarned=true;
   const cuma=(name==='Öğle' && isFriday() && cumaActive());
   const nm=NAMAZ_LABEL[name]||name;
-  toast(cuma?'⏳ Cuma namazının vakti çıkmak üzere — camiye git!':'⏳ '+nm+' namazının vakti çıkmak üzere!');
+  const hint=(S.hasSeccade && !cuma)?' (🧎 ile kıl)':'';
+  toast(cuma?'⏳ Cuma namazının vakti çıkmak üzere — camiye git!':'⏳ '+nm+' namazının vakti çıkmak üzere!'+hint);
   banner(cuma?'⏳ Cuma vakti çıkıyor':'⏳ '+nm+' vakti çıkıyor');
   const el=document.getElementById('vakit'); if(el) el.classList.add('urgent');
   beep(880,0,0.16,'sine',0.075); beep(660,0.2,0.28,'sine',0.06);
@@ -777,10 +790,11 @@ function applyIslandLock(){
   }
   for(const b of WORLD.bridges){ const open=bridgeOpen(b);
     (b.deco||[]).forEach(x=>x.m.material.color.copy(open?x.orig:x.gray)); }
-  for(const r of interactables){ if(r.exam||r.gather||r.animal) continue; const u=isUnlocked(questIslandId(r.q)); setAlive(r.meshes, u && r.done); }
+  for(const r of interactables){ if(r.exam||r.gather||r.animal||r.market) continue; const u=isUnlocked(questIslandId(r.q)); setAlive(r.meshes, u && r.done); }
   updateExamNodes();
   for(const rec of gatherNodes){ rec.g.visible=isUnlocked(rec.def.islId); }
   for(const an of animals){ an.rec.g.visible=isUnlocked(an.def.islId); }
+  if(marketRec){ const u=isUnlocked(MARKET_POS.islId); marketRec.g.visible=u; marketDecor.forEach(d=>d.visible=u); }
 }
 
 /* ============ HASAT / TOPLAMA (Faz 1) — kesb-i helâl ============ */
@@ -925,14 +939,19 @@ function laySeccade(){
 }
 function prayNamaz(){
   if(!S.hasSeccade){ toast('🧵 Önce Dağarcık\'tan yünle seccade ör'); return; }
+  const vn=vakitOf(gameTime)[1];
+  if(!FARZ_VAKIT.includes(vn)){ toast('🧎 Şu an farz namaz vakti değil ('+vn+')'); return; }
   if(S.done['ev_namaz']){ toast('✓ Bu vaktin namazını kıldın'); return; }
   laySeccade(); playAction(1.4);
   S.done['ev_namaz']=true; addNur(10); sndChime();
   const rec=interactables.find(r=>r.q.id==='ev_namaz'); if(rec) rec.done=true;
   const ev=document.getElementById('vakit'); if(ev) ev.classList.remove('urgent');
+  // Cuma: erkek+yetişkin, Cuma günü öğle → bonus (günde bir)
+  let cumaMsg='';
+  if(vn==='Öğle' && isFriday() && cumaActive()){ const t=today(); if(S.cumaDone!==t){ S.cumaDone=t; addNur(20); cumaMsg=' 🕌 Cuma namazı kabul olsun (cemaatle daha faziletli, +20 nûr)'; } }
   save(); refreshHUD(); applyIslandLock();
   if(islandDone('ev')) checkStreak();
-  setTimeout(()=>toast('🧎 Namaz kılındı (+10 nûr)'),200);
+  setTimeout(()=>toast(cumaMsg?cumaMsg:'🧎 Namaz kılındı (+10 nûr)'),200);
 }
 function updateSeccadeBtn(){ const b=document.getElementById('prayBtn'); if(b) b.style.display=S.hasSeccade?'block':'none'; }
 
@@ -977,6 +996,43 @@ function obligationsText(p){
   return '🕌 Sana farz olanlardan: <b>5 vakit namaz</b>,'+cuma+' oruç, <b>zekât</b> (nisaba ulaşınca), hac. Oyun; namaz, kesb-i helâl, zekât ve hayır konularında seni yönlendirir ve uyarır.'+cumaNot+(p.quran==='ogreniyor'?' Kur\'an okumaya da ağırlık ver.':'');
 }
 function applyProfile(){ if(isChild()){ S.hasSeccade=true; } save(); updateSeccadeBtn(); refreshHUD(); }
+
+/* ============ MEDİNE PAZARI (Faz 3) — kesb-i helâli dirhem'e çevir ============ */
+const MARKET_POS={ islId:'sehir', pos:[67,0,-4] };
+const PRICES={ hurma:2, dut:2, sut:3, yun:4, ekmek:3, su:1 };
+let marketRec=null, marketDecor=[];
+function buildMarket(){
+  marketDecor=[];
+  const it=instance('market_stall'); it.g.position.set(MARKET_POS.pos[0],0,MARKET_POS.pos[2]); it.g.rotation.y=Math.PI; scene.add(it.g);
+  marketRec={ q:{id:'market', market:true, pos:MARKET_POS.pos, nm:'Medine Pazarı', ic:'🛒'}, g:it.g, meshes:it.meshes, market:true, islId:MARKET_POS.islId };
+  interactables.push(marketRec);
+  const b1=instance('basket'); b1.g.position.set(MARKET_POS.pos[0]-1.3,0,MARKET_POS.pos[2]+0.3); scene.add(b1.g); marketDecor.push(b1.g);
+  const b2=instance('sack');   b2.g.position.set(MARKET_POS.pos[0]+1.3,0,MARKET_POS.pos[2]+0.3); scene.add(b2.g); marketDecor.push(b2.g);
+  const j=instance('jar');     j.g.position.set(MARKET_POS.pos[0]+0.7,0,MARKET_POS.pos[2]-0.7); j.g.scale.setScalar(0.9); scene.add(j.g); marketDecor.push(j.g);
+}
+function sellGood(k, all){
+  const have=S.inv[k]||0; if(have<=0) return;
+  const n=all?have:1, price=PRICES[k]||1, earn=n*price;
+  S.inv[k]-=n; if(S.inv[k]<=0) delete S.inv[k]; S.dirhem=(S.dirhem||0)+earn;
+  save(); refreshHUD(); renderMarket(); sndChime();
+  toast('💰 +'+earn+' dirhem ('+n+' '+GOODS[k].ic+' '+GOODS[k].nm+')');
+}
+function openMarket(){ if(!isUnlocked(MARKET_POS.islId)){ toast('🔒 Medine (Şehir) henüz açılmadı'); return; } audio(); renderMarket(); document.getElementById('market').classList.add('show'); }
+function closeMarket(){ document.getElementById('market').classList.remove('show'); }
+function renderMarket(){
+  document.getElementById('mktDirhem').textContent=S.dirhem||0;
+  const w=document.getElementById('mktList'); w.innerHTML='';
+  const keys=Object.keys(PRICES).filter(k=>(S.inv[k]||0)>0);
+  if(!keys.length){ w.innerHTML='<div class="invempty">Satacak malın yok. Adalarda topla/güt, sonra buraya getir 🌴🐑</div>'; return; }
+  for(const k of keys){ const g=GOODS[k], have=S.inv[k], price=PRICES[k];
+    const card=document.createElement('div'); card.className='hcard';
+    card.innerHTML='<div class="hic">'+g.ic+'</div><div class="hbody"><div class="hnm">'+g.nm+' <span class="hcnt">×'+have+'</span></div><div class="href">Birim fiyat: '+price+' 💰</div></div>';
+    const bs=document.createElement('div'); bs.style.display='flex'; bs.style.flexDirection='column'; bs.style.gap='5px';
+    const b1=document.createElement('button'); b1.className='hbuy'; b1.style.padding='7px 11px'; b1.textContent='Sat 1'; b1.onclick=()=>sellGood(k,false);
+    const b2=document.createElement('button'); b2.className='hbuy'; b2.style.padding='7px 11px'; b2.style.background='#e9c478'; b2.textContent='Tümü ('+(have*price)+'💰)'; b2.onclick=()=>sellGood(k,true);
+    bs.appendChild(b1); bs.appendChild(b2); card.appendChild(bs); w.appendChild(card);
+  }
+}
 function startProfile(){
   S.profile={ set:true, ageGroup:profSel.ageGroup, gender:profSel.gender, quran:profSel.quran };
   applyProfile();
@@ -1245,6 +1301,7 @@ function buildWorld(){
   buildExamNodes();
   buildGatherNodes();   // Medine: Hurma Bahçesi'nde toplanabilir ağaçlar
   buildAnimals();       // Medine: dolaşan hayvanlar (çobanlık)
+  buildMarket();        // Medine: Şehir'de Sûk (pazar)
 
   // player
   const pl=instance('player');
@@ -1509,7 +1566,10 @@ document.getElementById('invBtn').onclick=openInv;
 document.getElementById('invClose').onclick=closeInv;
 document.getElementById('inv').addEventListener('click',e=>{ if(e.target.id==='inv') closeInv(); });
 document.getElementById('prayBtn').onclick=prayNamaz;
+document.getElementById('mktClose').onclick=closeMarket;
+document.getElementById('market').addEventListener('click',e=>{ if(e.target.id==='market') closeMarket(); });
 actBtn.onclick=()=>{ if(!near) return;
+  if(near.market){ openMarket(); return; }
   if(near.animal){ doTend(near); return; }
   if(near.gather){ doGather(near); return; }
   if(near.exam){ openExam(near.islId); return; }
@@ -1578,7 +1638,8 @@ function tick(){
       if(dd<bd){ bd=dd; best=r; } }
     if(best!==near){ near=best;
       if(near){ actBtn.style.display='block';
-        if(near.animal){ actBtn.textContent = animalReady(near.def) ? (near.q.ic+' '+near.def.label) : '🐑 Dinleniyor'; }
+        if(near.market){ actBtn.textContent='🛒 Pazar'; }
+        else if(near.animal){ actBtn.textContent = animalReady(near.def) ? (near.q.ic+' '+near.def.label) : '🐑 Dinleniyor'; }
         else if(near.gather){ actBtn.textContent = nodeReady(near.def) ? (near.q.ic+' Topla') : '🌱 Olgunlaşıyor'; }
         else if(near.exam){ actBtn.textContent = S.conquered[near.islId] ? 'Meydan ✓' : (examReady(near.islId) ? '📝 İmtihana Gir' : '🔒 Önce dersler'); }
         else actBtn.textContent = S.done[near.q.id] ? 'Bak ✓'
@@ -1588,7 +1649,9 @@ function tick(){
     if(near){ // prompt position
       tmp.copy(near.g.position); tmp.y+=(near.gather?2.6:1.3); tmp.project(camera);
       promptEl.style.display='block';
-      promptEl.textContent = near.animal
+      promptEl.textContent = near.market
+        ? '🛒 Medine Pazarı'
+        : near.animal
         ? ((animalReady(near.def)?near.q.ic+' '+near.def.label:'🐑 dinleniyor'))
         : near.gather
         ? ((nodeReady(near.def)?near.q.ic+' ':'🌱 ')+near.q.nm+(nodeReady(near.def)?' topla':' — olgunlaşıyor'))
@@ -1601,7 +1664,7 @@ function tick(){
   }
   // sıradaki yapılabilir görev parıldasın (yol gösterir)
   const glow=0.28+0.22*Math.sin(clock.elapsedTime*3);
-  for(const r of interactables){ if(r.gather||r.animal) continue; const on=!r.done && questAvailable(r.q);
+  for(const r of interactables){ if(r.gather||r.animal||r.market) continue; const on=!r.done && questAvailable(r.q);
     for(const x of r.meshes){ if(x.m.material.emissive){ x.m.material.emissive.setHex(on?0xffcf55:0x000000); x.m.material.emissiveIntensity=on?glow:0; } } }
   if(particles.length) updateParticles(dt);
   if(examNodes.length) animateExamNodes(dt, clock.elapsedTime);
@@ -1660,6 +1723,9 @@ addEventListener('resize',resize); resize();
     craftSeccade:()=>craftSeccade(), pray:()=>prayNamaz(), hasSeccade:()=>S.hasSeccade,
     giveZekat:(k)=>giveZekat(k), zekat:()=>Object.assign({},S.zekat), day:()=>dayName(), friday:()=>isFriday(),
     openProfile:()=>openProfile(),
+    openMarket:()=>{ marketRec&&(marketRec.g.visible=true); document.getElementById('market').classList.add('show'); renderMarket(); },
+    sell:(k,all)=>sellGood(k,all), dirhem:()=>S.dirhem||0, prices:()=>PRICES,
+    marketBuilt:()=>!!marketRec,
     setProfile:(age,gen,q)=>{ profSel={ageGroup:age,gender:gen,quran:q}; startProfile(); return Object.assign({},S.profile); },
     profile:()=>Object.assign({},S.profile),
     rules:()=>({isChild:isChild(),isAdult:isAdult(),isMale:isMale(),cumaActive:cumaActive(),zekatMukellef:zekatMukellef(),hasSeccade:S.hasSeccade}),
