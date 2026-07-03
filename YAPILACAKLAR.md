@@ -102,6 +102,11 @@ Bu oyun manipülasyonla değil, **anlamla** bağ kurar. Kırmızı çizgiler:
 - [x] **Susuzluk/açlık** (nazik, cezalandırmayan): yavaş biriker; 🥤 su iç / 🍽️ ye (şükür nûru); oruçluyken iftara kadar yeme-içme yok; kaynaklar oyuncu lehine
 - [x] **Çocuk sûre-dua ezberi**: Fâtiha/İhlâs/Felak/Nâs/Kevser + 5 günlük dua; 📖 Ezber Defteri (çocuk profilinde), adım adım âyet + sırala testi + nûr
 
+### Faz 10 — Gölgelik, Zikir, Grid (2026-07-03)
+- [x] **Gölgelik şeffaflığı**: oyuncu ilim meclisi tentesinin altına girince tente saydamlaşır, altı görünür
+- [x] **Zikir Meclisi** (mescide): Hamdele/Salvele/İstiğfâr/Esmâü'l-Hüsnâ (vakit başına bir) + namaz sonrası **tesbihât** (33+33+33 + dua + Âyetü'l-Kürsî); kerahat/namaz-kılınmayan vakitlerde de
+- [x] **Hayvan grid/yükseklik**: çim yüzeyi y=0'a hizalandı (tüm nesneler taban üstünde), clamp sıkılaştırıldı, taban altına inmez; boot'ta build marker
+
 ## 📌 3D Modeller ✅ (2026-07-02)
 Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi
 (hayvanlar, hurma/dut ağaçları, eşya/pickup, pazar, yapılar, Mescid-i Nebevî, NPC'ler).
