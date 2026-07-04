@@ -244,6 +244,18 @@ görünen fallback kutusu = yüklenememiş model). Bu yüzden dev sunucumda bile
 - [ ] **Hac genişletmesi (ileride)**: Arafat vakfesi + Müzdelife + Şeytan taşlama (cemerât) + kurban →
   tam Hac. Ayrıca 'hac' QBANK topic'i + Şehir imtihanına bağlama.
 
+### Faz 11.22 — Arıcılık + bahçe çiçek + pazar yönü + seccade fix (2026-07-04, Suheyb)
+- [x] **🐝 Çiçek→arı→bal→satış zinciri**: Hurma Bahçesi (2. ada) 30 çiçekle donatıldı (sap+taç+tomurcuk,
+  ölü→diri ile grileşir/açar). Prosedürel **arı kovanı** (skep, `buildHiveTemplate`→`tpl.hive`) bahçeye gather
+  node (`hive_bahce`, item='bal', amount 2, cd 45s). `GOODS.bal`🍯 + `PRICES.bal=6` (en değerli). Sat: dirhem+6/adet (doğrulandı).
+- [x] **Pazar+tüccar yönü**: `CAM_OFF=(0,12,13)` → kamera +z'den bakar; stall+merchant `rotation.y=π` (−z, arkası bize)
+  idi → **rotation 0** (önü +z/kameraya); tüccar tezgâhın ARKA tarafına (pz−1.2), mallar öne (pz+1.6). Screenshot doğrulandı.
+- [x] **Seccade tekrar örülebilir**: serili seccade unutulunca `S.laidSeccade` set kalıp `craftSeccade`'i bloke
+  ediyor + wool-hint gizleniyordu → tıkanma. Fix: craftSeccade serili eskisini geride bırakıp yeniden örer;
+  woolHint `!laidSeccade` şartı kaldırıldı. Test: ör→ser→unut→yeniden ör (has✓, yün 20→10).
+- [ ] **Sinematik intro + dil (TR/AR/EN)** — SIRADA (bu oturumun büyük işi): başta HUD gizli, kontrol-ipucu +
+  dil seçim ekranı; yakın çekim kahraman yerde oturur→sağa-sola bakar→kalkar (karanlık+kısık ezan)→evinde bulur. i18n altyapısı.
+
 ## 📌 3D Modeller ✅ (2026-07-02)
 Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi
 (hayvanlar, hurma/dut ağaçları, eşya/pickup, pazar, yapılar, Mescid-i Nebevî, NPC'ler).

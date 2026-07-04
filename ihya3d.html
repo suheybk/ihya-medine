@@ -283,7 +283,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.21 (🕋 UMRE: Kâbe·tavâf·sa'y·tıraş · namaz+ikram anim · pazar 3x · dua ağaçta)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.22 (🐝 arıcılık+bal · bahçe çiçek dolu · pazar yönü düzeldi · seccade tekrar örülür)</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -968,6 +968,17 @@ function decorateIsland(is){
   for(let i=0;i<7;i++){ const x=cx+sq(), z=cz+sq();
     const f=new THREE.Mesh(new THREE.SphereGeometry(0.09,7,6), new THREE.MeshStandardMaterial({color:FC[i%FC.length],roughness:.8}));
     f.scale.y=0.55; f.position.set(x,hAt(x,z)+0.16,z); scene.add(f); is.deco.push(...wrapMesh(f)); }
+  // HURMA BAHÇESİ (2. ada): yoğun çiçek bahçesi (arıcılık burada) — sap + taç yaprak + tomurcuk
+  if(is.id==='bahce'){
+    const BC=[0xff5d73,0xffd23f,0xff8f3f,0xe86bd8,0x9b6bff,0xf6f2e8,0xff9ec4];
+    for(let i=0;i<30;i++){ const x=cx+sq(), z=cz+sq(), y=hAt(x,z), col=BC[i%BC.length];
+      const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.03,0.3,5), new THREE.MeshStandardMaterial({color:0x4f9e3a,roughness:1}));
+      stem.position.set(x,y+0.15,z); scene.add(stem); is.deco.push(...wrapMesh(stem));
+      const petal=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.02,7), new THREE.MeshStandardMaterial({color:col,roughness:.9}));
+      petal.position.set(x,y+0.29,z); scene.add(petal); is.deco.push(...wrapMesh(petal));
+      const bloom=new THREE.Mesh(new THREE.SphereGeometry(0.08,8,6), new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.06,roughness:.8}));
+      bloom.scale.y=0.7; bloom.position.set(x,y+0.32,z); scene.add(bloom); is.deco.push(...wrapMesh(bloom)); }
+  }
   // çakıl taşları
   for(let i=0;i<6;i++){ const x=cx+sq(), z=cz+sq();
     const p=new THREE.Mesh(new THREE.IcosahedronGeometry(rnd(0.12,0.22),0), new THREE.MeshStandardMaterial({color:0xb9b0a4,roughness:1}));
@@ -1030,7 +1041,7 @@ function applyIslandLock(){
 }
 
 /* ============ HASAT / TOPLAMA (Faz 1) — kesb-i helâl ============ */
-const GOODS={ hurma:{ic:'🌴',nm:'Hurma'}, dut:{ic:'🫐',nm:'Dut'}, sut:{ic:'🥛',nm:'Süt'}, yun:{ic:'🧶',nm:'Yün'}, ekmek:{ic:'🍞',nm:'Ekmek'}, su:{ic:'💧',nm:'Su'} };
+const GOODS={ hurma:{ic:'🌴',nm:'Hurma'}, dut:{ic:'🫐',nm:'Dut'}, sut:{ic:'🥛',nm:'Süt'}, yun:{ic:'🧶',nm:'Yün'}, ekmek:{ic:'🍞',nm:'Ekmek'}, su:{ic:'💧',nm:'Su'}, bal:{ic:'🍯',nm:'Bal'} };
 // Hurma Bahçesi'nde toplanabilir ağaçlar (tekrarlanır: topla → hasat hali → cooldown → yeniden dolar)
 // Tüm adalara EŞİT dağıt: her adada 1 hurma + 1 dut ağacı (kenarlarda, görev hattından uzak)
 const GATHER_DEFS=[];
@@ -1039,7 +1050,20 @@ WORLD.islands.forEach(is=>{ const cx=is.c[0];
   GATHER_DEFS.push({id:'mul_'+is.id, islId:is.id, pos:[cx+3,0,-5], full:'mulberry_tree', bare:'mulberry_tree_bare', item:'dut', amount:4, cd:30000, scale:1.0});
   // KUYU: su çek (susuzluk için) — model değişmez, bol ve kısa cooldown (oyuncu lehine)
   GATHER_DEFS.push({id:'well_'+is.id, islId:is.id, pos:[cx-4.5,0,-1.5], full:'well', bare:'well', item:'su', amount:3, cd:12000, scale:1.0});
+  // ARICILIK: yalnız Hurma Bahçesi'nde (2. ada) — çiçeklerden bal; hasat → cooldown (arılar tekrar doldurur)
+  if(is.id==='bahce') GATHER_DEFS.push({id:'hive_'+is.id, islId:is.id, pos:[cx+4.5,0,1.6], full:'hive', bare:'hive', item:'bal', amount:2, cd:45000, scale:1.0});
 });
+// Prosedürel ARI KOVANI (skep) modeli — tpl'e enjekte edilir (base64 modeli yok)
+function buildHiveTemplate(){
+  const g=new THREE.Group(); const M=(c,r)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?0.85:r});
+  const st=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.4,0.16,10),M(0x7a5a34)); st.position.y=0.08; st.name='Stand'; g.add(st);
+  const cols=[0xe6b34a,0xdba53f,0xcf9836];
+  for(let i=0;i<3;i++){ const r=0.42-i*0.09; const c=new THREE.Mesh(new THREE.CylinderGeometry(r,r+0.05,0.2,14),M(cols[i])); c.position.y=0.26+i*0.19; c.name='Skep'+i; g.add(c); }
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(0.15,12,8,0,6.2832,0,1.4),M(0xcf9836)); cap.position.y=0.82; cap.name='Cap'; g.add(cap);
+  const en=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.1,0.06),M(0x2a1c0e)); en.position.set(0,0.28,0.4); en.name='Entrance'; g.add(en);
+  for(let i=0;i<3;i++){ const a=i*2.1; const b=new THREE.Mesh(new THREE.SphereGeometry(0.05,6,5),M(0xf4c542,0.5)); b.position.set(Math.cos(a)*0.55,0.5+i*0.13,Math.sin(a)*0.55); b.name='Bee'+i; g.add(b); }
+  return g;
+}
 let gatherNodes=[];
 function nodeReady(def){ const t=S.gather[def.id]; return !t || Date.now()>=t; }
 function makeGatherNode(def){
@@ -1251,11 +1275,12 @@ const SECCADE_FIYAT=8; // seccade satış (dirhem)
 let laidSeccadeRec=null, seccadeAnim=0;
 function craftSeccade(){
   if(S.hasSeccade){ toast('✓ Zaten bir seccaden var'); return; }
-  if(S.laidSeccade){ toast('🧎 Seccaden yerde serili — gidip al'); return; }
   if((S.inv.yun||0)<SECCADE_YUN){ toast('🧵 '+SECCADE_YUN+' yün gerek ('+(S.inv.yun||0)+' var)'); return; }
+  // Serili/unutulmuş bir seccade varsa onu GERİDE BIRAK, yenisini ör (yoksa oyuncu tıkanıyordu)
+  const abandoned=!!S.laidSeccade; if(abandoned){ S.laidSeccade=null; removeLaidSeccade(); }
   S.inv.yun-=SECCADE_YUN; if(S.inv.yun<=0) delete S.inv.yun; S.hasSeccade=true; save(); refreshHUD(); renderInv(); sndFanfare();
-  banner('🧎 Seccade örüldü'); toast('Artık her yerde namaz kılabilirsin (🧎)');
-  updateSeccadeBtn();
+  banner('🧎 Seccade örüldü'); toast(abandoned?'Eski seccadeni geride bıraktın; yenisini ördün 🧎':'Artık her yerde namaz kılabilirsin (🧎)');
+  updateSeccadeBtn(); updateWoolHint();
 }
 // yerde serili seccade = toplanabilir düğüm; almazsan orada kalır
 function placeLaidSeccade(x,z,ry,animate){
@@ -1777,9 +1802,9 @@ function ezberFinish(){
 function updateWoolHint(){
   const el=document.getElementById('woolHint'); if(!el) return;
   const yun=S.inv.yun||0;
-  if(!S.hasSeccade && !S.laidSeccade && yun>0){
+  if(!S.hasSeccade && yun>0){   // serili seccade varken de göster → yenisini örebilsin (kaybolan/unutulan durumunda)
     el.style.display='flex'; const ready=yun>=SECCADE_YUN; el.classList.toggle('ready',ready);
-    el.textContent='🧶 '+Math.min(yun,SECCADE_YUN)+'/'+SECCADE_YUN+(ready?' · Seccade ör':' · Seccade');
+    el.textContent='🧶 '+Math.min(yun,SECCADE_YUN)+'/'+SECCADE_YUN+(ready?(S.laidSeccade?' · Yeni seccade ör':' · Seccade ör'):' · Seccade');
   } else el.style.display='none';
 }
 
@@ -1842,24 +1867,24 @@ function applyProfile(){ if(isChild()){ S.hasSeccade=true; } save(); updateSecca
 
 /* ============ MEDİNE PAZARI (Faz 3) — kesb-i helâli dirhem'e çevir ============ */
 const MARKET_POS={ islId:'sehir', pos:[67,0,-4] };
-const PRICES={ hurma:2, dut:2, sut:3, yun:4, ekmek:3, su:1 };
+const PRICES={ hurma:2, dut:2, sut:3, yun:4, ekmek:3, su:1, bal:6 };   // bal = en değerli hasat
 let marketRec=null, marketDecor=[], marketMerchant=null;
 function buildMarket(){
   marketDecor=[];
   const px=MARKET_POS.pos[0], pz=MARKET_POS.pos[2];
-  const it=instance('market_stall'); it.g.position.set(px,0,pz); it.g.rotation.y=Math.PI; it.g.scale.setScalar(3); scene.add(it.g);   // #7 Medine Pazarı 3x büyük
+  const it=instance('market_stall'); it.g.position.set(px,0,pz); it.g.rotation.y=0; it.g.scale.setScalar(3); scene.add(it.g);   // #7 Medine Pazarı 3x; ÖNÜ kameraya (+z) dönük
   marketRec={ q:{id:'market', market:true, pos:MARKET_POS.pos, nm:'Medine Pazarı', ic:'🛒'}, g:it.g, meshes:it.meshes, market:true, islId:MARKET_POS.islId };
   interactables.push(marketRec);
   OBSTACLES.push({x:px,z:pz,r:2.8});   // büyük tezgâh → geniş engel (etrafından dolan)
-  // #7 Tüccar: büyük tezgâhın ARKASINDA dursun, başı tentenin altında kalacak oranda
+  // Tüccar: tezgâhın ARKA tarafında (kameradan uzak, -z), ÖNÜ müşteriye/kameraya (+z) dönük
   marketMerchant=instance('merchant'); tintNpc(marketMerchant.g,'merchant');
-  marketMerchant.g.position.set(px,0,pz+1.15); marketMerchant.g.rotation.order='YXZ'; marketMerchant.g.rotation.y=Math.PI;  // müşteriye dönük
+  marketMerchant.g.position.set(px,0,pz-1.2); marketMerchant.g.rotation.order='YXZ'; marketMerchant.g.rotation.y=0;  // +z: yüzü bize dönük
   marketMerchant.g.scale.setScalar(2.7); scene.add(marketMerchant.g); marketDecor.push(marketMerchant.g);
   // (merchant modeli kendi tezgâhı + malı + "sunma" pozuyla gelir — baked poz korunur)
-  // mal sepetleri (önde, büyük tezgâhın ölçüsüne göre)
-  const b1=instance('basket'); b1.g.position.set(px-2.7,0,pz-1.9); b1.g.scale.setScalar(1.7); scene.add(b1.g); marketDecor.push(b1.g);
-  const b2=instance('sack');   b2.g.position.set(px+2.7,0,pz-1.9); b2.g.scale.setScalar(1.7); scene.add(b2.g); marketDecor.push(b2.g);
-  const j=instance('jar');     j.g.position.set(px+1.5,0,pz-2.6); j.g.scale.setScalar(1.4); scene.add(j.g); marketDecor.push(j.g);
+  // mal sepetleri ÖNDE (kamera tarafı, +z) — müşteri görsün
+  const b1=instance('basket'); b1.g.position.set(px-2.6,0,pz+1.6); b1.g.scale.setScalar(1.7); scene.add(b1.g); marketDecor.push(b1.g);
+  const b2=instance('sack');   b2.g.position.set(px+2.6,0,pz+1.6); b2.g.scale.setScalar(1.7); scene.add(b2.g); marketDecor.push(b2.g);
+  const j=instance('jar');     j.g.position.set(px,0,pz+2.2);      j.g.scale.setScalar(1.4); scene.add(j.g); marketDecor.push(j.g);
 }
 function sellGood(k, all){
   const have=S.inv[k]||0; if(have<=0) return;
@@ -2411,7 +2436,8 @@ function buildWorld(){
   for(const q of allQuests()) addInteractable(q);
   // her adanın imtihan meydanı
   buildExamNodes();
-  buildGatherNodes();   // Medine: Hurma Bahçesi'nde toplanabilir ağaçlar
+  if(!tpl.hive) tpl.hive=buildHiveTemplate();   // arı kovanı prosedürel modelini tpl'e ekle (gather 'hive' bunu kullanır)
+  buildGatherNodes();   // Medine: Hurma Bahçesi'nde toplanabilir ağaçlar + arı kovanı
   buildAnimals();       // Medine: dolaşan hayvanlar (çobanlık)
   buildMarket();        // Medine: Şehir'de Sûk (pazar)
   buildNpcs();          // Medine: tekrarlanan hayır NPC'leri (yetim/komşu/misafir)
@@ -2775,7 +2801,7 @@ document.getElementById('abdestBtn').onclick=refreshWudu;
 document.getElementById('ezberBtn').onclick=openEzber;
 document.getElementById('ezberClose').onclick=closeEzber;
 document.getElementById('ezber').addEventListener('click',e=>{ if(e.target.id==='ezber') closeEzber(); });
-document.getElementById('woolHint').onclick=()=>{ if((S.inv.yun||0)>=SECCADE_YUN && !S.hasSeccade && !S.laidSeccade) craftSeccade(); };
+document.getElementById('woolHint').onclick=()=>{ if((S.inv.yun||0)>=SECCADE_YUN && !S.hasSeccade) craftSeccade(); };
 document.getElementById('mktClose').onclick=closeMarket;
 document.getElementById('market').addEventListener('click',e=>{ if(e.target.id==='market') closeMarket(); });
 actBtn.onclick=()=>{ if(!near) return;
@@ -2968,7 +2994,7 @@ function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect
 addEventListener('resize',resize); resize();
 
 /* ============ BOOT ============ */
-console.log('%cİHYA sürüm: Faz 11.21 — YENİ BÖLÜM: Umre (Mekke/Kâbe: ihrâm+telbiye, tavâf 7 şavt, sa\'y Safâ-Merve, tıraş); namaz+ikram animasyonu; Medine Pazarı 3x; dua kitabı ağaçta','color:#8fce58;font-weight:bold');
+console.log('%cİHYA sürüm: Faz 11.22 — Hurma Bahçesi çiçek dolu + ARICILIK (arı kovanı → bal hasadı → pazarda satış); Pazar+tüccar yönü düzeldi (önleri kameraya); seccade kaybolunca yeniden örülebilir','color:#8fce58;font-weight:bold');
 (async()=>{
   let n=0;
   for(const m of MODELS){ await load(m); loadBar.style.width=(++n/MODELS.length*100)+'%'; }
