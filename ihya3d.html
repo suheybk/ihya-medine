@@ -264,7 +264,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.10 (deve/goat kök-kayma FİX — artık grounded)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.11 (hayvan küçült + NPC büyüt + referans renkleri)</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -1011,9 +1011,9 @@ function updateGatherRegrow(){
 // Tüm adalara EŞİT dağıt: her adada 1 koyun + 1 keçi; 2 adada ayrıca deve
 const ANIMAL_DEFS=[];
 WORLD.islands.forEach((is,i)=>{
-  ANIMAL_DEFS.push({id:'sheep_'+is.id, model:'sheep', islId:is.id, produce:'yun', ic:'🧶', label:'Yün kırp', amount:1, cd:24000, scale:1.05, spd:1.0});
-  ANIMAL_DEFS.push({id:'goat_'+is.id,  model:'goat',  islId:is.id, produce:'sut', ic:'🥛', label:'Süt sağ',  amount:1, cd:20000, scale:1.0, spd:1.3});
-  if(i%2===0) ANIMAL_DEFS.push({id:'camel_'+is.id, model:'camel', islId:is.id, produce:'sut', ic:'🥛', label:'Süt sağ', amount:2, cd:30000, scale:0.9, spd:0.8});
+  ANIMAL_DEFS.push({id:'sheep_'+is.id, model:'sheep', islId:is.id, produce:'yun', ic:'🧶', label:'Yün kırp', amount:1, cd:24000, scale:0.85, spd:1.0});
+  ANIMAL_DEFS.push({id:'goat_'+is.id,  model:'goat',  islId:is.id, produce:'sut', ic:'🥛', label:'Süt sağ',  amount:1, cd:20000, scale:0.8, spd:1.3});
+  if(i%2===0) ANIMAL_DEFS.push({id:'camel_'+is.id, model:'camel', islId:is.id, produce:'sut', ic:'🥛', label:'Süt sağ', amount:2, cd:30000, scale:0.72, spd:0.8});
 });
 let animals=[];
 function animalReady(def){ const t=S.gather[def.id]; return !t || Date.now()>=t; }
@@ -1275,9 +1275,9 @@ function buildMosqueInterior(){
   box(11,2.2,0.4, 0,1.1,4.5, 0xcaa87a);                     // arka duvar (giriş)
   for(const sx of [-3.4,3.4]) for(const sz of [-1.5,2.2]){ const c=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.3,4.2,12),mat(0xe4d3ad)); c.position.set(cx+sx,2.1,cz+sz); c.frustumCulled=false; g.add(c); }
   for(const lx of [-2.4,2.4]){ const l=new THREE.Mesh(new THREE.SphereGeometry(0.16,10,8),new THREE.MeshStandardMaterial({color:0xffd98a,emissive:0xffb347,emissiveIntensity:1.2})); l.position.set(cx+lx,3.0,cz-2.0); l.frustumCulled=false; g.add(l); }
-  const imam=instance('merchant'); imam.g.position.set(cx,0,cz-3.4); imam.g.rotation.y=QIBLA_ANGLE; imam.g.scale.setScalar(1.05); g.add(imam.g);   // kıbleye (mihraba, -Z) dönük
-  const cong=['neighbor','traveler','orphan','shepherd','neighbor','traveler']; let k=0;
-  for(let row=0; row<2; row++) for(let col=-1; col<=1; col++){ const m=instance(cong[k%cong.length]); m.g.position.set(cx+col*1.5,0,cz-1.2+row*1.7); m.g.rotation.y=QIBLA_ANGLE; m.g.scale.setScalar(0.98); g.add(m.g); k++; }   // cemaat saf hâlinde kıbleye dönük
+  const imam=instance('merchant'); tintNpc(imam.g,'merchant'); imam.g.position.set(cx,0,cz-3.4); imam.g.rotation.y=QIBLA_ANGLE; imam.g.scale.setScalar(1.8); g.add(imam.g);   // kıbleye (mihraba, -Z) dönük
+  const cong=['neighbor','traveler','shepherd','neighbor','traveler','shepherd']; let k=0;   // cemaat: yetişkinler (orphan çıkarıldı — boy tutarlılığı)
+  for(let row=0; row<2; row++) for(let col=-1; col<=1; col++){ const cm=cong[k%cong.length]; const m=instance(cm); tintNpc(m.g,cm); m.g.position.set(cx+col*1.5,0,cz-1.2+row*1.7); m.g.rotation.y=QIBLA_ANGLE; m.g.scale.setScalar(1.7); g.add(m.g); k++; }   // cemaat saf hâlinde kıbleye dönük
   scene.add(g);
 }
 function mosqueFade(){ const f=document.getElementById('mosqueFade'); if(!f) return;
@@ -1688,17 +1688,29 @@ const FOOD=['hurma','dut','ekmek','sut'];   // yiyecek kategorisi
 function foodCount(){ return FOOD.reduce((s,k)=>s+(S.inv[k]||0),0); }
 function takeFood(n){ let need=n; for(const k of FOOD){ while(need>0 && (S.inv[k]||0)>0){ S.inv[k]--; if(S.inv[k]<=0) delete S.inv[k]; need--; } } return n-need; }
 const NPC_DEFS=[
-  {id:'yetim1',   model:'orphan',   islId:'mahalle', pos:[30,0,-4.6], need:2, nur:15, cd:26000, scale:1.05,
+  {id:'yetim1',   model:'orphan',   islId:'mahalle', pos:[30,0,-4.6], need:2, nur:15, cd:26000, scale:2.5,
    nm:'Yetime yemek götür', ic:'🧒', ref:'"Ben ve yetimi gözeten, cennette şöyle yan yanayız." (Buhârî)'},
-  {id:'komsu1',   model:'neighbor', islId:'mahalle', pos:[35,0,4.6],  need:2, needItem:'dut', nur:12, cd:22000, scale:1.0,
+  {id:'komsu1',   model:'neighbor', islId:'mahalle', pos:[35,0,4.6],  need:2, needItem:'dut', nur:12, cd:22000, scale:1.85,
    nm:'Komşuya ikram et',   ic:'🤝', ref:'Cebrâil komşu hakkını mirasçı kılacak sandıracak kadar tavsiye etti. (Buhârî)'},
-  {id:'misafir1', model:'traveler', islId:'sehir',   pos:[63,0,-4.6], need:2, nur:14, cd:28000, scale:1.0,
+  {id:'misafir1', model:'traveler', islId:'sehir',   pos:[63,0,-4.6], need:2, nur:14, cd:28000, scale:1.95,
    nm:'Misafiri ağırla',    ic:'🧳', ref:'"Allah\'a ve âhiret gününe iman eden misafirine ikram etsin." (Buhârî, Edeb 85)'},
 ];
 let npcNodes=[], npcWander=[];
+// ★ NPC RENKLERİ — Suheyb'in referans görsellerine (models/*.glb.jpg) göre sıcak Medine paleti.
+// Mesh'ler <model>_<n> isimli: _1=cübbe/gövde, _2=ten(baş/el), _3=başörtü/saç, _4=koyu aksan(saç/kaş), _5/_6=ekstra.
+const NPC_SKIN=0xd9a575;   // ortak sıcak ten
+const NPC_TINT={
+  orphan:  {1:0xeee2ca, 2:NPC_SKIN, 3:0xd8a648, 4:0x6b4a2e},                          // krem tunik + kumral saç
+  neighbor:{1:0x8d9b57, 2:NPC_SKIN, 3:0xe8ddc4, 4:0x97531f},                          // zeytin cübbe + krem keffiye + kızıl saç
+  traveler:{1:0xb07c3f, 2:NPC_SKIN, 3:0xd8c8a8, 4:0x5f4227, 5:0x9a6a40, 6:0x7a5232},  // toprak- okr cübbe + bej başörtü + çanta
+  merchant:{1:0xd6b24e, 2:NPC_SKIN, 3:0x79894a, 4:0x5f4227, 5:0x9a6a40, 6:0x7a5232},  // hardal yelek + yeşil sarık
+  shepherd:{1:0x9f6f45, 2:NPC_SKIN, 3:0xccbb98, 4:0x5f4227, 5:0x7a5232, 6:0x6a4a30},  // kahve çoban cübbesi + bej başörtü
+};
+function tintNpc(g, model){ const map=NPC_TINT[model]; if(!map) return;
+  g.traverse(o=>{ if(o.isMesh && o.name){ const m=o.name.match(/_(\d+)$/); if(m && map[+m[1]]!=null){ o.material.color.setHex(map[+m[1]]); if(o.material.emissive) o.material.emissiveIntensity=0; } } }); }
 function npcReady(def){ const t=S.gather['npc_'+def.id]; return !t || Date.now()>=t; }
 function makeNpc(def){
-  const it=instance(def.model); it.g.position.set(def.pos[0],0,def.pos[2]); it.g.rotation.order='YXZ'; it.g.rotation.y=Math.PI; it.g.scale.setScalar(def.scale||1); scene.add(it.g);
+  const it=instance(def.model); tintNpc(it.g, def.model); it.g.position.set(def.pos[0],0,def.pos[2]); it.g.rotation.order='YXZ'; it.g.rotation.y=Math.PI; it.g.scale.setScalar(def.scale||1); scene.add(it.g);
   const rec={ q:{id:'npc_'+def.id, npc:true, def, pos:def.pos.slice(), nm:def.nm, ic:def.ic}, g:it.g, meshes:it.meshes, npc:true, def, islId:def.islId };
   interactables.push(rec); npcNodes.push(rec);
   const is=WORLD.islands.find(i=>i.id===def.islId);
@@ -1756,11 +1768,11 @@ function doGiveHayir(rec){
 
 /* ============ MUÂHÂT — Ensâr-Muhâcir kardeşliği (Faz 6: hikâye) ============ */
 // Medine'nin kalbi: Rasûlullah ﷺ her muhâciri bir ensâr ile kardeş ilân etti.
-const MUAHAT={ id:'muahat', model:'neighbor', islId:'mahalle', pos:[29,0,3.6], scale:1.06,
+const MUAHAT={ id:'muahat', model:'neighbor', islId:'mahalle', pos:[29,0,3.6], scale:1.85,
   nm:'Muâhât — Kardeşlik Ahdi', ic:'🤝' };
 let muahatRec=null;
 function makeMuahat(){
-  const it=instance(MUAHAT.model); it.g.position.set(MUAHAT.pos[0],0,MUAHAT.pos[2]); it.g.rotation.order='YXZ'; it.g.rotation.y=Math.PI; it.g.scale.setScalar(MUAHAT.scale); scene.add(it.g);
+  const it=instance(MUAHAT.model); tintNpc(it.g, MUAHAT.model); it.g.position.set(MUAHAT.pos[0],0,MUAHAT.pos[2]); it.g.rotation.order='YXZ'; it.g.rotation.y=Math.PI; it.g.scale.setScalar(MUAHAT.scale); scene.add(it.g);
   muahatRec={ q:{id:'muahat', muahat:true, pos:MUAHAT.pos.slice(), nm:MUAHAT.nm, ic:MUAHAT.ic}, g:it.g, meshes:it.meshes, muahat:true, def:MUAHAT, islId:'mahalle' };
   interactables.push(muahatRec); npcNodes.push(muahatRec);
   const is=WORLD.islands.find(i=>i.id==='mahalle');
@@ -2650,7 +2662,7 @@ function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect
 addEventListener('resize',resize); resize();
 
 /* ============ BOOT ============ */
-console.log('%cİHYA sürüm: Faz 11.10 — deve/goat GLB kök-kayma (T=9.2/7.6) sıfırlandı → hayvanlar gerçekten grounded','color:#8fce58;font-weight:bold');
+console.log('%cİHYA sürüm: Faz 11.11 — hayvanlar küçültüldü, NPC\'ler oyuncu boyuna büyütüldü + referans paletiyle renklendirildi','color:#8fce58;font-weight:bold');
 (async()=>{
   let n=0;
   for(const m of MODELS){ await load(m); loadBar.style.width=(++n/MODELS.length*100)+'%'; }
