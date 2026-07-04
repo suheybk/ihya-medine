@@ -267,6 +267,20 @@ görünen fallback kutusu = yüklenememiş model). Bu yüzden dev sunucumda bile
   (`performance.now`)+fps-bağımsız lerp → düşük fps'te takılmaz (ilk dt-cap bug'ı düzeltildi). ~6.8s→`endIntro`.
   Uçtan uca doğrulandı (dil→AR/RTL→sinematik→HUD döner). **İleride**: tam UI i18n + Endonezyaca/Malayca.
 
+### Faz 11.24 — Kıble oku · pazar satış fix · Umre sa'y düzeni · hız (2026-07-04, Suheyb)
+- [x] **Kıble oku ters düzeltildi**: ok geometrisi -z önlü, `rotation.y=QIBLA_ANGLE(π)` ile +z'yi gösteriyordu
+  (qibla -z'nin tersi). `+Math.PI` eklendi → artık -z (mescid/Kâbe yönü). Doğrulama: cone z(0.55) < base z(2.0).
+  Seccade mihrabı ölçüldü: zaten -z'de (kıbleyle tutarlı) → dokunulmadı. Kullanıcının "kıble bulucu doğru
+  göstersin" alternatifi karşılandı.
+- [x] **Pazar satış fix (regresyon)**: 3x tezgâh sonrası `OBSTACLES r=2.8` > etkileşim menzili 2.4 → oyuncu
+  yaklaşamıyordu. `r=1.9`'a düşürüldü → (67,-2) walkable, dist 2.0<2.4 → satış yapılabilir.
+- [x] **Arı kovanı görünür köşe**: `hive_bahce` pos `[cx+4.5,1.6]→[cx+4.5,-4]` (aşağıda/kesik kalmasın).
+- [x] **Oyuncu hızı**: `spd 6.0→8.5` (daha akıcı).
+- [x] **Umre sa'y düzeni**: (a) tavâf(7)→**2 rekât namaz** (Makām-ı İbrâhîm, Bakara 125, +6 nûr) fazı eklendi.
+  (b) Sa'y **Kâbe'den AYRI Mes'â**'da (`MESA_X=KABE_IC.x+46`, ayrı kamera `hacSayCam`; Safâ/Merve tepeleri +
+  yeşil işaret). (c) Panel "**4 gidiş + 3 geliş = 7**" + button gidiş/geliş etiketi. (d) **Bakara 158**
+  ﴿إِنَّ الصَّفَا وَالْمَرْوَةَ...﴾ âyeti panelde + namazdan sonra banner/toast ile öğretilir. Akış eval+screenshot doğrulandı.
+
 ## 📌 3D Modeller ✅ (2026-07-02)
 Prompt listesindeki **36 model** Blender'da üretilip `models/*.glb` olarak eklendi
 (hayvanlar, hurma/dut ağaçları, eşya/pickup, pazar, yapılar, Mescid-i Nebevî, NPC'ler).

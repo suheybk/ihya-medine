@@ -335,7 +335,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.23 (🎬 sinematik intro + dil seçimi TR/AR/EN + kontrol ipucu · arıcılık · pazar yönü)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.24 (kıble oku düzeldi · pazar satış fix · Umre: 2 rekât+sa'y ayrı Mes'â+Bakara158 · hız↑)</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -1103,7 +1103,7 @@ WORLD.islands.forEach(is=>{ const cx=is.c[0];
   // KUYU: su çek (susuzluk için) — model değişmez, bol ve kısa cooldown (oyuncu lehine)
   GATHER_DEFS.push({id:'well_'+is.id, islId:is.id, pos:[cx-4.5,0,-1.5], full:'well', bare:'well', item:'su', amount:3, cd:12000, scale:1.0});
   // ARICILIK: yalnız Hurma Bahçesi'nde (2. ada) — çiçeklerden bal; hasat → cooldown (arılar tekrar doldurur)
-  if(is.id==='bahce') GATHER_DEFS.push({id:'hive_'+is.id, islId:is.id, pos:[cx+4.5,0,1.6], full:'hive', bare:'hive', item:'bal', amount:2, cd:45000, scale:1.0});
+  if(is.id==='bahce') GATHER_DEFS.push({id:'hive_'+is.id, islId:is.id, pos:[cx+4.5,0,-4], full:'hive', bare:'hive', item:'bal', amount:2, cd:45000, scale:1.0});   // sağ-üst köşe (aşağıda/görünmez kalmasın)
 });
 // Prosedürel ARI KOVANI (skep) modeli — tpl'e enjekte edilir (base64 modeli yok)
 function buildHiveTemplate(){
@@ -1358,14 +1358,14 @@ function ensureQiblaArrow(){
   kabe.position.set(0,0.17,-1.95); kabe.frustumCulled=false; g.add(kabe);
   const kusak=new THREE.Mesh(new THREE.BoxGeometry(0.37,0.09,0.37),new THREE.MeshStandardMaterial({color:0xd9b24a,emissive:0x6b4f18,emissiveIntensity:0.4,metalness:0.3,roughness:0.4}));
   kusak.position.set(0,0.26,-1.95); kusak.frustumCulled=false; g.add(kusak);
-  g.rotation.y=QIBLA_ANGLE; g.visible=false; scene.add(g); qiblaArrow=g; return g;
+  g.rotation.y=QIBLA_ANGLE+Math.PI; g.visible=false; scene.add(g); qiblaArrow=g; return g;   // ok geometrisi -z önlü; kıble(-z) için π ekle (eskiden +z'yi gösteriyordu = ters)
 }
 // oyuncu kıbleye dönük mü (±~23°)
 function facingQibla(){ if(!player) return false; const d=((player.rotation.y-QIBLA_ANGLE+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; return Math.abs(d)<0.4; }
 function showQibla(silent){
   const g=ensureQiblaArrow();
   if(player) g.position.set(player.position.x,0.09,player.position.z);
-  g.rotation.y=QIBLA_ANGLE; g.visible=true;
+  g.rotation.y=QIBLA_ANGLE+Math.PI; g.visible=true;   // kıble oku -z'yi (mescid/Kâbe yönü) gösterir
   if(!silent){ banner('🧭 Kıble bu yönde');
     // yöneliş/yönelmeyiş farkı: anlık yöne göre geri bildirim
     if(facingQibla()) toast('✓ Yüzün kıbleye dönük — namaza durabilirsin. "Yüzünü Mescid-i Harâm tarafına çevir." (Bakara 144)');
@@ -1475,6 +1475,9 @@ const KABE_IC=new THREE.Vector3(-150,0,-120);       // gizli Mekke sahnesi (uzak
 const MATAF_R=4.0, SAY_HALF=8.0;
 const hacCamPos=new THREE.Vector3(-150,10.5,-107);  // Kâbe'ye yukarıdan bakış (tavâf görünür)
 const hacCamLook=new THREE.Vector3(-150,1.2,-121);
+const MESA_X=KABE_IC.x+46;                           // Sa'y AYRI yerde (Kâbe'den uzakta) — Safâ↔Merve Mes'â
+const hacSayCamPos=new THREE.Vector3(MESA_X,10,KABE_IC.z+11);
+const hacSayCamLook=new THREE.Vector3(MESA_X,1.0,KABE_IC.z);
 let hacState={phase:'ihram', tavaf:0, say:0, ang:Math.PI/4, angT:Math.PI/4, sayPos:-1, sayT:-1};
 function buildKaabaScene(){
   const g=new THREE.Group(); g.visible=false; hacGroup=g;
@@ -1484,8 +1487,10 @@ function buildKaabaScene(){
   const KH=2.6, kabe=new THREE.Mesh(new THREE.BoxGeometry(2.2,KH,2.2),M(0x121212,0.85)); kabe.position.set(cx,KH/2,cz); kabe.frustumCulled=false; g.add(kabe);
   const band=new THREE.Mesh(new THREE.BoxGeometry(2.26,0.32,2.26),M(0xceac4e,0.45,0x4a3a08)); band.position.set(cx,KH*0.74,cz); band.frustumCulled=false; g.add(band);
   const hes=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.34,10),M(0x9a9a9a,0.4,0x1a1a1a)); hes.position.set(cx+1.12,1.15,cz+1.12); hes.frustumCulled=false; g.add(hes);   // Hacerü'l-Esved köşesi (başlangıç)
-  for(const sx of [-1,1]){ const h=new THREE.Mesh(new THREE.SphereGeometry(1.0,16,10,0,6.2832,0,1.25),M(0xc3b389,0.95)); h.position.set(cx+sx*SAY_HALF,0,cz+9); h.scale.y=0.6; h.frustumCulled=false; g.add(h); }   // Safâ & Merve
-  const mesa=new THREE.Mesh(new THREE.BoxGeometry(SAY_HALF*2+1,0.05,1.7),M(0xe7dfc7,0.9)); mesa.position.set(cx,0.06,cz+9); mesa.frustumCulled=false; g.add(mesa);   // mes'â (sa'y yolu)
+  // ── SA'Y ALANI: Kâbe'den UZAKTA ayrı Mes'â (Safâ ↔ Merve) ──
+  for(const sx of [-1,1]){ const h=new THREE.Mesh(new THREE.SphereGeometry(1.1,16,10,0,6.2832,0,1.25),M(0xc3b389,0.95)); h.position.set(MESA_X+sx*SAY_HALF,0,cz); h.scale.y=0.6; h.frustumCulled=false; g.add(h);
+    const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.2,0.5,8),M(0x2f8f63,0.6,0x1f6b3f)); cap.position.set(MESA_X+sx*SAY_HALF,0.75,cz); cap.frustumCulled=false; g.add(cap); }   // Safâ & Merve tepeleri + yeşil işaret
+  const mesa=new THREE.Mesh(new THREE.BoxGeometry(SAY_HALF*2+1.4,0.05,2.0),M(0xe7dfc7,0.9)); mesa.position.set(MESA_X,0.06,cz); mesa.frustumCulled=false; g.add(mesa);   // mes'â (sa'y yolu)
   for(let i=0;i<10;i++){ const a=i/10*6.2832, r=MATAF_R+(i%3)*0.7; const p=instance('traveler'); p.g.position.set(cx+Math.cos(a)*r,0,cz+Math.sin(a)*r); p.g.rotation.y=a+Math.PI/2; p.g.scale.setScalar(1.35);
     p.g.traverse(o=>{ if(o.isMesh){ o.material=o.material.clone(); o.material.color.setHex(0xeeece4); } }); g.add(p.g); }   // ihrâmlı hacılar (beyaz) dekor
   hacPilgrim=instance('boy_takke'); hacPilgrim.g.scale.setScalar(1.9); hacPilgrim.g.rotation.order='YXZ';
@@ -1515,12 +1520,15 @@ function renderHac(){
     h+='<button class="do" onclick="__hacAct(\'ihram\')">🤍 İhrâma gir ve telbiye getir</button>'; }
   else if(P.phase==='tavaf'){ title='Tavâf '+P.tavaf+'/7';
     h+='<div class="sub" style="margin-bottom:8px">Hacerü\'l-Esved hizasından başlayarak Kâbe\'yi <b>sola alarak</b> yedi kez dön; her şavtta zikret ve duâ et.</div>';
-    h+= P.tavaf>=7 ? '<button class="do" onclick="__hacAct(\'toSay\')">✅ Tavâf tamam — Sa\'ye geç</button>'
+    h+= P.tavaf>=7 ? '<button class="do" onclick="__hacAct(\'toNamaz\')">✅ Tavâf tamam — 2 rekât namaz</button>'
       : '<button class="do" onclick="__hacAct(\'tavaf\')">🕋 Bir şavt tavâf et ('+(P.tavaf+1)+'/7)</button>'; }
+  else if(P.phase==='namaz'){ title='Tavâf Namazı (2 rekât)';
+    h+='<div class="sub" style="margin-bottom:8px">Yedi şavt tavâftan sonra <b>Makām-ı İbrâhîm</b> arkasında (mümkünse) <b>iki rekât</b> namaz kılınır. <i>"Makām-ı İbrâhîm\'i namaz yeri edinin."</i> (Bakara 125)</div>';
+    h+='<button class="do" onclick="__hacAct(\'namaz\')">🧎 İki rekât namaz kıl (+6 nûr)</button>'; }
   else if(P.phase==='say'){ title='Sa\'y '+P.say+'/7';
-    h+='<div class="sub" style="margin-bottom:8px">Safâ ile Merve arasında yedi kez gidip gel — Hâcer annemizin oğlu İsmâil\'e su ararken koşuşunu anarak. <i>"Şüphesiz Safâ ile Merve Allah\'ın nişânelerindendir."</i> (Bakara 158)</div>';
+    h+='<div class="sub" style="margin-bottom:8px">Şimdi (Kâbe\'den ayrı) <b>Mes\'â</b>\'da <b>Safâ ile Merve</b> arasında yürü: <b>4 gidiş + 3 geliş = 7</b>. Hâcer annemizin İsmâil\'e su ararken koşusunu anarak.<div style="font-size:1.15em;margin:6px 0;direction:rtl">﴿إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ﴾</div><i>"Şüphesiz Safâ ile Merve, Allah\'ın nişânelerindendir."</i> (Bakara 158)</div>';
     h+= P.say>=7 ? '<button class="do" onclick="__hacAct(\'toTiras\')">✅ Sa\'y tamam — tıraş</button>'
-      : '<button class="do" onclick="__hacAct(\'say\')">🚶 Bir şavt sa\'y yap ('+(P.say+1)+'/7)</button>'; }
+      : '<button class="do" onclick="__hacAct(\'say\')">🚶 '+(P.say%2===0?'Safâ → Merve (gidiş)':'Merve → Safâ (geliş)')+' — '+(P.say+1)+'/7</button>'; }
   else { title='Tıraş / Kısaltma';
     h+='<div class="sub" style="margin-bottom:8px">Saçını tıraş et veya kısalt; böylece ihrâmdan çıkarsın ve Umre tamamlanır.</div>';
     h+='<button class="do" onclick="__hacAct(\'tiras\')">✂️ Tıraş ol — Umre\'yi tamamla (+40 nûr)</button>'; }
@@ -1533,7 +1541,10 @@ window.__hacAct=function(kind){
   if(kind==='exit'){ exitHac(); return; }
   if(kind==='ihram'){ telbiye(); P.phase='tavaf'; renderHac(); return; }
   if(kind==='tavaf'){ if(P.tavaf<7){ P.tavaf++; P.angT-=Math.PI*2; addNur(2); sndChime(); } renderHac(); return; }
-  if(kind==='toSay'){ P.phase='say'; P.sayPos=-1; P.sayT=-1; renderHac(); return; }
+  if(kind==='toNamaz'){ P.phase='namaz'; renderHac(); return; }
+  if(kind==='namaz'){ addNur(6); sndChime(); banner('🧎 İki rekât tamam'); P.phase='say'; P.sayPos=-1; P.sayT=-1; renderHac();
+    setTimeout(()=>banner('﴿إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ﴾'),400);
+    setTimeout(()=>toast('"Şüphesiz Safâ ile Merve, Allah\'ın nişânelerindendir." (Bakara 158)'),1700); return; }
   if(kind==='say'){ if(P.say<7){ P.say++; P.sayT=(P.say%2===1)?1:-1; addNur(2); sndChime(); } renderHac(); return; }
   if(kind==='toTiras'){ P.phase='tiras'; renderHac(); return; }
   if(kind==='tiras'){ S.umreCount=(S.umreCount||0)+1; addNur(40); save(); refreshHUD(); sndFanfare(); banner('🕋 Umre kabul olsun');
@@ -1544,8 +1555,8 @@ function hacTick(dt){
   if(!hacMode||!hacPilgrim) return;
   const cx=KABE_IC.x, cz=KABE_IC.z, g=hacPilgrim.g, bob=Math.abs(Math.sin(clock.elapsedTime*8))*0.03;
   if(hacState.phase==='say'){
-    hacState.sayPos += (hacState.sayT-hacState.sayPos)*Math.min(1,dt*1.5);
-    g.position.set(cx+hacState.sayPos*SAY_HALF, bob, cz+9);
+    hacState.sayPos += (hacState.sayT-hacState.sayPos)*Math.min(1,dt*1.6);
+    g.position.set(MESA_X+hacState.sayPos*SAY_HALF, bob, cz);   // Kâbe'den ayrı Mes'â'da Safâ↔Merve
     g.rotation.y = (hacState.sayT>=hacState.sayPos?1:-1)*Math.PI/2;
   } else {
     hacState.ang += (hacState.angT-hacState.ang)*Math.min(1,dt*1.3);
@@ -1927,7 +1938,7 @@ function buildMarket(){
   const it=instance('market_stall'); it.g.position.set(px,0,pz); it.g.rotation.y=0; it.g.scale.setScalar(3); scene.add(it.g);   // #7 Medine Pazarı 3x; ÖNÜ kameraya (+z) dönük
   marketRec={ q:{id:'market', market:true, pos:MARKET_POS.pos, nm:'Medine Pazarı', ic:'🛒'}, g:it.g, meshes:it.meshes, market:true, islId:MARKET_POS.islId };
   interactables.push(marketRec);
-  OBSTACLES.push({x:px,z:pz,r:2.8});   // büyük tezgâh → geniş engel (etrafından dolan)
+  OBSTACLES.push({x:px,z:pz,r:1.9});   // engel < etkileşim menzili(2.4) → oyuncu tezgâha yaklaşıp satış yapabilir
   // Tüccar: tezgâhın ARKA tarafında (kameradan uzak, -z), ÖNÜ müşteriye/kameraya (+z) dönük
   marketMerchant=instance('merchant'); tintNpc(marketMerchant.g,'merchant');
   marketMerchant.g.position.set(px,0,pz-1.2); marketMerchant.g.rotation.order='YXZ'; marketMerchant.g.rotation.y=0;  // +z: yüzü bize dönük
@@ -2896,7 +2907,7 @@ function tick(){
   const moving = player && mag>0.06 && !mosqueMode && !hacMode && !introMode;   // mescit/Mekke/intro'dayken hareket durur
   if(moving){
     ix/=Math.max(mag,1); iz/=Math.max(mag,1);
-    const spd=6.0, nx=player.position.x+ix*spd*dt, nz=player.position.z+iz*spd*dt;
+    const spd=8.5, nx=player.position.x+ix*spd*dt, nz=player.position.z+iz*spd*dt;   // yürüme hızı artırıldı (daha akıcı)
     // yürünebilir alan: ada/köprü. eksen bazlı → kenarda kayma
     if(walkable(nx,player.position.z)) player.position.x=nx;
     if(walkable(player.position.x,nz)) player.position.z=nz;
@@ -2935,9 +2946,10 @@ function tick(){
   if(introMode){
     introTick(dt);           // sinematik: kamera + kahraman uyanış pozu
   } else if(hacMode){
-    camera.position.lerp(hacCamPos,0.1);
-    camera.lookAt(hacCamLook);
-    hacTick(dt);              // tavâf/sa'y animasyonu (hacı Kâbe etrafında döner)
+    const sayNow=hacState.phase==='say';               // sa'y AYRI Mes'â'da → kamera oraya kayar (Kâbe görünmez)
+    camera.position.lerp(sayNow?hacSayCamPos:hacCamPos, 0.1);
+    camera.lookAt(sayNow?hacSayCamLook:hacCamLook);
+    hacTick(dt);              // tavâf: Kâbe etrafında döner; sa'y: Safâ↔Merve yürür
   } else if(mosqueMode){
     camera.position.lerp(mosCamPos,0.08);
     camera.lookAt(mosCamLook);
@@ -3107,7 +3119,7 @@ function introTick(dt){
 }
 
 /* ============ BOOT ============ */
-console.log('%cİHYA sürüm: Faz 11.23 — SİNEMATİK INTRO: başta dil seçimi (TR/AR/EN, Arapça RTL) + kontrol ipucu (WASD/joystick); kahraman fecir loşunda uyanır (otur→bakın→ayağa kalk, kısık ezan) → evinde bulur; arıcılık+bal; pazar yönü','color:#8fce58;font-weight:bold');
+console.log('%cİHYA sürüm: Faz 11.24 — kıble oku düzeltildi (artık -Z/Kâbe yönü); Medine Pazarı satış fix (engel<menzil); arı kovanı görünür köşeye; Umre: tavâf→2 rekât namaz→sa\'y AYRI Mes\'â (Safâ↔Merve 4 gidiş 3 geliş, Bakara 158)→tıraş; oyuncu hızı arttı','color:#8fce58;font-weight:bold');
 (async()=>{
   let n=0;
   for(const m of MODELS){ await load(m); loadBar.style.width=(++n/MODELS.length*100)+'%'; }
