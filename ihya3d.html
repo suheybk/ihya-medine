@@ -77,6 +77,12 @@
   .need{display:flex;align-items:center;gap:5px;font-size:13px;filter:drop-shadow(0 1px 2px #0004)}
   .nbar{width:60px;height:7px;background:#00000033;border-radius:5px;overflow:hidden;box-shadow:0 1px 3px #0002}
   .nbar>i{display:block;height:100%;width:0%;border-radius:5px;transition:width .35s}
+  /* Medine Adaleti göstergesi (muhtaç ihmali → huzursuzluk) */
+  .adalet{position:fixed;top:118px;left:12px;z-index:6;display:flex;align-items:center;gap:5px;pointer-events:auto;cursor:pointer;
+    padding:5px 10px;border-radius:12px;font:800 12px system-ui;box-shadow:0 3px 10px #0003;color:#fff}
+  .adalet.ok{background:#3f8f63dd}
+  .adalet.warn{background:#d99a2edd;animation:fastpulse 1.4s ease-in-out infinite}
+  .adalet.bad{background:#c0341fdd;animation:fastpulse .9s ease-in-out infinite}
   .ezsec{font-weight:800;font-size:13px;color:var(--muted);margin:10px 2px 6px}
   .ezgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .ezcard{padding:12px 10px;border:none;border-radius:14px;background:var(--panel);font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 3px 10px #0002;text-align:left}
@@ -262,6 +268,7 @@
   <div class="need"><span>🍞</span><div class="nbar"><i id="hungerBar"></i></div></div>
   <div class="need"><span>🚻</span><div class="nbar"><i id="toiletBar"></i></div></div>
 </div>
+<div id="adalet" class="adalet" style="display:none" onclick="__ihya3d&&__ihya3d.openHayir&&__ihya3d.openHayir()"></div>
 
 <div class="toolbar" id="toolbar">
   <button class="iconbtn" id="prayBtn" title="Namaz kıl (seccadeni ser)" style="display:none">🧎</button>
@@ -276,7 +283,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.15 (base disk kaldır + kalça-pivot bacak animasyonu + NPC yön)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.16 (hurma en uzun ağaç + Medine Adaleti: ihmal→zulüm)</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -668,6 +675,11 @@ for(const k of ['agac','kandil','cesme','ilim']) if(!S.hayir[k]) S.hayir[k]=[];
 if(!S.inv) S.inv={};        // KALICI envanter: {hurma:n, dut:n, ...}
 if(!S.gather) S.gather={};  // KALICI hasat cooldown'ları: {nodeId: nextReadyTimestamp}
 if(!S.zekat) S.zekat={};    // hangi malda nisab hatırlatması yapıldı
+// ---- Medine Adaleti: muhtaçların ihmali → mutsuzluk → şehirde huzursuzluk/zulüm ----
+if(!S.mood) S.mood={};      // muhtaç NPC başına mutsuzluk 0..3 (yetim/komşu/misafir)
+if(!S.helpedWk) S.helpedWk={}; // bu hafta gözetilen muhtaçlar
+if(typeof S.wkDay!=='number') S.wkDay=S.dayNum||0;   // son haftalık değerlendirme günü
+if(typeof S.zulum!=='number') S.zulum=0;   // yaşanan adaletsizlik olayı sayısı (KALICI)
 if(S.hasSeccade===undefined) S.hasSeccade=false;  // yünden örülen seccade (yanında taşınan)
 if(S.laidSeccade===undefined) S.laidSeccade=null;  // yere serili seccade {x,z,ry} — alınmazsa kalır
 if(!S.profile) S.profile={ set:false, ageGroup:null, gender:null, quran:null };  // kişisel mükellefiyet profili
@@ -714,6 +726,7 @@ function onNewDay(){
   S.dayNum=(S.dayNum||0)+1; S.done={}; save();
   interactables.forEach(r=>{ if(!r.exam&&!r.gather&&!r.animal&&!r.npc&&!r.muahat&&!r.market&&!r.mosque&&!r.seccadePickup) r.done=false; });
   applyIslandLock(); refreshHUD();
+  weeklyJustice();   // haftalık: muhtaç ihmali → mutsuzluk → şehir olayları
   toast('🌙 Yeni gün doğdu — '+dayName());
   if(isFriday()) setTimeout(()=>{ banner('🕌 Bugün Cuma'); toast('Öğle vakti gelince Mescid\'e git, Cuma\'yı cemaatle kıl 🕌'); },1300);
   if(isFastingDay() && orucMukellef()) setTimeout(()=>{ banner('🌙 Bugün '+dayName()); toast('Sünnet oruç günü — gece/öğleden önce niyet et, Akşam iftar (🌙 düğmesi)'); },1300);
@@ -1005,7 +1018,7 @@ const GOODS={ hurma:{ic:'🌴',nm:'Hurma'}, dut:{ic:'🫐',nm:'Dut'}, sut:{ic:'�
 // Tüm adalara EŞİT dağıt: her adada 1 hurma + 1 dut ağacı (kenarlarda, görev hattından uzak)
 const GATHER_DEFS=[];
 WORLD.islands.forEach(is=>{ const cx=is.c[0];
-  GATHER_DEFS.push({id:'palm_'+is.id, islId:is.id, pos:[cx-3,0,5], full:'date_palm', bare:'date_palm_bare', item:'hurma', amount:3, cd:40000, scale:0.95});
+  GATHER_DEFS.push({id:'palm_'+is.id, islId:is.id, pos:[cx-3,0,5], full:'date_palm', bare:'date_palm_bare', item:'hurma', amount:3, cd:40000, scale:1.7});   // hurma = en uzun ağaç
   GATHER_DEFS.push({id:'mul_'+is.id, islId:is.id, pos:[cx+3,0,-5], full:'mulberry_tree', bare:'mulberry_tree_bare', item:'dut', amount:4, cd:30000, scale:1.0});
   // KUYU: su çek (susuzluk için) — model değişmez, bol ve kısa cooldown (oyuncu lehine)
   GATHER_DEFS.push({id:'well_'+is.id, islId:is.id, pos:[cx-4.5,0,-1.5], full:'well', bare:'well', item:'su', amount:3, cd:12000, scale:1.0});
@@ -1834,6 +1847,7 @@ function doGiveHayir(rec){
   if(item){ S.inv[item]-=def.need; if(S.inv[item]<=0) delete S.inv[item]; } else takeFood(def.need);
   addNur(def.nur);
   S.gather['npc_'+def.id]=Date.now()+def.cd;
+  careNeedy(def.id);   // bu muhtaç bu hafta gözetildi → mutsuzluğu azalır
   save(); refreshHUD(); sndChime();
   banner(def.ic+' Hayrın kabul olsun');
   toast('+'+def.nur+' nûr — '+def.nm+' (−'+def.need+' '+(item?GOODS[item].ic+' '+GOODS[item].nm:'yiyecek')+')');
@@ -1970,9 +1984,44 @@ function donateHayir(id){
   if(arr.length>=def.max){ toast('✓ Bu hayırda azami sayıya ulaştın'); return; }
   if((S.dirhem||0)<def.cost){ toast('🔒 Yetersiz dirhem — '+def.cost+' gerekli (pazarda mal sat)'); return; }
   S.dirhem-=def.cost; addNur(def.reward); const p=randomHayirSpot(); arr.push(p); addHayirMesh(id,p);
+  careAllNeedy();   // sadaka-i câriye topluma yayılır → tüm muhtaçları gözetir
   save(); refreshHUD(); renderHayir();
   sndChime(); banner(def.ic+' Sadaka-i câriye'); toast('🤲 '+def.nm+' — kabul olsun (+'+def.reward+' nûr)');
 }
+/* ============ MEDİNE ADALETİ — muhtaç ihmali → mutsuzluk → şehir huzursuzluğu/zulüm ============ */
+// Zekât/sadaka/hayrın düştüğü muhtaçlar. Haftalık gözetilmezlerse mutsuzlaşır; mutsuzluk
+// birikince şehirde yağma/eşkıya/saldırı çıkar → adaletsizlik. Sadaka/hayır ile düzelir.
+const NEEDY=[{id:'yetim1',nm:'yetim'},{id:'komsu1',nm:'komşu'},{id:'misafir1',nm:'yolcu'}];
+function moodTotal(){ return NEEDY.reduce((s,n)=>s+(S.mood[n.id]||0),0); }   // 0..9
+function careNeedy(id){ S.helpedWk[id]=true; S.mood[id]=Math.max(0,(S.mood[id]||0)-1); updateAdaletHud(); }     // bir muhtaç gözetildi
+function careAllNeedy(){ for(const n of NEEDY){ S.helpedWk[n.id]=true; S.mood[n.id]=Math.max(0,(S.mood[n.id]||0)-1); } updateAdaletHud(); }  // sadaka-i câriye topluma yayılır
+function weeklyJustice(){   // onNewDay'den — 7 günde bir değerlendirme
+  if((S.dayNum-(S.wkDay||0))<7) return;
+  S.wkDay=S.dayNum; const neglected=[];
+  for(const n of NEEDY){ if(!S.helpedWk[n.id]){ S.mood[n.id]=Math.min(3,(S.mood[n.id]||0)+1); neglected.push(n.nm); } }
+  S.helpedWk={}; const total=moodTotal(); save(); updateAdaletHud();
+  if(neglected.length){ setTimeout(()=>banner('😟 Muhtaçlar gözetilmedi'),400);
+    setTimeout(()=>toast('Bu hafta '+neglected.join(', ')+' aç kaldı — huzursuzluk artıyor. Onları gözet, sadaka ver.'),900); }
+  else if(total>0){ setTimeout(()=>toast('🕊️ Muhtaçlar gözetildi — şehir yatışıyor.'),700); }
+  if(total>=5) setTimeout(()=>zulumEvent(total),1700);
+}
+function zulumEvent(total){   // yüksek mutsuzluk → yağma/eşkıya/saldırı → adaletsizlik
+  S.zulum++;
+  const evs=['🗡️ Şehirde eşkıya türedi — yoksul gözetilmedi, kervan yağmalandı.',
+    '🔥 Aç kalanlar çarşıyı bastı — yağma çıktı.',
+    '⚔️ Zayıfın hakkı yendi — sokakta saldırılar arttı.'];
+  const ev=evs[S.zulum%evs.length]; const loss=Math.min(S.dirhem||0, 12+total*3);
+  if(loss>0) S.dirhem=Math.max(0,(S.dirhem||0)-loss);
+  save(); refreshHUD();
+  banner('⚠️ Adaletsizlik');
+  setTimeout(()=>toast(ev+(loss>0?' (−'+loss+' 💰 dirhem yağmalandı)':'')),300);
+  setTimeout(()=>toast('"Zulümden sakının; zulüm kıyamet günü karanlıklardır." (Müslim) — muhtaçları gözet ki şehir huzur bulsun.'),2000);
+}
+function adaletState(){ const t=moodTotal(); return t<=2?{ic:'⚖️',lbl:'Huzur',cls:'ok'}:t<=4?{ic:'😟',lbl:'Huzursuz',cls:'warn'}:{ic:'🗡️',lbl:'Zulüm',cls:'bad'}; }
+function updateAdaletHud(){ const el=document.getElementById('adalet'); if(!el) return; const t=moodTotal();
+  if(t<=0){ el.style.display='none'; return; }
+  const s=adaletState(); el.style.display='flex'; el.className='adalet '+s.cls;
+  el.innerHTML=s.ic+' <b>'+s.lbl+'</b>'; }
 function openHayir(){ audio(); renderHayir(); document.getElementById('hayir').classList.add('show'); }
 function closeHayir(){ document.getElementById('hayir').classList.remove('show'); }
 function renderHayir(){
@@ -2748,7 +2797,7 @@ function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect
 addEventListener('resize',resize); resize();
 
 /* ============ BOOT ============ */
-console.log('%cİHYA sürüm: Faz 11.15 — model base diskleri kaldırıldı + v2 hayvan/NPC kalça-pivot bacak animasyonu + NPC yön ofseti','color:#8fce58;font-weight:bold');
+console.log('%cİHYA sürüm: Faz 11.16 — hurma en uzun ağaç + Medine Adaleti (muhtaç ihmali → mutsuzluk → şehir yağma/zulüm)','color:#8fce58;font-weight:bold');
 (async()=>{
   let n=0;
   for(const m of MODELS){ await load(m); loadBar.style.width=(++n/MODELS.length*100)+'%'; }
@@ -2757,7 +2806,7 @@ console.log('%cİHYA sürüm: Faz 11.15 — model base diskleri kaldırıldı + 
   // istikamet: son tamamlanan gün ne bu gün ne dün ise (dayNum) zincir kırılmış → sıfırla
   if(S.streakDay>=0 && S.streakDay < (S.dayNum||0)-1){ S.streak=0; save(); }
   buildWorld(); applyHayir(); refreshHUD(); applyIslandLock();
-  updateSeccadeBtn(); checkZekat(); updateWoolHint(); updateFastBtn();
+  updateSeccadeBtn(); checkZekat(); updateWoolHint(); updateFastBtn(); updateAdaletHud();
   if(S.laidSeccade) placeLaidSeccade(S.laidSeccade.x, S.laidSeccade.z, S.laidSeccade.ry, false);  // önceki serili seccade yerinde kalsın
   document.getElementById('load').style.display='none';
   if(!S.introSeen){ S.introSeen=true; save();
@@ -2851,6 +2900,11 @@ console.log('%cİHYA sürüm: Faz 11.15 — model base diskleri kaldırıldı + 
     showEnd:()=>showEnd(),
     hayirMeshes:()=>hayirGroups.length,
     warnState:()=>({warned:vakitWarned, urgent:document.getElementById('vakit').classList.contains('urgent'), vakit:vakitOf(gameTime)[1]}),
+    // --- Medine Adaleti test ---
+    adalet:()=>({mood:Object.assign({},S.mood), total:moodTotal(), state:adaletState().lbl, zulum:S.zulum, wkDay:S.wkDay, helpedWk:Object.assign({},S.helpedWk)}),
+    setMood:(id,v)=>{ S.mood[id]=v; updateAdaletHud(); return S.mood; },
+    weeklyJustice:()=>{ S.wkDay=(S.dayNum||0)-7; weeklyJustice(); return {mood:Object.assign({},S.mood),total:moodTotal(),zulum:S.zulum}; },
+    careNeedy:(id)=>{ careNeedy(id); return S.mood; },
     ezan:()=>sndEzan(), ezanVoice:()=>({has:!!ezanVoice, lang:ezanVoice?ezanVoice.lang:null, name:ezanVoice?ezanVoice.name:null, voices:(('speechSynthesis' in window)?(speechSynthesis.getVoices()||[]).map(v=>v.lang):[])}),
     showQibla:()=>showQibla(false), qiblaAngle:()=>QIBLA_ANGLE,
     qiblaState:()=>({ angle:+QIBLA_ANGLE.toFixed(3), playerRy:player?+player.rotation.y.toFixed(3):null,
