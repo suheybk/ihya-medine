@@ -276,7 +276,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.14 (well v2 — yuvarlak clay tuğla + doğru renk)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.15 (base disk kaldır + kalça-pivot bacak animasyonu + NPC yön)</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -1093,10 +1093,15 @@ function makeAnimal(def){
   scene.add(it.g);
   const rec={ q:{id:'anim_'+def.id, animal:true, def, pos:[x,0,z], nm:def.label, ic:def.ic}, g:it.g, meshes:it.meshes, animal:true, def, islId:def.islId };
   interactables.push(rec);
-  // uzuv-ayrımlı yeni modeller: bacak düğümlerini yakala (yürüme animasyonu için)
+  // uzuv-ayrımlı modeller: bacak(+toynak) düğümlerini yakala + KALÇA PİVOTU hesapla (yürüme animasyonu)
   const gob=n=>it.g.getObjectByName(n);
-  const legs={FL:gob('legFL'),FR:gob('legFR'),BL:gob('legBL'),BR:gob('legBR')};
-  const hasLegs=!!(legs.FL||legs.FR||legs.BL||legs.BR);
+  const legs={};
+  for(const k of ['FL','FR','BL','BR']){
+    const v2=gob('Leg_'+k), old=gob('leg'+k), leg=v2||old; if(!leg) continue;
+    const parts=[leg]; const hoof=gob('Hoof_'+k); if(hoof) parts.push(hoof);
+    legs[k]={parts, piv: v2?limbPivot(leg):null};   // v2: kalça-pivot rigid; eski: node zaten kalçada
+  }
+  const hasLegs=Object.keys(legs).length>0;
   const an={rec, def, is, tx:x, tz:z, pause:Math.random()*3, ph:Math.random()*6.28, spd:def.spd, legs:hasLegs?legs:null};
   animals.push(an); return an;
 }
@@ -1118,8 +1123,20 @@ function groundAnimals(){
     if(!(g.position.y>=0 && g.position.y<=0.1)) g.position.y=0;   // uçamaz/batamaz
   }
 }
-function setLeg(o,t){ if(o) o.rotation.x += (t-o.rotation.x)*0.3; }
-function restLegs(L){ if(L){ setLeg(L.FL,0); setLeg(L.FR,0); setLeg(L.BL,0); setLeg(L.BR,0); } }
+// bir mesh'in ÜST ucu = eklem (kalça/omuz) pivotu — model-yerel koordinatta
+function limbPivot(mesh){ if(!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox(); const bb=mesh.geometry.boundingBox;
+  return {x:(bb.min.x+bb.max.x)/2, y:bb.max.y, z:(bb.min.z+bb.max.z)/2}; }
+// bacağı (varsa toynağıyla) X ekseninde `ang` kadar EKLEM etrafında rigid döndür (yumuşak lerp)
+function swingLeg(entry, ang){
+  if(!entry) return;
+  if(entry.piv){ // v2: kalça pivotu — rigid rotation, position kompanzasyonu
+    const cur=entry.parts[0]; const a=cur.rotation.x + (ang-cur.rotation.x)*0.35;
+    const c=Math.cos(a), s=Math.sin(a), py=entry.piv.y, pz=entry.piv.z;
+    const ny=py-(py*c-pz*s), nz=pz-(py*s+pz*c);
+    for(const p of entry.parts){ p.rotation.x=a; p.position.set(0,ny,nz); }
+  } else { for(const p of entry.parts) p.rotation.x += (ang-p.rotation.x)*0.3; } // eski: node kalçada
+}
+function restLegs(L){ if(L){ swingLeg(L.FL,0); swingLeg(L.FR,0); swingLeg(L.BL,0); swingLeg(L.BR,0); } }
 function updateAnimals(dt){
   for(const an of animals){
     const g=an.rec.g;
@@ -1148,8 +1165,8 @@ function updateAnimals(dt){
     g.position.x=nx; g.position.z=nz;   // hedef zaten iç bölgede + engelsiz; üstteki kare-clamp backstop
     g.rotation.y=Math.atan2(dx,dz)+(ANIMAL_FACE[an.def.model]??Math.PI);   // baş öne gelsin (model-başına ofset; yeni goat +Z önlü)
     an.ph+=dt*8; g.position.y=Math.abs(Math.sin(an.ph))*0.04;
-    // tırıs: çapraz bacak çiftleri karşı fazda salınır (FL+BR / FR+BL)
-    if(L){ const sw=Math.sin(an.ph)*0.5; setLeg(L.FL,sw); setLeg(L.BR,sw); setLeg(L.FR,-sw); setLeg(L.BL,-sw); }
+    // tırıs: çapraz bacak çiftleri karşı fazda kalçadan salınır (FL+BR / FR+BL)
+    if(L){ const sw=Math.sin(an.ph)*0.5; swingLeg(L.FL,sw); swingLeg(L.BR,sw); swingLeg(L.FR,-sw); swingLeg(L.BL,-sw); }
     an.rec.q.pos[0]=g.position.x; an.rec.q.pos[2]=g.position.z;
   }
 }
@@ -1758,12 +1775,16 @@ const NPC_TINT={
 function tintNpc(g, model){ const map=NPC_TINT[model]; if(!map) return;
   g.traverse(o=>{ if(o.isMesh && o.name){ const m=o.name.match(/_(\d+)$/); if(m && map[+m[1]]!=null){ o.material.color.setHex(map[+m[1]]); if(o.material.emissive) o.material.emissiveIntensity=0; } } }); }
 function npcReady(def){ const t=S.gather['npc_'+def.id]; return !t || Date.now()>=t; }
+// NPC (2 bacak) kalça-pivot rig: yürürken bacak+sandalet kalçadan sallanır (cübbe altındaki alt bacak görünür)
+function rigNpcLegs(g){ const gob=n=>g.getObjectByName(n);
+  const pk=(leg,foot)=>{ const m=gob(leg); return m?{parts:[m,gob(foot)].filter(Boolean), piv:limbPivot(m)}:null; };
+  const L=pk('Leg_L','Sandal_L'), R=pk('Leg_R','Sandal_R'); return (L||R)?{FL:L,FR:R,BL:null,BR:null}:null; }
 function makeNpc(def){
   const it=instance(def.model); tintNpc(it.g, def.model); it.g.position.set(def.pos[0],0,def.pos[2]); it.g.rotation.order='YXZ'; it.g.rotation.y=Math.PI; it.g.scale.setScalar(def.scale||1); scene.add(it.g);
   const rec={ q:{id:'npc_'+def.id, npc:true, def, pos:def.pos.slice(), nm:def.nm, ic:def.ic}, g:it.g, meshes:it.meshes, npc:true, def, islId:def.islId };
   interactables.push(rec); npcNodes.push(rec);
   const is=WORLD.islands.find(i=>i.id===def.islId);
-  npcWander.push({rec, is, hx:def.pos[0], hz:def.pos[2], tx:def.pos[0], tz:def.pos[2], range:def.range||2.4, spd:def.spd||0.8, pause:1+Math.random()*3, ph:Math.random()*6.28});
+  npcWander.push({rec, is, hx:def.pos[0], hz:def.pos[2], tx:def.pos[0], tz:def.pos[2], range:def.range||2.4, spd:def.spd||0.8, pause:1+Math.random()*3, ph:Math.random()*6.28, legs:rigNpcLegs(it.g), model:def.model});
   return rec;
 }
 function buildNpcs(){ npcNodes=[]; npcWander=[]; for(const d of NPC_DEFS) makeNpc(d); makeMuahat(); }
@@ -1771,10 +1792,13 @@ function buildNpcs(){ npcNodes=[]; npcWander=[]; for(const d of NPC_DEFS) makeNp
 function pickNpcTarget(n){ const a=Math.random()*6.283, r=0.8+Math.random()*n.range; n.tx=n.hx+Math.cos(a)*r; n.tz=n.hz+Math.sin(a)*r; }
 // cübbeli figüre yakışan yürüyüş: adım zıplaması + yana salınım (waddle) + hafif öne eğilme.
 // dururken/etkileşimde tilt'ler 0'a döner. (bacaklar cübbe altında gizli → uzuv ayrımı yerine gövde animasyonu)
-function npcRest(g,k){ g.position.y*=0.85; g.rotation.x+=-g.rotation.x*k; g.rotation.z+=-g.rotation.z*k; }
+// Model-başına NPC yüz yönü: v2 (neighbor/orphan/shepherd/merchant) +Z-önlü → 0; eski traveler -Z → PI
+const NPC_FACE={ traveler:Math.PI };
+function npcRest(n,k){ const g=n.rec.g; g.position.y*=0.85; g.rotation.x+=-g.rotation.x*k; g.rotation.z+=-g.rotation.z*k;
+  if(n.legs){ swingLeg(n.legs.FL,0); swingLeg(n.legs.FR,0); } }   // bacaklar da rest'e döner
 function updateNpcs(dt){
   for(const n of npcWander){
-    const rec=n.rec, g=rec.g;
+    const rec=n.rec, g=rec.g; const foff=NPC_FACE[n.model||rec.def.model]||0;
     const isl=n.is||{c:[0,0],r:8}, c=isl.c, rmax=(isl.r||8)-1.4;   // KENDİ karesi (geçersizse ev'e düş)
     // KOŞULSUZ KARE SINIR: kare dışına/NaN'a çıkarsa eve ışınla → kaçış imkânsız
     { const px=g.position.x, pz=g.position.z;
@@ -1782,20 +1806,21 @@ function updateNpcs(dt){
     if(!(g.position.y>=0 && g.position.y<=0.1)) g.position.y=0;   // Y tabana kilit: NPC uçamaz/batamaz
     if(!g.visible) continue;
     if(near===rec){ // oyuncu yanındayken dur ve ona dön (etkileşim için)
-      g.rotation.y=Math.atan2(player.position.x-g.position.x, player.position.z-g.position.z);
-      npcRest(g,0.2); rec.q.pos[0]=g.position.x; rec.q.pos[2]=g.position.z; continue;
+      g.rotation.y=Math.atan2(player.position.x-g.position.x, player.position.z-g.position.z)+foff;
+      npcRest(n,0.2); rec.q.pos[0]=g.position.x; rec.q.pos[2]=g.position.z; continue;
     }
-    if(n.pause>0){ n.pause-=dt; npcRest(g,0.15); continue; }
+    if(n.pause>0){ n.pause-=dt; npcRest(n,0.15); continue; }
     const dx=n.tx-g.position.x, dz=n.tz-g.position.z, d=Math.hypot(dx,dz);
     if(d<0.25){ n.pause=1.8+Math.random()*3.8; pickNpcTarget(n); continue; }
     const nx=g.position.x+dx/d*n.spd*dt, nz=g.position.z+dz/d*n.spd*dt;
     if(inSq(nx,nz,c,rmax)){ g.position.x=nx; g.position.z=nz; }
     else { n.pause=0.5+Math.random()*1.0; pickNpcTarget(n); }
-    g.rotation.y=Math.atan2(dx,dz)+Math.PI;   // baş öne (model başı -Z)
+    g.rotation.y=Math.atan2(dx,dz)+foff;   // baş öne (model-başına ofset: v2 +Z→0, eski traveler -Z→PI)
     n.ph+=dt*7; const w=Math.sin(n.ph);
-    g.position.y=Math.abs(w)*0.045;                    // adım zıplaması
-    g.rotation.z=w*0.055;                              // yana salınım (waddle, facing'e göre)
-    g.rotation.x=0.05+Math.abs(Math.cos(n.ph))*0.025;  // hafif öne eğilme + tempo
+    g.position.y=Math.abs(w)*0.04;                     // adım zıplaması
+    g.rotation.z=w*0.04;                               // hafif yana salınım (bacaklar da anime olduğu için azaltıldı)
+    g.rotation.x=0.04;                                 // çok hafif öne eğilme
+    if(n.legs){ swingLeg(n.legs.FL, w*0.42); swingLeg(n.legs.FR, -w*0.42); }   // bacaklar zıt fazda kalçadan adımlar
     rec.q.pos[0]=g.position.x; rec.q.pos[2]=g.position.z;
   }
 }
@@ -1825,7 +1850,7 @@ function makeMuahat(){
   muahatRec={ q:{id:'muahat', muahat:true, pos:MUAHAT.pos.slice(), nm:MUAHAT.nm, ic:MUAHAT.ic}, g:it.g, meshes:it.meshes, muahat:true, def:MUAHAT, islId:'mahalle' };
   interactables.push(muahatRec); npcNodes.push(muahatRec);
   const is=WORLD.islands.find(i=>i.id==='mahalle');
-  npcWander.push({rec:muahatRec, is, hx:MUAHAT.pos[0], hz:MUAHAT.pos[2], tx:MUAHAT.pos[0], tz:MUAHAT.pos[2], range:2.0, spd:0.7, pause:1+Math.random()*3, ph:Math.random()*6.28});
+  npcWander.push({rec:muahatRec, is, hx:MUAHAT.pos[0], hz:MUAHAT.pos[2], tx:MUAHAT.pos[0], tz:MUAHAT.pos[2], range:2.0, spd:0.7, pause:1+Math.random()*3, ph:Math.random()*6.28, legs:rigNpcLegs(it.g), model:MUAHAT.model});
   return muahatRec;
 }
 function doMuahat(rec){
@@ -2022,11 +2047,17 @@ function load(name){
   });
 }
 function grayOf(c){ const l=c.r*0.3+c.g*0.59+c.b*0.11; return new THREE.Color(l*0.9+0.15,l*0.9+0.15,l*0.9+0.15); }
+// Bu modellerin altındaki 'Base' diski (çember plaka) gizlensin — karakter/ağaç zeminde dursun, diski olmasın.
+// (scale/market_stall/masjid 'Base'i YAPISAL → onlara dokunma.)
+const BASE_HIDE=new Set(['camel','orphan','shepherd','date_palm','date_palm_bare','mulberry_tree','mulberry_tree_bare','lamb']);
 function instance(name){
   const t=tpl[name];
   const g = t ? t.clone(true) : new THREE.Mesh(new THREE.BoxGeometry(0.6,0.6,0.6),new THREE.MeshStandardMaterial({color:0xc99}));
   const meshes=[];
-  g.traverse(o=>{ if(o.isMesh){ o.frustumCulled=false; o.material=o.material.clone(); meshes.push({m:o,orig:o.material.color.clone(),gray:grayOf(o.material.color)}); }});
+  const hideBase=BASE_HIDE.has(name);
+  g.traverse(o=>{ if(o.isMesh){
+    if(hideBase && o.name==='Base'){ o.visible=false; return; }   // altındaki disk/plaka kaldırıldı
+    o.frustumCulled=false; o.material=o.material.clone(); meshes.push({m:o,orig:o.material.color.clone(),gray:grayOf(o.material.color)}); }});
   return {g,meshes};
 }
 function setAlive(meshes,alive){ meshes.forEach(x=>x.m.material.color.copy(alive?x.orig:x.orig.clone().lerp(x.gray,0.8))); }
@@ -2717,7 +2748,7 @@ function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect
 addEventListener('resize',resize); resize();
 
 /* ============ BOOT ============ */
-console.log('%cİHYA sürüm: Faz 11.13 — v2 detaylı modeller (fetch) + mescid nafile cooldown + sonraki-namaz geri-sayım animasyonu','color:#8fce58;font-weight:bold');
+console.log('%cİHYA sürüm: Faz 11.15 — model base diskleri kaldırıldı + v2 hayvan/NPC kalça-pivot bacak animasyonu + NPC yön ofseti','color:#8fce58;font-weight:bold');
 (async()=>{
   let n=0;
   for(const m of MODELS){ await load(m); loadBar.style.width=(++n/MODELS.length*100)+'%'; }
