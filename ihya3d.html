@@ -283,7 +283,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.19 (namaz+ikram animasyonu · pazar 3x+tüccar · NPC etiket · +8 soru)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 11.20 (namaz+ikram anim · pazar 3x · dua kitabı ağaçta · NPC etiket · +8 soru)</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -2211,6 +2211,12 @@ function animateExamNodes(dt,t){
 function addInteractable(q){
   const it=instance(q.model);
   it.g.position.set(q.pos[0],0,q.pos[2]); it.g.rotation.y=q.rot||0; it.g.scale.setScalar(q.scale||1);
+  // #6 Zikir/dua kitabı YERDE olmasın → küçük ağaca ASILI dursun (Suheyb: ev adası dua kitabı)
+  if(q.topic==='dua'){
+    const tr=instance('tree'); tr.g.position.set(q.pos[0],0,q.pos[2]); tr.g.scale.setScalar(1.35);
+    tr.g.frustumCulled=false; scene.add(tr.g); it.g.userData.duaTree=tr.g;   // ders ile birlikte kaldırılsın
+    it.g.position.set(q.pos[0]+0.6,1.45,q.pos[2]+0.1); it.g.rotation.z=0.55; it.g.rotation.y=(q.rot||0)+0.5;  // dala asılı: yükseklik + eğim
+  }
   scene.add(it.g);
   const rec={q,g:it.g,meshes:it.meshes,done:!!S.done[q.id]};
   setAlive(it.meshes, rec.done);
@@ -2222,7 +2228,7 @@ function rebuildEvQuests(vname){
   // (eski bug: geniş 'ev' filtresi ev hayvanlarını da siliyordu → vakit değişince hayvanlar "yok" oluyordu)
   for(let i=interactables.length-1;i>=0;i--){ const r=interactables[i];
     if(r.exam||r.animal||r.gather||r.npc||r.market||r.muahat||r.mosque||r.seccadePickup) continue;
-    if(questIslandId(r.q)==='ev'){ scene.remove(r.g); interactables.splice(i,1); } }
+    if(questIslandId(r.q)==='ev'){ if(r.g.userData&&r.g.userData.duaTree) scene.remove(r.g.userData.duaTree); scene.remove(r.g); interactables.splice(i,1); } }
   setVakitQuests(vname);
   for(const q of evQuests) addInteractable(q);
   applyIslandLock(); refreshHUD();
@@ -2852,7 +2858,7 @@ function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect
 addEventListener('resize',resize); resize();
 
 /* ============ BOOT ============ */
-console.log('%cİHYA sürüm: Faz 11.19 — namaz (kıbleye dönüş+kıyam/rükû/secde) + ikram jesti animasyonu; Medine Pazarı 3x + tüccar; NPC etiketi baş üstü; +8 imtihan sorusu','color:#8fce58;font-weight:bold');
+console.log('%cİHYA sürüm: Faz 11.20 — namaz + ikram animasyonu; Medine Pazarı 3x + tüccar; dua/zikir kitabı ağaca asılı; NPC etiketi baş üstü; +8 imtihan sorusu','color:#8fce58;font-weight:bold');
 (async()=>{
   let n=0;
   for(const m of MODELS){ await load(m); loadBar.style.width=(++n/MODELS.length*100)+'%'; }

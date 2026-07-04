@@ -220,8 +220,10 @@ görünen fallback kutusu = yüklenememiş model). Bu yüzden dev sunucumda bile
   (baş üstü), gather 2.6, diğer 1.3. Yüz görünür.
 - [x] **+8 imtihan sorusu** — `QBANK`: quran/dua/selam/komsu/sadaka/ilim/adalet/hayir konularına 3. soru
   (kaynaklı: Buhârî/Müslim/Tirmizî/Ebû Dâvûd/Bakara/Mâide). ⚠️ yeni dinî metinler yayın öncesi ehlince teyit.
-- [ ] **#6 Zikir kitabı ağaçta asılı** — BEKLİYOR: hangi book node'u ('selam'/'davet'/'dua' hepsi book modeli)
-  kastedildiği belirsiz; Suheyb'e soruldu. Netleşince konum+yükseklik (ağaca asılı) değişimi yapılacak.
+- [x] **#6 Zikir/dua kitabı ağaçta asılı (11.20)** — Suheyb: **ev adası dua kitabı**. `addInteractable`'da
+  `q.topic==='dua'` özel: küçük `tree` (scale 1.35) eklenir, book dala asılır (y=1.45, tilt z=0.55).
+  `rebuildEvQuests` ağacı da kaldırır (orphan yok — 6 vakit test: slot'ta 1 ağaç). Kitap tepe 1.76 <
+  ağaç tepe 2.75 → foliage'a yuvalanmış. Etkileşim/prompt sağlam.
 - **NOT (debug artefaktı, bug DEĞİL):** `d.teleport` sonrası prompt bayat kalıyordu ("Tuvalet âdâbı" pazarda);
   normal `d.move`'da anında güncelledi → gerçek oyunda (oyuncu hep yürür) sorun yok, dokunulmadı.
 
