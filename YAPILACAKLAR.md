@@ -434,9 +434,19 @@ görünen fallback kutusu = yüklenememiş model). Bu yüzden dev sunucumda bile
   kolay; metin-içi için `emo()` + innerHTML). Emoji bulunmazsa emojiye düşer (regresyon yok).
 - [x] **PROMPTLAR** (`MODEL_PROMPTLARI.md` Faz 11.29): `seated_sahabe` (bağdaş, turban, eller dizde — huni+top
   yerine), `hive`=PETEK (hexagonal, skep değil), + kaaba/vortex_swirl/rooster/mescid_nabawi opsiyonel.
-- [ ] **AÇIK — senaryo MEKANİĞİ** (modeller kayıtlı, görsel yerleştirme + diyalog/görev bağlama kaldı): barıştırma
-  (arg_villager_a/b+dispute_item), adalet (qadi+plaintiff), emanet (trust_owner+trust_pouch), sadaka (beggar=dilenci),
-  faydalı iş (public_fountain/shade_bench), taharet (mud_doorway). Sonraki oturumun ODAK işi.
+- [x] **YAPILDI (Faz 11.30) — senaryo MEKANİĞİ**: 13 model diyalog+göreve bağlandı, preview'da doğrulandı (v1139).
+  Yeni `#dlg` diyalog motoru + `buildScenarios/sceneComplete/updateScenarios`. Barıştırma (arg_villager_a/b+dispute_item,
+  💢→sulh, Cami doğu 53.6,0.8), Kadı/Adalet (qadi+tüccar+çoban, delile göre hüküm), Emanet (trust_owner→kese ele takılır→
+  Mahalle'de neighbor'a teslim; deliverPouch sahibin `emanet` quest'ini tamamlar), Dilenci (beggar, dirhem/yiyecek→
+  careAllNeedy+gizli sadaka), Faydalı iş (public_fountain/shade_bench Hayır Çeşmesi paneline), Taharet (door→mud_doorway).
+  sceneComplete idempotency guard (nûr farming engellendi). Detay: memory `session-faz11-30`.
+- [x] **YAPILDI (Faz 11.30) — özel ikon seti düzenlendi + entegre**: kullanıcının `models/icon-set/icons_raw`(158 blob)+
+  `rename_map.csv` pipeline'ı → contact.png'den tanıyıp **72 ikon adlandırıldı** (`models/icon-set/icons/`), kapalı-delik dama
+  temizlendi (`cleanup_holes.py`). **65 claymorphism oyuna senkron** (`IG/icons/`, 7 tabiat farklı-stil hariç). HTML `EMOJI_ICON`
+  + `emo()`/`ic()` + CSS; toast/banner/altyazı/actBtn/diyalog ikonlaştı; +🌇🌌🌀🏮 eşleme (preview ✓, 200, konsol temiz).
+- [ ] **AÇIK — ikon yayılımı**: statik HUD butonları (hayirBtn/ezberBtn/abdestBtn…), quest `ic:` rozetleri + panel
+  listeleri (exam/hayir/market/zekat), endscreen/rütbe de `emo()`/`ic()`'e geçebilir. Tabiat ikonları (mulberry/honey/
+  cat/foot/walk…) kullanıcı claymorphism'de yeniden üretirse eklenir.
 
 ### (eski) TASARIM notları — barıştırma + 4 etkinlik senaryolaştırma
 > GLB'ler geldi (build_pack5.py). Senaryo tasarımları yukarıda Faz 11.27/11.28 taslaklarında.
