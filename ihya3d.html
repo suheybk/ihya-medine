@@ -351,7 +351,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 3.5 (ATÖLYE ADASI: Hurma Bahçesi güneyine yan köprüyle bağlı craft adası — Değirmen (un), Tandır (ekmek), Tezgâh (seccade); craft Dağarcık'tan istasyonlara taşındı; side-ada fetih/bitiş-ekranından hariç. Buğday→Un→Ekmek + Yün→Seccade orada · Senaryo Defteri/unvanlar · tekrarlanan vakalar)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 4 (ÇANTA+KAPASİTE: çantasız 100 / çanta 150 / büyük çanta 200 item, tezgâhta yünden ör; dolunca toplama durur · TAVUK+YUMURTA: Hâne'de tavuklar+1 horoz, yumurta topla → tandırda çörek · barıştırma bug fix [fethedilmiş ada serbest tekrar] · Atölye craft adası · Senaryo Defteri/unvanlar)</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -600,7 +600,7 @@ const MODELS = ['player','boy_takke','prayer','rahle','book','door','tree','plot
   // Medine — hasat/toplama (Faz 1) + kuyu (Faz 9)
   'date_palm','date_palm_bare','mulberry_tree','mulberry_tree_bare','item_date','item_mulberry','well','wheat',
   // Medine — çobanlık (Faz 2)
-  'sheep','goat','camel',
+  'sheep','goat','camel','chicken','rooster',
   // Medine — seccade + pazar (Faz 3)
   'seccade','market_stall','basket','scale','jar','sack',
   // Medine — tekrarlanan hayır NPC'leri (Faz 4)
@@ -790,6 +790,7 @@ if(!S.helpedWk) S.helpedWk={}; // bu hafta gözetilen muhtaçlar
 if(typeof S.wkDay!=='number') S.wkDay=S.dayNum||0;   // son haftalık değerlendirme günü
 if(typeof S.zulum!=='number') S.zulum=0;   // yaşanan adaletsizlik olayı sayısı (KALICI)
 if(!S.scen) S.scen={};   // KALICI tekrarlanan senaryo defteri: {baris/adalet/emanet:{n:çözülen mesele, idx:havuz sırası, cd:sonraki vaka zamanı}}
+if(typeof S.bag!=='number') S.bag=0;   // çanta seviyesi 0/1/2 → taşıma kapasitesi 100/150/200 (tek çanta taşınır; büyük çanta küçüğün yerine geçer)
 if(S.hasSeccade===undefined) S.hasSeccade=false;  // yünden örülen seccade (yanında taşınan)
 if(S.laidSeccade===undefined) S.laidSeccade=null;  // yere serili seccade {x,z,ry} — alınmazsa kalır
 if(!S.profile) S.profile={ set:false, ageGroup:null, gender:null, quran:null };  // kişisel mükellefiyet profili
@@ -1153,7 +1154,7 @@ function applyIslandLock(){
 }
 
 /* ============ HASAT / TOPLAMA (Faz 1) — kesb-i helâl ============ */
-const GOODS={ hurma:{ic:'🌴',nm:'Hurma'}, dut:{ic:'🫐',nm:'Dut'}, sut:{ic:'🥛',nm:'Süt'}, yun:{ic:'🧶',nm:'Yün'}, ekmek:{ic:'🍞',nm:'Ekmek'}, su:{ic:'💧',nm:'Su'}, bal:{ic:'🍯',nm:'Bal'}, bugday:{ic:'🌾',nm:'Buğday'}, un:{ic:'🥣',nm:'Un'} };
+const GOODS={ hurma:{ic:'🌴',nm:'Hurma'}, dut:{ic:'🫐',nm:'Dut'}, sut:{ic:'🥛',nm:'Süt'}, yun:{ic:'🧶',nm:'Yün'}, ekmek:{ic:'🍞',nm:'Ekmek'}, su:{ic:'💧',nm:'Su'}, bal:{ic:'🍯',nm:'Bal'}, bugday:{ic:'🌾',nm:'Buğday'}, un:{ic:'🥣',nm:'Un'}, yumurta:{ic:'🥚',nm:'Yumurta'}, corek:{ic:'🥯',nm:'Çörek'} };
 // Hurma Bahçesi'nde toplanabilir ağaçlar (tekrarlanır: topla → hasat hali → cooldown → yeniden dolar)
 // Tüm adalara EŞİT dağıt: her adada 1 hurma + 1 dut ağacı (kenarlarda, görev hattından uzak)
 // Gather node'ları ada'nın 4 KÖŞESİNE dağıt (ada-yarıçapı-farkında): merkez görev hattından (z≈±2.6)
@@ -1200,19 +1201,25 @@ function swapGatherModel(rec, toFull){
   it.g.position.copy(rec.g.position); it.g.rotation.copy(rec.g.rotation); it.g.scale.copy(rec.g.scale); it.g.visible=rec.g.visible;
   scene.remove(rec.g); scene.add(it.g); rec.g=it.g; rec.meshes=it.meshes; rec.bareNow=!toFull;
 }
-function invAdd(item,n){ S.inv[item]=(S.inv[item]||0)+n; }
+// ---- TAŞIMA KAPASİTESİ (çanta) ----
+function invCount(){ let s=0; for(const k in S.inv) s+=(S.inv[k]||0); return s; }   // envanterdeki toplam item
+function invCap(){ return 100+(S.bag||0)*50; }   // çantasız 100, çanta1 150, çanta2 200
+function bagName(){ return (S.bag>=2)?'Büyük Çanta':(S.bag>=1)?'Çanta':'—'; }
+function invFull(){ return invCount()>=invCap(); }
+function invAdd(item,n){ const room=Math.max(0,invCap()-invCount()); const add=Math.min(n,room); if(add>0) S.inv[item]=(S.inv[item]||0)+add; return add; }   // kapasiteyi aşmaz; eklenen miktarı döner
 function doGather(rec){
   const def=rec.def;
   if(!isUnlocked(def.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
   if(!nodeReady(def)){ const s=Math.max(1,Math.ceil((S.gather[def.id]-Date.now())/1000)); toast('🌱 Olgunlaşıyor… '+s+' sn'); return; }
+  if(invFull()){ toast('🎒 Dağarcık dolu ('+invCap()+') — sat/kullan ya da Atölye\'de çanta ör'); return; }
   facePlayer(rec.g.position);
   if(def.item==='su') playAction(1.7,'draw');            // KUYU: ipi hand-over-hand çek (su çekme)
   else playAction(1.1,'pluck');                          // meyve: yukarı uzanıp koparma
-  invAdd(def.item, def.amount);
+  const got=invAdd(def.item, def.amount);
   S.gather[def.id]=Date.now()+def.cd;
   swapGatherModel(rec,false);
   save(); refreshHUD(); sndChime();
-  const g=GOODS[def.item]; toast('+'+def.amount+' '+g.ic+' '+g.nm+' topladın');
+  const g=GOODS[def.item]; toast('+'+got+' '+g.ic+' '+g.nm+(got<def.amount?' (çanta doldu)':' topladın'));
   checkZekat();
 }
 function facePlayer(pos){ if(player) player.rotation.y=Math.atan2(pos.x-player.position.x, pos.z-player.position.z); }
@@ -1231,10 +1238,15 @@ WORLD.islands.forEach((is,i)=>{
   ANIMAL_DEFS.push({id:'goat_'+is.id,  model:'goat',  islId:is.id, produce:'sut', ic:'🥛', label:'Süt sağ',  amount:1, cd:20000, scale:0.8, spd:1.3});
   if(i%2===0) ANIMAL_DEFS.push({id:'camel_'+is.id, model:'camel', islId:is.id, produce:'sut', ic:'🥛', label:'Süt sağ', amount:2, cd:30000, scale:1.8, spd:0.8});   // deve dev: koyunun ~2.8 katı (gerçekte deve ~2m, koyun ~70cm)
 });
+// TAVUKLAR — Hâne adasında kümes çevresinde: 3 tavuk (yumurta) + 1 horoz (dekoratif, öter, ürün yok)
+ANIMAL_DEFS.push({id:'hen1', model:'chicken', islId:'ev', produce:'yumurta', ic:'🥚', label:'Yumurta topla', amount:1, cd:22000, scale:0.5, spd:1.1});
+ANIMAL_DEFS.push({id:'hen2', model:'chicken', islId:'ev', produce:'yumurta', ic:'🥚', label:'Yumurta topla', amount:1, cd:24000, scale:0.5, spd:1.1});
+ANIMAL_DEFS.push({id:'hen3', model:'chicken', islId:'ev', produce:'yumurta', ic:'🥚', label:'Yumurta topla', amount:1, cd:26000, scale:0.5, spd:1.15});
+ANIMAL_DEFS.push({id:'rooster1', model:'rooster', islId:'ev', ic:'🐓', label:'Horoz', amount:0, cd:9000, scale:0.55, spd:1.0});
 let animals=[];
 // Model-başına YÜZ YÖNÜ ofseti (yürürken baş öne gelsin). Eski modeller -Z önlü (+PI).
 // Yeni goat-test modeli +Z önlü → ofset 0. Yeni model eklenince buraya ekle.
-const ANIMAL_FACE={ goat:0, camel:0, sheep:0 };   // v2 goat/camel/sheep +Z önlü (default PI)
+const ANIMAL_FACE={ goat:0, camel:0, sheep:0, chicken:0, rooster:0 };   // v2 modeller +Z önlü (default PI)
 function animalReady(def){ const t=S.gather[def.id]; return !t || Date.now()>=t; }
 // Hayvanların GİREMEYECEĞİ yerler: Mescid + serili seccade (kutu bölgeler)
 const MESCID_AVOID={x:49,z:-4.4,r:2.6};
@@ -1350,11 +1362,13 @@ function doTend(rec){
   const def=rec.def;
   if(!isUnlocked(def.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
   if(!animalReady(def)){ const s=Math.max(1,Math.ceil((S.gather[def.id]-Date.now())/1000)); toast('🐑 Dinleniyor… '+s+' sn'); return; }
-  facePlayer(rec.g.position); playAction(1.2, def.produce==='yun'?'shear':'milk');   // yün→kırpma, süt→sağma
-  invAdd(def.produce, def.amount);
+  if(!def.produce){ playAction(0.9,'work'); S.gather[def.id]=Date.now()+(def.cd||8000); playSnd&&playSnd('rooster',0.4,1.0); toast('🐓 Horoz ötüyor: Ü-ürü-üüü!'); return; }   // horoz: dekoratif, ürün yok
+  if(invFull()){ toast('🎒 Dağarcık dolu ('+invCap()+') — sat/kullan ya da Atölye\'de çanta ör'); return; }
+  facePlayer(rec.g.position); playAction(1.2, def.produce==='yun'?'shear':(def.produce==='yumurta'?'pluck':'milk'));   // yün→kırpma, süt→sağma, yumurta→toplama
+  const got=invAdd(def.produce, def.amount);
   S.gather[def.id]=Date.now()+def.cd;
   save(); refreshHUD(); sndChime();
-  const g=GOODS[def.produce]; toast('+'+def.amount+' '+g.ic+' '+g.nm+' aldın');
+  const g=GOODS[def.produce]; toast('+'+got+' '+g.ic+' '+g.nm+(got<def.amount?' (çanta doldu)':' aldın'));
   checkZekat();
 }
 
@@ -1403,6 +1417,17 @@ function craftSeccade(){
   banner('🧎 Seccade örüldü'); toast(abandoned?'Eski seccadeni geride bıraktın; yenisini ördün 🧎':'Artık her yerde namaz kılabilirsin (🧎)');
   updateSeccadeBtn(); updateWoolHint();
 }
+// ÇANTA (taşıma kapasitesi): 15 yün → Çanta 1 (150), 50 yün → Çanta 2 (200). Tek çanta; büyük çanta küçüğün yerine geçer.
+const BAG_YUN={1:15, 2:50};
+function craftBag(level){
+  if((S.bag||0)>=level){ toast('🎒 Zaten bu çanta (ya da daha büyüğü) sende var'); return; }
+  const need=BAG_YUN[level]||15;
+  if((S.inv.yun||0)<need){ toast('🎒 '+need+' yün gerek ('+(S.inv.yun||0)+' var)'); return; }
+  S.inv.yun-=need; if(S.inv.yun<=0) delete S.inv.yun; S.bag=level; save(); refreshHUD();
+  if(document.getElementById('inv').classList.contains('show')) renderInv();
+  sndFanfare(); banner('🎒 '+(level===2?'Büyük Çanta':'Çanta')+' örüldü');
+  setTimeout(()=>toast('Taşıma kapasiten '+invCap()+' item oldu.'),150);
+}
 // ÜRETİM ZİNCİRİ (Faz 3): buğday → un → ekmek. Ekmek FOOD → muhtaçları besler (kesb-i helâl + hayır).
 const UN_BUGDAY=3, EKMEK_UN=2, EKMEK_YIELD=2;   // 3 buğday→1 un; 2 un→2 ekmek
 function craftUn(){ if((S.inv.bugday||0)<UN_BUGDAY){ toast('🌾 '+UN_BUGDAY+' buğday gerek ('+(S.inv.bugday||0)+' var)'); return; }
@@ -1412,6 +1437,12 @@ function craftEkmek(){ if((S.inv.un||0)<EKMEK_UN){ toast('🥣 '+EKMEK_UN+' un g
   S.inv.un-=EKMEK_UN; if(S.inv.un<=0) delete S.inv.un; S.inv.ekmek=(S.inv.ekmek||0)+EKMEK_YIELD;
   save(); refreshHUD(); renderInv(); sndFanfare(); banner('🍞 Ekmek pişti');
   setTimeout(()=>toast('Tandırda ekmek (+'+EKMEK_YIELD+'). Bir aç kalana / yetime ver — "İnsanların hayırlısı insanlara faydalı olandır."'),1300); }
+// ÇÖREK — yumurtalı, katma değerli: 1 un + 2 yumurta → 2 çörek (FOOD; pazarda ekmekten değerli)
+const COREK_UN=1, COREK_YUMURTA=2, COREK_YIELD=2;
+function craftCorek(){ if((S.inv.un||0)<COREK_UN || (S.inv.yumurta||0)<COREK_YUMURTA){ toast('🥯 '+COREK_UN+' un + '+COREK_YUMURTA+' yumurta gerek'); return; }
+  S.inv.un-=COREK_UN; if(S.inv.un<=0) delete S.inv.un; S.inv.yumurta-=COREK_YUMURTA; if(S.inv.yumurta<=0) delete S.inv.yumurta;
+  invAdd('corek', COREK_YIELD); save(); refreshHUD(); if(document.getElementById('inv').classList.contains('show'))renderInv(); sndFanfare(); banner('🥯 Çörek pişti');
+  setTimeout(()=>toast('Yumurtalı çörek (+'+COREK_YIELD+') — besleyici. Aç kalana ver ya da pazarda sat.'),1300); }
 // yerde serili seccade = toplanabilir düğüm; almazsan orada kalır
 function placeLaidSeccade(x,z,ry,animate){
   removeLaidSeccade();
@@ -2040,7 +2071,7 @@ function applyProfile(){ if(isChild()){ S.hasSeccade=true; } save(); updateSecca
 
 /* ============ MEDİNE PAZARI (Faz 3) — kesb-i helâli dirhem'e çevir ============ */
 const MARKET_POS={ islId:'sehir', pos:[67,0,-4] };
-const PRICES={ hurma:2, dut:2, sut:3, yun:4, ekmek:3, su:1, bal:6, bugday:2 };   // bal = en değerli hasat; un craft-ara ürün (satılmaz), ekmek muhtaca da verilir
+const PRICES={ hurma:2, dut:2, sut:3, yun:4, ekmek:3, su:1, bal:6, bugday:2, yumurta:3, corek:5 };   // bal = en değerli hasat; un craft-ara ürün (satılmaz); çörek = katma değerli (un+yumurta)
 let marketRec=null, marketDecor=[], marketMerchant=null;
 function buildMarket(){
   marketDecor=[];
@@ -2087,7 +2118,7 @@ function renderMarket(){
 }
 
 /* ============ TEKRARLANAN HAYIR — NPC'ler (Faz 4): aynî sadaka ============ */
-const FOOD=['hurma','dut','ekmek','sut'];   // yiyecek kategorisi
+const FOOD=['hurma','dut','ekmek','sut','yumurta','corek'];   // yiyecek kategorisi (muhtaçlara verilebilir)
 function foodCount(){ return FOOD.reduce((s,k)=>s+(S.inv[k]||0),0); }
 function takeFood(n){ let need=n; for(const k of FOOD){ while(need>0 && (S.inv[k]||0)>0){ S.inv[k]--; if(S.inv[k]<=0) delete S.inv[k]; need--; } } return n-need; }
 const NPC_DEFS=[
@@ -2440,6 +2471,13 @@ function closeInv(){ document.getElementById('inv').classList.remove('show'); }
 function renderInv(){
   document.getElementById('invDirhem').textContent=S.dirhem||0;
   const w=document.getElementById('invList'); w.innerHTML='';
+  // taşıma kapasitesi (çanta) göstergesi
+  { const cnt=invCount(), cap=invCap(), pct=Math.min(100,Math.round(cnt/cap*100));
+    const d=document.createElement('div'); d.style.cssText='margin:0 2px 9px;padding:8px 11px;background:#0000000f;border-radius:11px;font:700 12px system-ui;line-height:1.5';
+    d.innerHTML=emo('🎒')+' <b>Taşıma</b> '+cnt+'/'+cap+(S.bag?' · '+bagName():' · çanta yok')+(cnt>=cap?' <span style="color:#c0341f">DOLU</span>':'')+
+      '<div class="pbar" style="margin-top:5px"><div class="pfill" style="width:'+pct+'%'+(cnt>=cap?';background:linear-gradient(90deg,#e08a3a,#c0341f)':'')+'"></div></div>'+
+      (S.bag<2?'<div style="opacity:.7;font-weight:600;margin-top:4px">Daha büyük çanta için Atölye\'deki tezgâha git (yünle ör).</div>':'');
+    w.appendChild(d); }
   const keys=Object.keys(GOODS).filter(k=>(S.inv[k]||0)>0);
   if(keys.length){
     const grid=document.createElement('div'); grid.className='invgrid';
@@ -2469,7 +2507,7 @@ function b64ToBuf(u){ const b=atob(u.split(',')[1]); const a=new Uint8Array(b.le
 const MODELV='f8';   // model sürümü (well v2 yuvarlak+linear-renk → cache-bust)
 // v2 detaylı modeller: gömülü (eski) sürümü ATLA, models/*.glb'den (yeni) fetch et.
 // (models büyüdü → embed HTML'i şişirmesin; SW cache'ler, offline PWA çalışır. file:// bu modelleri yükleyemez.)
-const FETCH_ONLY = new Set(['boy_takke','camel','goat','sheep','traveler','date_palm','date_palm_bare','item_date','item_mulberry',
+const FETCH_ONLY = new Set(['boy_takke','camel','goat','sheep','chicken','rooster','traveler','date_palm','date_palm_bare','item_date','item_mulberry',
   'jar','market_stall','merchant','mulberry_tree','mulberry_tree_bare','neighbor','orphan',
   'sack','scale','seccade','shepherd','well','basket','wheat',
   'arg_villager_a','arg_villager_b','qadi','plaintiff','beggar','trust_owner','trust_pouch',
@@ -2697,11 +2735,15 @@ function doStation(rec){
   if(rec.craft==='un'){
     openDialog({ic:'🌾',title:'Değirmen', start:'s0', steps:{ s0:{who:'Un öğüt', txt:'Değirmen taşını çevir, buğdayı una öğüt.\n\n<b>'+UN_BUGDAY+' buğday → 1 un</b>\nElinde: '+bug+' buğday · '+un+' un.', ref:'<b>Hadis:</b> «Kişinin yediği en helâl şey, kendi elinin emeğidir.» (Buhârî)', opts:[ {l:'🌾 Un öğüt', act:()=>craftUn()}, {l:'Kapat'} ]} }});
   } else if(rec.craft==='ekmek'){
-    openDialog({ic:'🍞',title:'Tandır', start:'s0', steps:{ s0:{who:'Ekmek pişir', txt:'Unu yoğur, tandırda ekmek pişir; sıcak ekmeği aç kalana ver.\n\n<b>'+EKMEK_UN+' un → '+EKMEK_YIELD+' ekmek</b>\nElinde: '+un+' un · '+ek+' ekmek.', ref:'<b>Hadis:</b> «İnsanların en hayırlısı, insanlara faydalı olandır.» (Beyhakî)', opts:[ {l:'🍞 Ekmek pişir', act:()=>craftEkmek()}, {l:'Kapat'} ]} }});
+    const yum=S.inv.yumurta||0;
+    openDialog({ic:'🍞',title:'Tandır', start:'s0', steps:{ s0:{who:'Fırın', txt:'Tandırda pişir; sıcak ekmeği/çöreği aç kalana ver.\n<b>'+EKMEK_UN+' un → '+EKMEK_YIELD+' ekmek</b>\n<b>'+COREK_UN+' un + '+COREK_YUMURTA+' yumurta → '+COREK_YIELD+' çörek</b> (yumurtalı, besleyici)\n\nElinde: '+un+' un · '+yum+' yumurta · '+ek+' ekmek.', ref:'<b>Hadis:</b> «İnsanların en hayırlısı, insanlara faydalı olandır.» (Beyhakî)', opts:[ {l:'🍞 Ekmek pişir', act:()=>craftEkmek()}, {l:'🥯 Çörek pişir (yumurtalı)', act:()=>craftCorek()}, {l:'Kapat'} ]} }});
   } else if(rec.craft==='seccade'){
-    const ör={l:'🧵 Seccade ör ('+yun+'/'+SECCADE_YUN+' yün)', act:()=>craftSeccade()};
-    if(S.hasSeccade){ openDialog({ic:'🧎',title:'Tezgâh', start:'s0', steps:{ s0:{who:'Tezgâh', txt:'Zaten bir seccaden var — her yerde namaz kılabilirsin. Dilersen eskisini bırakıp yenisini örebilirsin.', opts:[ ör, {l:'Kapat'} ]} }}); return; }
-    openDialog({ic:'🧵',title:'Tezgâh', start:'s0', steps:{ s0:{who:'Seccade ör', txt:'Yünü tezgâhta seccadeye dönüştür; artık her yerde namaz kılabilirsin.\n\n<b>'+SECCADE_YUN+' yün → 1 seccade</b>\nElinde: '+yun+' yün.', ref:'<b>Âyet:</b> «Namazı dosdoğru kılın.» (Bakara 2/43)', opts:[ ör, {l:'Kapat'} ]} }});
+    const opts=[];
+    opts.push({l:(S.hasSeccade?'🧵 Yeni seccade ör':'🧵 Seccade ör')+' ('+yun+'/'+SECCADE_YUN+' yün)', act:()=>craftSeccade()});
+    if((S.bag||0)<1) opts.push({l:'🎒 Çanta ör ('+yun+'/'+BAG_YUN[1]+' yün → 150 kapasite)', act:()=>craftBag(1)});
+    if((S.bag||0)<2) opts.push({l:'🎒 Büyük çanta ör ('+yun+'/'+BAG_YUN[2]+' yün → 200 kapasite)', act:()=>craftBag(2)});
+    opts.push({l:'Kapat'});
+    openDialog({ic:'🧵',title:'Tezgâh', start:'s0', steps:{ s0:{who:'Tezgâh', txt:'Yünü tezgâhta işle:\n<b>'+SECCADE_YUN+' yün → seccade</b> (her yerde namaz)\n<b>'+BAG_YUN[1]+' yün → çanta</b> (150 taşı) · <b>'+BAG_YUN[2]+' yün → büyük çanta</b> (200 taşı)\n\nElinde: '+yun+' yün · Çantan: '+bagName()+' ('+invCap()+' kapasite)', ref:'<b>Âyet:</b> «Namazı dosdoğru kılın.» (Bakara 2/43)', opts} }});
   }
 }
 
@@ -2930,7 +2972,10 @@ function buildScenarios(){
 }
 function doScenario(rec){
   if(rec.islId && !isUnlocked(rec.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
-  if(rec.q && QUESTS.some(x=>x.id===rec.q.id) && !S.done[rec.q.id] && !questAvailable(rec.q)){ const p=prereqOf(rec.q); toast('🔒 Önce: '+(p?p.nm:'sıradaki adım')); return; }
+  // prereq kapısı: yalnız İLK KEZ (ada henüz fethedilmemiş VE senaryo hiç çözülmemiş) uygulanır.
+  // Aksi hâlde günlük S.done sıfırlaması senaryoyu her gün yeniden kilitliyordu → tekrar barıştıramama/hükmedememe.
+  const freeRepeat = rec.renew && (S.conquered[rec.islId] || (S.scen[rec.renew] && S.scen[rec.renew].n>0));
+  if(!freeRepeat && rec.q && QUESTS.some(x=>x.id===rec.q.id) && !S.done[rec.q.id] && !questAvailable(rec.q)){ const p=prereqOf(rec.q); toast('🔒 Önce: '+(p?p.nm:'sıradaki adım')); return; }
   const fn=SCENE_DO[rec.sid]; if(fn) fn(rec);
 }
 function updateScenarios(dt,t){

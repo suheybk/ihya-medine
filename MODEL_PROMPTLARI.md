@@ -209,3 +209,16 @@ girer (yoksa şu an prosedürel placeholder çiziliyor). Origin **taban-merkez, 
 
 > İleride aynı adaya eklenebilecek istasyonlar (şimdilik gerekmez): `cauldron.glb` (pekmez kazanı —
 > dut/bal→pekmez), `brickmold.glb` (kerpiç kalıbı — su+balçık→kerpiç). İstersen bunların da promptunu veririm.
+
+---
+
+## 🎣 13) İLERİDE — Gölet & Balık (plan, henüz yapılmadı)
+Kullanıcı isteği: ufak bir **gölet** kurup **balık tutmak**. İleride yapılacak. Gerekebilecek modeller:
+- **`pond.glb` — Gölet**: small round low-poly pond — soft blue water disc + reed/cattail tufts + a few
+  rocks + lily pads around the rim. Calm, toy-like. ~2 m çap.
+- **`fish.glb` — Balık** (opsiyonel): tiny cute fish (silver/orange), for a caught-fish pickup icon/pop.
+- **`rod.glb` — Olta** (opsiyonel): simple wooden fishing rod + line; ya da oyuncu eline prosedürel çubuk.
+
+**Mekanik fikri:** göletin kenarında "Balık tut" etkileşimi → kısa bekleme/olta animasyonu → `balik` (fish)
+ürünü (FOOD, pazarda değerli). Craft: balık → (tandırda) "balık ızgara/kızartma" ya da doğrudan muhtaca ikram.
+Atölye/Hâne yakınına küçük bir gölet dekoru; ya da yeni küçük bir "Gölet" side-alanı.
