@@ -1255,10 +1255,12 @@ function invCap(){ return 100+(S.bag||0)*50; }   // çantasız 100, çanta1 150,
 function bagName(){ return (S.bag>=2)?'Büyük Çanta':(S.bag>=1)?'Çanta':'—'; }
 function invFull(){ return invCount()>=invCap(); }
 function invAdd(item,n){ const room=Math.max(0,invCap()-invCount()); const add=Math.min(n,room); if(add>0) S.inv[item]=(S.inv[item]||0)+add; return add; }   // kapasiteyi aşmaz; eklenen miktarı döner
+// Bekleme (cooldown) mesajı — kaynağa özel (kuyu doluyor / arı bal yapıyor / tavuk yumurtluyor …)
+const REGROW_MSG={ su:'💧 Kuyu suyla doluyor', bugday:'🌾 Başaklar olgunlaşıyor', yumurta:'🥚 Tavuklar yumurtluyor', bal:'🍯 Arılar bal yapıyor', hurma:'🌴 Hurmalar olgunlaşıyor', dut:'🍇 Dutlar olgunlaşıyor' };
 function doGather(rec){
   const def=rec.def;
   if(!isUnlocked(def.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
-  if(!nodeReady(def)){ const s=Math.max(1,Math.ceil((S.gather[def.id]-Date.now())/1000)); toast('🌱 Olgunlaşıyor… '+s+' sn'); return; }
+  if(!nodeReady(def)){ const s=Math.max(1,Math.ceil((S.gather[def.id]-Date.now())/1000)); toast((REGROW_MSG[def.item]||'🌱 Olgunlaşıyor')+'… '+s+' sn'); return; }
   if(invFull()){ toast('🎒 Dağarcık dolu ('+invCap()+') — sat/kullan ya da Atölye\'de çanta ör'); return; }
   facePlayer(rec.g.position);
   // İŞE ÖZEL toplama animasyonu (item'e göre)
@@ -1417,7 +1419,7 @@ function updateAnimals(dt){
 function doTend(rec){
   const def=rec.def;
   if(!isUnlocked(def.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
-  if(!animalReady(def)){ const s=Math.max(1,Math.ceil((S.gather[def.id]-Date.now())/1000)); toast('🐑 Dinleniyor… '+s+' sn'); return; }
+  if(!animalReady(def)){ const s=Math.max(1,Math.ceil((S.gather[def.id]-Date.now())/1000)); const m=def.produce==='yun'?'🐑 Yün yeniden uzuyor':def.produce==='sut'?'🥛 Süt birikiyor':'🐑 Dinleniyor'; toast(m+'… '+s+' sn'); return; }
   if(!def.produce){ playAction(0.9,'work'); S.gather[def.id]=Date.now()+(def.cd||8000);   // dekoratif tavuk/horoz: ürün yok (yumurta kümesten alınır)
     if(def.model==='rooster'){ playSnd&&playSnd('rooster',0.4,1.0); toast('🐓 Horoz ötüyor: Ü-ürü-üüü!'); }
     else { toast('🐔 Tavuk gıdaklıyor: gıt gıt gıdak!'); }
@@ -2798,7 +2800,7 @@ function buildLoom(g){   // tezgâh: ahşap çerçeve + çözgü iplikleri + yar
   for(const [cy,cc] of [[0.36,0xd8b048],[0.5,0xe8ddc4],[0.64,0x4f7a5f]]) stAdd(new THREE.BoxGeometry(1.05,0.09,0.06), stMat(cc,1), 0,cy,0.04, g);
 }
 const ATOLYE_STATIONS=[
-  {key:'mill', tpl:'mill', build:buildMill, pos:[13.4,-13.6], ry:0.35,  nm:'Değirmen', ic:'🌾', craft:'un',      sBtn:'🌾 Un öğüt',     sTitle:'Değirmen — un öğüt'},
+  {key:'mill', tpl:'mill', build:buildMill, pos:[13.4,-13.6], ry:0.35,  nm:'Değirmen', ic:'🌾', craft:'un',      sBtn:'🌾 Buğday öğüt',  sTitle:'Değirmen — buğday öğüt (un yap)'},
   {key:'oven', tpl:'oven', build:buildOven, pos:[16.6,-15.7], ry:0.0,   nm:'Tandır',   ic:'🍞', craft:'ekmek',   sBtn:'🍞 Ekmek pişir', sTitle:'Tandır — ekmek pişir'},
   {key:'loom', tpl:'loom', build:buildLoom, pos:[19.6,-13.6], ry:-0.35, nm:'Tezgâh',   ic:'🧶', craft:'seccade', sBtn:'🧶 Yünü işle',   sTitle:'Tezgâh — yünü işle (seccade · çanta)'},
 ];
@@ -2824,7 +2826,7 @@ function doStation(rec){
   if(!isUnlocked('atolye')){ toast('🔒 Atölye henüz açılmadı'); return; }
   const bug=S.inv.bugday||0, un=S.inv.un||0, yun=S.inv.yun||0, ek=S.inv.ekmek||0;
   if(rec.craft==='un'){
-    openDialog({ic:'🌾',title:'Değirmen', start:'s0', steps:{ s0:{who:'Un öğüt', txt:'Değirmen taşını çevir, buğdayı una öğüt.\n\n<b>'+UN_BUGDAY+' buğday → 1 un</b>\nElinde: '+bug+' buğday · '+un+' un.', ref:'<b>Hadis:</b> «Kişinin yediği en helâl şey, kendi elinin emeğidir.» (Buhârî)', opts:[ {l:'🌾 Un öğüt', act:()=>craftUn()}, {l:'Kapat'} ]} }});
+    openDialog({ic:'🌾',title:'Değirmen', start:'s0', steps:{ s0:{who:'Buğday öğüt', txt:'Değirmen taşını çevir, buğdayı una öğüt.\n\n<b>'+UN_BUGDAY+' buğday → 1 un</b>\nElinde: '+bug+' buğday · '+un+' un.', ref:'<b>Hadis:</b> «Kişinin yediği en helâl şey, kendi elinin emeğidir.» (Buhârî)', opts:[ {l:'🌾 Buğday öğüt (un yap)', act:()=>craftUn()}, {l:'Kapat'} ]} }});
   } else if(rec.craft==='ekmek'){
     const yum=S.inv.yumurta||0;
     openDialog({ic:'🍞',title:'Tandır', start:'s0', steps:{ s0:{who:'Fırın', txt:'Tandırda pişir; sıcak ekmeği/çöreği aç kalana ver.\n<b>'+EKMEK_UN+' un → '+EKMEK_YIELD+' ekmek</b>\n<b>'+COREK_UN+' un + '+COREK_YUMURTA+' yumurta → '+COREK_YIELD+' çörek</b> (yumurtalı, besleyici)\n\nElinde: '+un+' un · '+yum+' yumurta · '+ek+' ekmek.', ref:'<b>Hadis:</b> «İnsanların en hayırlısı, insanlara faydalı olandır.» (Beyhakî)', opts:[ {l:'🍞 Ekmek pişir', act:()=>craftEkmek()}, {l:'🥯 Çörek pişir (yumurtalı)', act:()=>craftCorek()}, {l:'Kapat'} ]} }});
