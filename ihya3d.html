@@ -1672,7 +1672,7 @@ function enterMosque(){
   const ab=document.getElementById('act'); if(ab) ab.style.display='none';
   const pe=document.getElementById('prompt'); if(pe){ pe.classList.remove('show'); pe.style.display='none'; }
   document.getElementById('mosque').classList.add('show');
-  mosqueFade(); renderMosque(); sndVakit(); banner('🕌 Mescid\'e girdin');
+  mosqueFade(); renderMosque(); if(isFriday()){ sndEzan(true); } else { sndVakit(); } banner('🕌 Mescid\'e girdin');   // Cuma: camiye girince BAŞTAN SONA ezan (kullanıcı isteği); diğer gün nazik ton
 }
 function exitMosque(){
   mosqueMode=false; wake(); if(mosqueGroup) mosqueGroup.visible=false;
@@ -3311,7 +3311,11 @@ function sayPhrase(text, delay){
     setTimeout(()=>{ try{ speechSynthesis.speak(u); }catch(e){} }, delay);
   }catch(e){}
 }
-function sndEzan(){ audio(); if(muted) return;
+function sndEzan(full){ audio(); if(muted) return;
+  if(sndBuf.ezan){   // GERÇEK ezan kaydı yüklüyse onu çal: full → baştan sona (Cuma+mescit), değilse sadece başı (~14 sn)
+    playSnd('ezan', 0.85, 1, full?0:14);
+    return;
+  }
   if('speechSynthesis' in window){
     if(ezanVoice===undefined) pickEzanVoice();
     if(ezanVoice){
@@ -3371,6 +3375,7 @@ const SND_URL={
   camel:'sounds/rzalmanialmani-camel-male-sound-effect-370202.mp3',
   chicken:'sounds/digitalstore07-chicken-430403.mp3',
   rooster:'sounds/nematoki-rooster-cry-chicken-rooster-305576.mp3',
+  ezan:'sounds/ezan.mp3',   // GERÇEK ezan kaydı (kullanıcı ekleyecek; TAM ezan olsun — normalde sadece başı çalınır, Cuma camide tamamı). Dosya yoksa sessizce TTS/tona düşer.
 };
 const sndBuf={}; let sndReady=false, sndLoading=false, sndCount=0;
 function loadSamples(){ if(sndLoading||!audio())return; sndLoading=true;
