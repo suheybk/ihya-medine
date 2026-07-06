@@ -186,3 +186,26 @@ Küçük, tek nesne, zeminde/elde durabilir; envanterde ikon olarak da kullanıl
     run, a couple of cream hens + one rooster (red comb) pecking. ~1.2 m. (Hâne adasındaki `FARMYARD`
     ses kümesine görsel; tavuk/horoz sesleri hazır, sadece görsel eksik. İstersen tek `chicken.glb` +
     `rooster.glb` ayrı da olur, ben yerleştiririm.)
+
+---
+
+## 🔨 12) ATÖLYE ADASI — craft istasyonları (Faz 3.5)
+Bu üç model **Atölye adasındaki** üretim istasyonları. Kodda `mill/oven/loom` isimleriyle bekleniyor:
+GLB'lerini `models/mill.glb`, `models/oven.glb`, `models/loom.glb` olarak verirsen otomatik devreye
+girer (yoksa şu an prosedürel placeholder çiziliyor). Origin **taban-merkez, Y-up**, ~1–1.3 m, +Z önlü.
+
+1. **`mill.glb` — Değirmen (el değirmeni)**: rustic hand-operated stone grain mill (Ortaçağ çöl/vaha
+   tarzı). Tapered round **stone base** (muted gray), a thick round **millstone disc** on top, a small
+   wooden **crank handle** sticking out to the side, a little **flour sack** (cream) leaning at the base
+   and a **spilled flour pile** (off-white) in front. Warm, toy-like, claymorphism. ~1.3 m.
+2. **`oven.glb` — Tandır (kerpiç fırın)**: traditional clay **tandoor/bread oven** — terracotta clay
+   **dome** on a short cylindrical base, a dark arched **fire-mouth** at front (subtle warm ember glow),
+   a small **chimney** on top, and a round **bread loaf** (golden) resting beside it. Warm terracotta +
+   sand palette, soft rounded clay finish. ~1.2 m.
+3. **`loom.glb` — Tezgâh (dokuma tezgâhı / seccade)**: upright wooden **weaving loom** — two vertical
+   posts + top & bottom beams, taut vertical **warp threads** (cream), and a **half-woven prayer rug**
+   in progress with a few colored horizontal stripes (muted gold, cream, olive-green — Medine kilim
+   deseni). Wooden frame warm brown. ~1.5 m tall.
+
+> İleride aynı adaya eklenebilecek istasyonlar (şimdilik gerekmez): `cauldron.glb` (pekmez kazanı —
+> dut/bal→pekmez), `brickmold.glb` (kerpiç kalıbı — su+balçık→kerpiç). İstersen bunların da promptunu veririm.
