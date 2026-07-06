@@ -351,7 +351,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 2 (SENARYO DEFTERİ PANELİ + UNVANLAR: Sulh/Adalet/Emanet çözülen meseleye göre kilometre taşı unvanları [Hakem→Âdil Hakem→Adaletli Kadı…] + bonus nûr + ilerleme çubuklu panel · tekrarlanan vaka havuzları [Faz 1] · meclis 6 renk sahâbe · hurma yeşil+kahve/hasat soluk · dilenci ağaç gölgesinde)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 3 (ÜRETİM ZİNCİRİ: Buğday→Un→Ekmek — buğday tarlası [bahçe+mahalle] hasat → Dağarcık'ta un öğüt/ekmek pişir → ekmeği muhtaca ver [FOOD döngüsü kapandı]; buğday pazarda satılır · Senaryo Defteri+unvanlar [Faz 2] · tekrarlanan vaka havuzları [Faz 1])</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -598,7 +598,7 @@ const QUESTS = [
 ];
 const MODELS = ['player','boy_takke','prayer','rahle','book','door','tree','plot','plot_sprout','fountain','mosque','island_tile','bridge',
   // Medine — hasat/toplama (Faz 1) + kuyu (Faz 9)
-  'date_palm','date_palm_bare','mulberry_tree','mulberry_tree_bare','item_date','item_mulberry','well',
+  'date_palm','date_palm_bare','mulberry_tree','mulberry_tree_bare','item_date','item_mulberry','well','wheat',
   // Medine — çobanlık (Faz 2)
   'sheep','goat','camel',
   // Medine — seccade + pazar (Faz 3)
@@ -1145,7 +1145,7 @@ function applyIslandLock(){
 }
 
 /* ============ HASAT / TOPLAMA (Faz 1) — kesb-i helâl ============ */
-const GOODS={ hurma:{ic:'🌴',nm:'Hurma'}, dut:{ic:'🫐',nm:'Dut'}, sut:{ic:'🥛',nm:'Süt'}, yun:{ic:'🧶',nm:'Yün'}, ekmek:{ic:'🍞',nm:'Ekmek'}, su:{ic:'💧',nm:'Su'}, bal:{ic:'🍯',nm:'Bal'} };
+const GOODS={ hurma:{ic:'🌴',nm:'Hurma'}, dut:{ic:'🫐',nm:'Dut'}, sut:{ic:'🥛',nm:'Süt'}, yun:{ic:'🧶',nm:'Yün'}, ekmek:{ic:'🍞',nm:'Ekmek'}, su:{ic:'💧',nm:'Su'}, bal:{ic:'🍯',nm:'Bal'}, bugday:{ic:'🌾',nm:'Buğday'}, un:{ic:'🥣',nm:'Un'} };
 // Hurma Bahçesi'nde toplanabilir ağaçlar (tekrarlanır: topla → hasat hali → cooldown → yeniden dolar)
 // Tüm adalara EŞİT dağıt: her adada 1 hurma + 1 dut ağacı (kenarlarda, görev hattından uzak)
 // Gather node'ları ada'nın 4 KÖŞESİNE dağıt (ada-yarıçapı-farkında): merkez görev hattından (z≈±2.6)
@@ -1159,6 +1159,9 @@ WORLD.islands.forEach(is=>{ const cx=is.c[0]; const off=is.r-2.5, offZ=is.r-3.0;
   // ARICILIK: yalnız Hurma Bahçesi'nde (2. ada) — ÖN-SAĞ köşe; çiçeklerden bal; hasat → cooldown
   if(is.id==='bahce') GATHER_DEFS.push({id:'hive_'+is.id, islId:is.id, pos:[cx+off,0,-offZ], full:'hive', bare:'hive', item:'bal', amount:2, cd:45000, scale:1.0});
 });
+// BUĞDAY TARLASI (Faz 3 üretim zinciri) — Hurma Bahçesi + Ensâr Mahallesi'nde; hasat→sap (plot_sprout)→cooldown
+GATHER_DEFS.push({id:'wheat_bahce',   islId:'bahce',   pos:[16.5,0,-4.2], full:'wheat', bare:'plot_sprout', item:'bugday', amount:3, cd:35000, scale:1.25});
+GATHER_DEFS.push({id:'wheat_mahalle', islId:'mahalle', pos:[37.5,0,-4.5], full:'wheat', bare:'plot_sprout', item:'bugday', amount:3, cd:35000, scale:1.25});
 // Prosedürel ARI KOVANI (skep) modeli — tpl'e enjekte edilir (base64 modeli yok)
 function buildHiveTemplate(){
   const g=new THREE.Group(); const M=(c,r)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?0.85:r});
@@ -1390,6 +1393,15 @@ function craftSeccade(){
   banner('🧎 Seccade örüldü'); toast(abandoned?'Eski seccadeni geride bıraktın; yenisini ördün 🧎':'Artık her yerde namaz kılabilirsin (🧎)');
   updateSeccadeBtn(); updateWoolHint();
 }
+// ÜRETİM ZİNCİRİ (Faz 3): buğday → un → ekmek. Ekmek FOOD → muhtaçları besler (kesb-i helâl + hayır).
+const UN_BUGDAY=3, EKMEK_UN=2, EKMEK_YIELD=2;   // 3 buğday→1 un; 2 un→2 ekmek
+function craftUn(){ if((S.inv.bugday||0)<UN_BUGDAY){ toast('🌾 '+UN_BUGDAY+' buğday gerek ('+(S.inv.bugday||0)+' var)'); return; }
+  S.inv.bugday-=UN_BUGDAY; if(S.inv.bugday<=0) delete S.inv.bugday; S.inv.un=(S.inv.un||0)+1;
+  save(); refreshHUD(); renderInv(); sndChime(); toast('🥣 Değirmen döndü — buğdayı un ettin (+1 un)'); }
+function craftEkmek(){ if((S.inv.un||0)<EKMEK_UN){ toast('🥣 '+EKMEK_UN+' un gerek ('+(S.inv.un||0)+' var)'); return; }
+  S.inv.un-=EKMEK_UN; if(S.inv.un<=0) delete S.inv.un; S.inv.ekmek=(S.inv.ekmek||0)+EKMEK_YIELD;
+  save(); refreshHUD(); renderInv(); sndFanfare(); banner('🍞 Ekmek pişti');
+  setTimeout(()=>toast('Tandırda ekmek (+'+EKMEK_YIELD+'). Bir aç kalana / yetime ver — "İnsanların hayırlısı insanlara faydalı olandır."'),1300); }
 // yerde serili seccade = toplanabilir düğüm; almazsan orada kalır
 function placeLaidSeccade(x,z,ry,animate){
   removeLaidSeccade();
@@ -2018,7 +2030,7 @@ function applyProfile(){ if(isChild()){ S.hasSeccade=true; } save(); updateSecca
 
 /* ============ MEDİNE PAZARI (Faz 3) — kesb-i helâli dirhem'e çevir ============ */
 const MARKET_POS={ islId:'sehir', pos:[67,0,-4] };
-const PRICES={ hurma:2, dut:2, sut:3, yun:4, ekmek:3, su:1, bal:6 };   // bal = en değerli hasat
+const PRICES={ hurma:2, dut:2, sut:3, yun:4, ekmek:3, su:1, bal:6, bugday:2 };   // bal = en değerli hasat; un craft-ara ürün (satılmaz), ekmek muhtaca da verilir
 let marketRec=null, marketDecor=[], marketMerchant=null;
 function buildMarket(){
   marketDecor=[];
@@ -2436,6 +2448,19 @@ function renderInv(){
     const d=document.createElement('div'); d.className='sub'; d.style.textAlign='center'; d.style.marginBottom='8px'; d.textContent='🧎 Seccaden var — her yerde namaz kılabilirsin'; cw.appendChild(d);
   }
   w.appendChild(cw);
+  // --- MUTFAK: buğday → un → ekmek üretim zinciri (Faz 3) ---
+  { const bug=S.inv.bugday||0, un=S.inv.un||0;
+    const box=document.createElement('div'); box.style.marginBottom='8px';
+    const hdr=document.createElement('div'); hdr.className='sub'; hdr.style.marginBottom='6px';
+    hdr.innerHTML=emo('🍞')+' <b>Mutfak</b> — buğdayı una öğüt, unu ekmeğe pişir; ekmeği aç kalana ver.';
+    box.appendChild(hdr);
+    const b1=document.createElement('button'); b1.className='hbuy'+(bug>=UN_BUGDAY?'':' off'); b1.style.width='100%'; b1.style.marginBottom='6px';
+    b1.innerHTML=emo('🌾')+' Un öğüt ('+bug+'/'+UN_BUGDAY+' buğday → '+emo('🥣')+' un)'; if(bug>=UN_BUGDAY) b1.onclick=()=>craftUn();
+    box.appendChild(b1);
+    const b2=document.createElement('button'); b2.className='hbuy'+(un>=EKMEK_UN?'':' off'); b2.style.width='100%'; b2.style.marginBottom='8px';
+    b2.innerHTML=emo('🥣')+' Ekmek pişir ('+un+'/'+EKMEK_UN+' un → '+emo('🍞')+' ekmek)'; if(un>=EKMEK_UN) b2.onclick=()=>craftEkmek();
+    box.appendChild(b2);
+    w.appendChild(box); }
   // --- zekât ver (nisaba ulaşan mallar) — çocuk mükellef değil ---
   const zk=zekatMukellef()?Object.keys(ZEKAT).filter(k=>(S.inv[k]||0)>=ZEKAT[k].nisab):[];
   if(zk.length){
@@ -2456,7 +2481,7 @@ const MODELV='f8';   // model sürümü (well v2 yuvarlak+linear-renk → cache-
 // (models büyüdü → embed HTML'i şişirmesin; SW cache'ler, offline PWA çalışır. file:// bu modelleri yükleyemez.)
 const FETCH_ONLY = new Set(['boy_takke','camel','goat','sheep','traveler','date_palm','date_palm_bare','item_date','item_mulberry',
   'jar','market_stall','merchant','mulberry_tree','mulberry_tree_bare','neighbor','orphan',
-  'sack','scale','seccade','shepherd','well','basket',
+  'sack','scale','seccade','shepherd','well','basket','wheat',
   'arg_villager_a','arg_villager_b','qadi','plaintiff','beggar','trust_owner','trust_pouch',
   'dispute_item','coop','mud_doorway','shade_bench','public_fountain','seated_sahabe']);
 function load(name){
