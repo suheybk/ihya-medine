@@ -2897,6 +2897,19 @@ function doStation(rec){
    Dinî metinler yayın öncesi ehlince teyit edilmeli (bkz. Dinî İçerik Notu). */
 const SCENE_QUESTS=new Set(['davet','adalet','emanet','hayir']);
 let scenarioRecs=[], argueList=[], emanetRecipient=null, carryPouch=null, sceneIdle=[];
+let fishRod=null;   // balık tutma oltası (sağ ele bağlı; fishing sırasında görünür)
+// Prosedürel OLTA: ahşap çubuk + misina (sağ elin Hand_R düğümüne eklenir → el ile sallanır)
+function buildRod(){
+  const g=new THREE.Group();
+  const wood=new THREE.MeshStandardMaterial({color:0x8a5a2a,roughness:0.9});
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.028,1.15,6), wood); pole.position.y=0.5; g.add(pole);   // çubuk yukarı uzanır
+  const tip=new THREE.Mesh(new THREE.SphereGeometry(0.03,6,5), wood); tip.position.y=1.06; g.add(tip);
+  const line=new THREE.Mesh(new THREE.CylinderGeometry(0.005,0.005,0.85,4), new THREE.MeshStandardMaterial({color:0xe8e8e8,roughness:0.5})); line.position.set(0,0.62,0.42); line.rotation.x=0.5; g.add(line);   // misina uçtan öne-aşağı sarkar
+  const bob=new THREE.Mesh(new THREE.SphereGeometry(0.035,6,5), new THREE.MeshStandardMaterial({color:0xd23b3b})); bob.position.set(0,0.24,0.78); g.add(bob);   // şamandıra
+  g.traverse(o=>{ if(o.isMesh) o.frustumCulled=false; });
+  g.scale.setScalar(0.9); g.rotation.x=-0.5;   // çubuk öne-yukarı doğrulsun (el frame'ine göre)
+  return g;
+}
 const SCENE_DO={};
 // --- emoji sprite (baş üstü 💢 vb.) ---
 function emojiSprite(ch,size){ const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d');
@@ -3050,7 +3063,7 @@ function dlgEmanet(){ const c=curEmanet(); return { ic:'📿', title:'Emaneti Ul
     {l:'Şimdi olmaz'} ]},
 }}; }
 function takePouch(){ if(S.carryPouch||!player) return; S.carryPouch=true;
-  if(!carryPouch){ const it=instance('trust_pouch'); carryPouch=it.g; carryPouch.scale.setScalar(0.85); carryPouch.position.set(-0.16,0.9,0.34); player.add(carryPouch); }   // SOL kolda (kıvrık) göğüs hizası
+  if(!carryPouch){ const it=instance('trust_pouch'); carryPouch=it.g; carryPouch.scale.setScalar(0.85); carryPouch.position.set(-0.15,0.64,0.3); player.add(carryPouch); }   // SOL kolda (kıvrık) GÖĞÜS hizası (0.9→0.64: elin üstünde durmasın)
   carryPouch.visible=true; save(); sndChime(); banner('📿 Emaneti aldın');
   setTimeout(()=>toast(curEmanet().carry),1200);
 }
@@ -3119,7 +3132,7 @@ function buildScenarios(){
     sceneRec('faydali',q('hayir'),anchor,[],'sehir','🤲 Sebil yaptır','🤲 Topluma faydalı iş yap');
     OBSTACLES.push({x:67,z:2,r:0.7}); }
   // taşınan emanet kesesini geri yükle (kaydedilmiş oyun)
-  if(S.carryPouch && player){ const it=instance('trust_pouch'); carryPouch=it.g; carryPouch.scale.setScalar(0.85); carryPouch.position.set(-0.16,0.9,0.34); player.add(carryPouch); }   // SOL kolda (kıvrık) göğüs hizası
+  if(S.carryPouch && player){ const it=instance('trust_pouch'); carryPouch=it.g; carryPouch.scale.setScalar(0.85); carryPouch.position.set(-0.15,0.64,0.3); player.add(carryPouch); }   // SOL kolda (kıvrık) GÖĞÜS hizası (0.9→0.64: elin üstünde durmasın)
 }
 function doScenario(rec){
   if(rec.islId && !isUnlocked(rec.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
@@ -3812,10 +3825,11 @@ function tick(){
       else if(actionKind==='stir'){                                                                  // PEKMEZ: kazanı kepçeyle karıştır (yavaş döngüsel)
         aL=-1.05; aR=-1.05+Math.sin(et*3.6)*0.5;                                                      // sağ el kepçeyle döndürür, sol el sabit tutar
         player.rotation.x += (0.16 - player.rotation.x)*0.12; }                                       // kazana hafif eğil
-      else if(actionKind==='fish'){                                                                  // BALIK TUT: oltayı öne tut, ara ara çek (bekle)
-        const w=Math.sin(et*2.0), jerk=Math.max(0,Math.sin(et*2.0-1.2));                              // yavaş bekleyiş + ara sıra çekiş
-        aL=-1.45-jerk*0.35; aR=-1.45-jerk*0.35;                                                       // iki el önde oltayı tutar, çekişte yukarı
-        player.rotation.x += (0.06+jerk*0.08 - player.rotation.x)*0.12; }                             // suya hafif eğik, çekişte doğrulur
+      else if(actionKind==='fish'){                                                                  // BALIK TUT: TEK EL (sağ) oltayı sallar; sol el yanda serbest
+        const cast=Math.sin(et*2.6);                                                                  // olta savurma/çekiş salınımı
+        aR=-1.3+cast*0.55;                                                                            // sağ kol oltayı savurur/çeker (yukarı ↔ öne)
+        aL=-0.12;                                                                                     // sol kol yanda aşağıda (serbest)
+        player.rotation.x += (0.07+Math.max(0,cast)*0.06 - player.rotation.x)*0.12; }                 // suya hafif eğik, savuruşta doğrulur
       else { const w=Math.sin(et*17); aL=-1.15+w*0.5; aR=-1.15-w*0.5; }                             // genel çalışma: kollar öne-aşağı
       swingLeg(PP.armL, aL); swingLeg(PP.armR, aR);
       if(actionT<=0 && actionKind==='namaz') lastActT = nowS - 11;   // namaz bitti + AFK → seccadede otur (10sn beklemeden)
@@ -3824,8 +3838,12 @@ function tick(){
     // (öne eğik komik görünüyordu → hafif geriye/dik ~ -0.04, bağdaş kuran biri gibi doğal)
     if(!(actionT>0 && (actionKind==='namaz'||actionKind==='give'||actionKind==='hug'||actionKind==='draw'))) player.rotation.x += (sitAmount*-0.04 - player.rotation.x)*0.2;
   }
-  // EMANET taşırken SOL kol dirsekten yukarı kıvrık (keseyi göğüste tutar) — dururken/yürürken/harekette HEP (son yazan → salınımı ezer)
-  if(hacVortexT<=0 && S.carryPouch && PP && PP.armL){ swingLeg(PP.armL, -1.45); }
+  // EMANET taşırken SOL kol dirsekten kıvrık (keseyi GÖĞÜS hizasında tutar) — dururken/yürürken/harekette HEP (son yazan → salınımı ezer)
+  if(hacVortexT<=0 && S.carryPouch && PP && PP.armL){ swingLeg(PP.armL, -1.18); }   // -1.45→-1.18: el göğse iner, kese elin üstünde kalmaz
+  // BALIK OLTASI: fishing sırasında sağ elde görünür (Hand_R'a bağlı → el ile sallanır)
+  { const fishing = actionT>0 && actionKind==='fish';
+    if(fishing && !fishRod && player){ const hand=player.getObjectByName('Hand_R'); if(hand){ fishRod=buildRod(); hand.add(fishRod); } }
+    if(fishRod) fishRod.visible=fishing; }
   // seccade serilme (açılma) animasyonu
   if(seccadeAnim>0 && laidSeccadeRec){ seccadeAnim-=dt*2.6; const t=Math.max(0,Math.min(1,1-seccadeAnim)); const e=t*t*(3-2*t); const s=0.16+0.84*e; laidSeccadeRec.g.scale.set(s,1,s); if(seccadeAnim<=0){ laidSeccadeRec.g.scale.set(1,1,1); seccadeAnim=0; } }
   // camera follow (intro / mescit / Mekke / normal)
