@@ -351,7 +351,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 4.3 (bağışlanan hayır eserleri [ağaç/çeşme/kandil/mushaf/sebil/gölgelik] artık haritaya dağılmaz — hepsi SADAKA BAHÇESİ adasına konur + eskiler oraya taşındı · Sadaka adası [Hâne önü] · ev Kur'an/seccade köprü ağacı soluna [hayvan-yasak] · tavuklar büyüdü · arılar · çanta/kapasite)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 4.4 (YUMURTA KÜMESTEN alınır — tavuklar artık dekoratif [dolaşır, etkileşimsiz], peşinde koşulmaz; kümes = yumurta gather-düğümü · tavuk boyu keçinin yarısından biraz küçük · bağışlanan hayır eserleri Sadaka Bahçesi'nde toplanır · arılar · çanta/kapasite)</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -1218,6 +1218,8 @@ WORLD.islands.forEach(is=>{ if(is.side) return;   // yan ada (Atölye) toplama/h
 // BUĞDAY TARLASI (Faz 3 üretim zinciri) — Hurma Bahçesi + Ensâr Mahallesi'nde; hasat→sap (plot_sprout)→cooldown
 GATHER_DEFS.push({id:'wheat_bahce',   islId:'bahce',   pos:[13.5,0,-4.3], full:'wheat', bare:'plot_sprout', item:'bugday', amount:3, cd:35000, scale:1.25});   // su kuyusuna (11.5,-4.5) yakın
 GATHER_DEFS.push({id:'wheat_mahalle', islId:'mahalle', pos:[37.5,0,-4.5], full:'wheat', bare:'plot_sprout', item:'bugday', amount:3, cd:35000, scale:1.25});
+// KÜMES — Hâne adasında yumurta düğümü (tavuk peşinde koşmadan, kümesten yumurta topla). full=bare='coop' → görsel değişmez.
+GATHER_DEFS.push({id:'coop_ev', islId:'ev', pos:[4,0,4], full:'coop', bare:'coop', item:'yumurta', amount:2, cd:20000, scale:1.35});
 // Prosedürel ARI KOVANI (skep) modeli — tpl'e enjekte edilir (base64 modeli yok)
 function buildHiveTemplate(){
   const g=new THREE.Group(); const M=(c,r)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?0.85:r});
@@ -1285,10 +1287,12 @@ WORLD.islands.forEach((is,i)=>{
   if(i%2===0) ANIMAL_DEFS.push({id:'camel_'+is.id, model:'camel', islId:is.id, produce:'sut', ic:'🥛', label:'Süt sağ', amount:2, cd:30000, scale:1.8, spd:0.8});   // deve dev: koyunun ~2.8 katı (gerçekte deve ~2m, koyun ~70cm)
 });
 // TAVUKLAR — Hâne adasında kümes çevresinde: 3 tavuk (yumurta) + 1 horoz (dekoratif, öter, ürün yok)
-ANIMAL_DEFS.push({id:'hen1', model:'chicken', islId:'ev', produce:'yumurta', ic:'🥚', label:'Yumurta topla', amount:1, cd:22000, scale:0.78, spd:1.05});
-ANIMAL_DEFS.push({id:'hen2', model:'chicken', islId:'ev', produce:'yumurta', ic:'🥚', label:'Yumurta topla', amount:1, cd:24000, scale:0.75, spd:1.05});
-ANIMAL_DEFS.push({id:'hen3', model:'chicken', islId:'ev', produce:'yumurta', ic:'🥚', label:'Yumurta topla', amount:1, cd:26000, scale:0.8, spd:1.1});
-ANIMAL_DEFS.push({id:'rooster1', model:'rooster', islId:'ev', ic:'🐓', label:'Horoz', amount:0, cd:9000, scale:0.92, spd:0.95});
+// Tavuklar DEKORATİF (dolaşır, gıdaklar) — yumurta artık KÜMES'ten alınır (tavuk peşine koşulmaz).
+// Boy: keçinin (0.8) yarısından biraz küçük.
+ANIMAL_DEFS.push({id:'hen1', model:'chicken', islId:'ev', decor:true, scale:1.08, spd:0.95});
+ANIMAL_DEFS.push({id:'hen2', model:'chicken', islId:'ev', decor:true, scale:1.02, spd:0.95});
+ANIMAL_DEFS.push({id:'hen3', model:'chicken', islId:'ev', decor:true, scale:1.1, spd:1.0});
+ANIMAL_DEFS.push({id:'rooster1', model:'rooster', islId:'ev', decor:true, scale:1.22, spd:0.9});
 let animals=[];
 // Model-başına YÜZ YÖNÜ ofseti (yürürken baş öne gelsin). Eski modeller -Z önlü (+PI).
 // Yeni goat-test modeli +Z önlü → ofset 0. Yeni model eklenince buraya ekle.
@@ -1328,7 +1332,7 @@ function makeAnimal(def){
   it.g.userData.anIsl=def.islId;   // güvenlik ağı etiketi (groundAnimals her kare bunları tabana/adaya sıkıştırır)
   scene.add(it.g);
   const rec={ q:{id:'anim_'+def.id, animal:true, def, pos:[x,0,z], nm:def.label, ic:def.ic}, g:it.g, meshes:it.meshes, animal:true, def, islId:def.islId };
-  interactables.push(rec);
+  if(!def.decor) interactables.push(rec);   // dekoratif hayvan (tavuk/horoz): dolaşır ama etkileşimsiz — yumurta kümesten alınır, tavuk peşine koşulmaz
   // uzuv-ayrımlı modeller: bacak(+toynak) düğümlerini yakala + KALÇA PİVOTU hesapla (yürüme animasyonu)
   const gob=n=>it.g.getObjectByName(n);
   const legs={};
@@ -1411,7 +1415,10 @@ function doTend(rec){
   const def=rec.def;
   if(!isUnlocked(def.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
   if(!animalReady(def)){ const s=Math.max(1,Math.ceil((S.gather[def.id]-Date.now())/1000)); toast('🐑 Dinleniyor… '+s+' sn'); return; }
-  if(!def.produce){ playAction(0.9,'work'); S.gather[def.id]=Date.now()+(def.cd||8000); playSnd&&playSnd('rooster',0.4,1.0); toast('🐓 Horoz ötüyor: Ü-ürü-üüü!'); return; }   // horoz: dekoratif, ürün yok
+  if(!def.produce){ playAction(0.9,'work'); S.gather[def.id]=Date.now()+(def.cd||8000);   // dekoratif tavuk/horoz: ürün yok (yumurta kümesten alınır)
+    if(def.model==='rooster'){ playSnd&&playSnd('rooster',0.4,1.0); toast('🐓 Horoz ötüyor: Ü-ürü-üüü!'); }
+    else { toast('🐔 Tavuk gıdaklıyor: gıt gıt gıdak!'); }
+    return; }
   if(invFull()){ toast('🎒 Dağarcık dolu ('+invCap()+') — sat/kullan ya da Atölye\'de çanta ör'); return; }
   facePlayer(rec.g.position); playAction(1.2, def.produce==='yun'?'shear':(def.produce==='yumurta'?'pluck':'milk'));   // yün→kırpma, süt→sağma, yumurta→toplama
   const got=invAdd(def.produce, def.amount);
@@ -3119,7 +3126,7 @@ function buildWorld(){
   buildMarket();        // Medine: Şehir'de Sûk (pazar)
   buildNpcs();          // Medine: tekrarlanan hayır NPC'leri (yetim/komşu/misafir)
   // KÜMES görseli — Hâne adası FARMYARD ses kümesine (tavuk/horoz sesleri Faz 11.26'da hazırdı)
-  try{ if(tpl.coop){ const cp=instance('coop'); cp.g.position.set(4,0,4); cp.g.rotation.y=-0.6; cp.g.scale.setScalar(1.35); scene.add(cp.g); OBSTACLES.push({x:4,z:4,r:1.1}); } }catch(e){ console.warn('coop yerleştirilemedi',e); }
+  OBSTACLES.push({x:4,z:4,r:1.0});   // kümes artık yumurta gather-düğümü (GATHER_DEFS coop_ev) — etrafından dolan, yaklaşınca yumurta topla
 
   // player — boy_takke (takkeli çocuk): bacak/kol kalça-omuz pivotuyla animasyonlu
   const pl=instance('boy_takke');
