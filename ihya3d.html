@@ -351,7 +351,7 @@
   <button class="iconbtn" id="hayirBtn" title="Hayır Çeşmesi — nûrunu sadakaya dönüştür">🤲</button>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 4.2 (SADAKA BAHÇESİ adası [Hâne önü — 6 hayır eseri sergisi] · ev Kur'an+seccade köprü ağacı soluna [kümes boşaldı, hayvan-yasak köşe] · tavuklar büyüdü · bahçe buğday kuyuya yakın · cami seccade cami önünde · arılar · çanta/kapasite · tavuk-yumurta-çörek)</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:6px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.5;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.05em">İhya · Faz 4.3 (bağışlanan hayır eserleri [ağaç/çeşme/kandil/mushaf/sebil/gölgelik] artık haritaya dağılmaz — hepsi SADAKA BAHÇESİ adasına konur + eskiler oraya taşındı · Sadaka adası [Hâne önü] · ev Kur'an/seccade köprü ağacı soluna [hayvan-yasak] · tavuklar büyüdü · arılar · çanta/kapasite)</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -2399,10 +2399,22 @@ const HAYIR=[
 ];
 for(const h of HAYIR) if(!S.hayir[h.id]) S.hayir[h.id]=[];   // eski kayıtlara yeni hayır kalemleri için boş dizi
 let hayirGroups=[], lanternCores=[];
+// Bağışlanan hayır eserleri ARTIK Sadaka Bahçesi adasına konur (Hâne önü) — haritanın her yerine dağılmaz.
 function randomHayirSpot(){
-  const uis=WORLD.islands.filter(is=>isUnlocked(is.id)); const is=uis[Math.floor(Math.random()*uis.length)]||WORLD.islands[0];
-  const a=Math.random()*6.283, r=is.r*(0.35+Math.random()*0.45);
-  return { x:+(is.c[0]+Math.cos(a)*r).toFixed(2), z:+(is.c[1]+Math.sin(a)*r).toFixed(2) };
+  const is=WORLD.islands.find(i=>i.id==='sadaka')||WORLD.islands[0];
+  const entZ=is.c[1]+is.r-0.5;   // kuzey köprü girişi — kapama
+  for(let k=0;k<14;k++){
+    const a=Math.random()*6.283, r=is.r*(0.5+Math.random()*0.38);   // dış halka (merkez sergiyi boş bırak)
+    const x=is.c[0]+Math.cos(a)*r, z=is.c[1]+Math.sin(a)*r;
+    if(Math.hypot(x-is.c[0], z-entZ) < 2.4) continue;   // girişi/köprüyü tıkama
+    return { x:+x.toFixed(2), z:+z.toFixed(2) };
+  }
+  return { x:+(is.c[0]-2.5).toFixed(2), z:+(is.c[1]-2).toFixed(2) };   // yedek: güney-batı
+}
+// eski bağış eserlerini (haritaya dağılmış) Sadaka adasına TAŞI — bir kez
+if(!S.hayirMigrated){
+  for(const id in S.hayir){ if(Array.isArray(S.hayir[id]) && S.hayir[id].length) S.hayir[id]=S.hayir[id].map(()=>randomHayirSpot()); }
+  S.hayirMigrated=true; save();
 }
 function makeLantern(){
   const g=new THREE.Group();
