@@ -881,8 +881,32 @@ const UI_STR={ en:{
   p_satchel:'Satchel', p_market:'Market', p_mosque:'Mosque', p_charity:'Fountain of Good', p_ledger:'Case Ledger', p_exam:'Trial',
   close:'Close', mosque_exit:'🚪 Leave the mosque',
   tut_next:'Next ›', tut_start:'Begin ✓', tut_prev:'‹ Back', tut_skip:'Skip / close',
+  // --- Faz 2a: dünya-içi etkileşim ---
+  ab_seccade:'🧎 Take your rug', ab_mosque:'🕌 Enter mosque', ab_hac:'🕋 Intend Umrah',
+  ab_greet:'🤝 Greet', ab_broth:'🤝 Become brothers', ab_done:'✓ Done', ab_give:'Give', ab_gave:'🙏 Given',
+  ab_market:'🛒 Market', ab_rest:'🐑 Resting', ab_gather:'Gather', ab_ripening:'🌱 Ripening',
+  ab_exam_done:'Grounds ✓', ab_exam_enter:'📝 Take exam', ab_exam_lock:'🔒 Lessons first',
+  ab_look:'Look ✓', ab_interact:'Interact', ab_notyet:'🔒 Not yet',
+  pr_seccade:'🧎 Take your prayer rug', pr_mosque:'🕌 Enter the mosque', pr_hac:'🕋 Intend Umrah',
+  pr_market:'🛒 Medina Market', pr_rest:'🐑 resting', pr_gave:' — given', pr_gatherv:'Gather', pr_ripen:' — ripening', pr_exam:'Trial Grounds',
+  good_hurma:'Dates', good_dut:'Mulberries', good_sut:'Milk', good_yun:'Wool', good_ekmek:'Bread',
+  good_su:'Water', good_bal:'Honey', good_bugday:'Wheat', good_un:'Flour', good_yumurta:'Eggs',
+  good_corek:'Buns', good_pekmez:'Molasses', good_balik:'Fish', good_izgara:'Grilled Fish',
+  gv_su:'💧 Draw water', gv_bal:'🍯 Take honey', gv_yumurta:'🥚 Collect eggs', gv_bugday:'🌾 Reap wheat', gv_balik:'🎣 Fish',
+  rg_su:'💧 The well is refilling', rg_bugday:'🌾 The wheat is ripening', rg_yumurta:'🥚 The hens are laying',
+  rg_bal:'🍯 The bees are making honey', rg_hurma:'🌴 The dates are ripening', rg_dut:'🍇 The mulberries are ripening',
+  rg_balik:'🎣 The fish are biting', rg_generic:'🌱 Ripening',
+  anim_yun:'Shear wool', anim_sut:'Milk',
+  t_locked_here:'🔒 This place isn\'t open yet', t_sec:' s', t_bagfull:'🎒 Satchel full', t_bagfilled:' (satchel full)', t_gathered:' gathered',
+  day_0:'Sunday', day_1:'Monday', day_2:'Tuesday', day_3:'Wednesday', day_4:'Thursday', day_5:'Friday', day_6:'Saturday', day_friday:'🕌 Jumu\'ah',
+  'vk_Gece':'Night', 'vk_Fecir':'Fajr', 'vk_Kuşluk':'Duha', 'vk_Öğle':'Dhuhr', 'vk_İkindi':'Asr', 'vk_Akşam':'Maghrib', 'vk_Yatsı':'Isha',
 }};
 function tU(k){ return (S.lang==='en' && UI_STR.en[k]!=null) ? UI_STR.en[k] : null; }
+function vakitName(vn){ return tU('vk_'+vn) || vn; }   // vakit adı (dil)
+function goodName(item){ return tU('good_'+item) || (GOODS[item]&&GOODS[item].nm) || item; }   // item adı (dil)
+function gverb(item){ return tU('gv_'+item) || (typeof GATHER_VERB!=='undefined' && GATHER_VERB[item]) || null; }   // toplama fiili (dil)
+function regrowMsg(item){ return tU('rg_'+item) || (typeof REGROW_MSG!=='undefined' && REGROW_MSG[item]) || (tU('rg_generic')||'🌱 Olgunlaşıyor'); }   // olgunlaşma mesajı (dil)
+function animalLabel(def){ return (def&&def.produce&&tU('anim_'+def.produce)) || (def&&def.label) || ''; }   // hayvan etiketi (dil)
 const RANKS=[[0,'Niyet'],[60,'Tâlib'],[180,'Gayret Ehli'],[360,'İhyâ Yolcusu'],[600,'İhyâ Eri'],[1000,'İhyâ Ustası']];
 function rankIndex(n){ let i=0; for(let k=0;k<RANKS.length;k++){ if(n>=RANKS[k][0]) i=k; } return i; }
 function rankName(n){ const i=rankIndex(n); return tU('rank_'+i)||RANKS[i][1]; }
@@ -986,7 +1010,7 @@ function updateDayNight(dt){
   moonMesh.position.set(px-Math.sin(az)*16, 5-el*24, pz-34);
   moonMesh.visible=moonRise>0.01; moonMesh.material.transparent=true; moonMesh.material.opacity=moonRise;
   const v=vakitOf(gameTime);
-  if(v!==lastVakit){ const prev=lastVakit; lastVakit=v; const el2=document.getElementById('vakit'); if(el2){ const icon=(v[2]==='☾')?moonPhase().e:v[2]; el2.textContent=(isFriday()?'🕌 Cuma':dayName())+' · '+icon+' '+v[1]; el2.classList.remove('urgent'); } vakitWarned=false; if(prev) onVakitChange(v); }
+  if(v!==lastVakit){ const prev=lastVakit; lastVakit=v; const el2=document.getElementById('vakit'); if(el2){ const icon=(v[2]==='☾')?moonPhase().e:v[2]; el2.textContent=(isFriday()?(tU('day_friday')||'🕌 Cuma'):dayName())+' · '+icon+' '+vakitName(v[1]); el2.classList.remove('urgent'); } vakitWarned=false; if(prev) onVakitChange(v); }
   checkVakitWarning();
   if(typeof updateRoosterAzan==='function') updateRoosterAzan();   // ezandan 15 sn önce horoz (her adadan)
   skyAcc+=dt; if(dt===0 || skyAcc>=0.15){ skyAcc=0; updateSkyWidget(); }
@@ -1354,9 +1378,9 @@ const REGROW_MSG={ su:'💧 Kuyu suyla doluyor', bugday:'🌾 Başaklar olgunla�
 const GATHER_VERB={ su:'💧 Su çek', bal:'🍯 Bal al', yumurta:'🥚 Yumurta al', bugday:'🌾 Buğday biç', balik:'🎣 Balık tut' };
 function doGather(rec){
   const def=rec.def;
-  if(!isUnlocked(def.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
-  if(!nodeReady(def)){ const s=Math.max(1,Math.ceil((S.gather[def.id]-Date.now())/1000)); toast((REGROW_MSG[def.item]||'🌱 Olgunlaşıyor')+'… '+s+' sn'); return; }
-  if(invFull()){ toast('🎒 Dağarcık dolu ('+invCap()+') — sat/kullan ya da Atölye\'de çanta ör'); return; }
+  if(!isUnlocked(def.islId)){ toast(tU('t_locked_here')||'🔒 Burası henüz açılmadı'); return; }
+  if(!nodeReady(def)){ const s=Math.max(1,Math.ceil((S.gather[def.id]-Date.now())/1000)); toast(regrowMsg(def.item)+'… '+s+(tU('t_sec')||' sn')); return; }
+  if(invFull()){ toast((tU('t_bagfull')||'🎒 Dağarcık dolu')+' ('+invCap()+')'); return; }
   facePlayer(rec.g.position);
   // İŞE ÖZEL toplama animasyonu (item'e göre)
   const GK={ su:['draw',1.7], bugday:['reap',1.7], yumurta:['coop',1.4], bal:['honey',1.6], balik:['fish',1.9] };
@@ -1368,7 +1392,7 @@ function doGather(rec){
   swapGatherModel(rec,false);
   reviveTint(rec.meshes, 0.78);   // hasat anında solgun (cooldown boyunca updateCooldownSprites yeşertir)
   save(); refreshHUD(); sndChime();
-  const g=GOODS[def.item]; toast('+'+got+' '+g.ic+' '+g.nm+(got<def.amount?' (çanta doldu)':' topladın'));
+  const g=GOODS[def.item]; toast('+'+got+' '+g.ic+' '+goodName(def.item)+(got<def.amount?(tU('t_bagfilled')||' (çanta doldu)'):(tU('t_gathered')||' topladın')));
   checkZekat();
 }
 function facePlayer(pos){ if(player) player.rotation.y=Math.atan2(pos.x-player.position.x, pos.z-player.position.z); }
@@ -1571,7 +1595,7 @@ function giveZekat(k){
 const DAYS=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 const WEEK_START=6;   // oyun CUMARTESİ başlar (birkaç gün keşfet → Cuma gelince camiye)
 function dow(){ return (WEEK_START+(S.dayNum||0))%7; }   // gerçek takvimden bağımsız; her gün/gece döngüsünde ilerler
-function dayName(){ return DAYS[dow()]; }
+function dayName(){ return tU('day_'+dow()) || DAYS[dow()]; }
 // ---- KAMERÎ AY (30 günlük döngü): ay evreleri + Eyyâm-ı Bîz (13-14-15 = beyaz günler orucu) ----
 function lunarDay(){ return ((S.dayNum||0) % 30) + 1; }   // 1..30 (1: hilâl doğar, 14-15: dolunay, 29-30: kaybolur)
 function moonPhase(){ const d=lunarDay();
@@ -1953,7 +1977,7 @@ window.__zikir=function(id){
 };
 function renderMosque(){
   const vn=vakitOf(gameTime)[1];
-  const vl=document.getElementById('mosqueVakit'); if(vl) vl.textContent=(isFriday()?'🕌 Cuma':dayName())+' · '+vn;
+  const vl=document.getElementById('mosqueVakit'); if(vl) vl.textContent=(isFriday()?(tU('day_friday')||'🕌 Cuma'):dayName())+' · '+vakitName(vn);
   const body=document.getElementById('mosqueBody'); if(!body) return;
   const cuma=(vn==='Öğle' && isFriday() && cumaActive());
   let h='';
@@ -4133,29 +4157,29 @@ function tick(){
       if(dd<reach && dd<bd){ bd=dd; best=r; } }
     if(best!==near){ near=best;
       if(near){ actBtn.style.display='block';
-        if(near.seccadePickup){ actBtn.textContent='🧎 Seccadeni al'; }
-        else if(near.mosque){ actBtn.textContent='🕌 Mescide gir'; }
-        else if(near.hac){ actBtn.textContent='🕋 Umre\'ye niyet'; }
-        else if(near.muahat){ actBtn.textContent = S.muahat ? '🤝 Selâm ver' : '🤝 Kardeş ol'; }
+        if(near.seccadePickup){ actBtn.textContent=tU('ab_seccade')||'🧎 Seccadeni al'; }
+        else if(near.mosque){ actBtn.textContent=tU('ab_mosque')||'🕌 Mescide gir'; }
+        else if(near.hac){ actBtn.textContent=tU('ab_hac')||'🕋 Umre\'ye niyet'; }
+        else if(near.muahat){ actBtn.textContent = S.muahat ? (tU('ab_greet')||'🤝 Selâm ver') : (tU('ab_broth')||'🤝 Kardeş ol'); }
         else if(near.station){ actBtn.textContent = near.sBtn; }
-        else if(near.scenario){ actBtn.textContent = (near.renew ? !scenArmed(near) : (near.q && S.done[near.q.id])) ? '✓ Tamam' : near.sBtn; }
-        else if(near.npc){ actBtn.textContent = npcReady(near.def) ? (near.q.ic+' Ver') : '🙏 Verdin'; }
-        else if(near.market){ actBtn.textContent='🛒 Pazar'; }
-        else if(near.animal){ actBtn.textContent = animalReady(near.def) ? (near.q.ic+' '+near.def.label) : '🐑 Dinleniyor'; }
-        else if(near.gather){ actBtn.textContent = nodeReady(near.def) ? (GATHER_VERB[near.def.item]||(near.q.ic+' Topla')) : '🌱 Olgunlaşıyor'; }
-        else if(near.exam){ actBtn.textContent = S.conquered[near.islId] ? 'Meydan ✓' : (examReady(near.islId) ? '📝 İmtihana Gir' : '🔒 Önce dersler'); }
-        else actBtn.textContent = S.done[near.q.id] ? 'Bak ✓'
-          : (questAvailable(near.q) ? 'Etkileşim '+near.q.ic : '🔒 Sırası değil');
+        else if(near.scenario){ actBtn.textContent = (near.renew ? !scenArmed(near) : (near.q && S.done[near.q.id])) ? (tU('ab_done')||'✓ Tamam') : near.sBtn; }
+        else if(near.npc){ actBtn.textContent = npcReady(near.def) ? (near.q.ic+' '+(tU('ab_give')||'Ver')) : (tU('ab_gave')||'🙏 Verdin'); }
+        else if(near.market){ actBtn.textContent=tU('ab_market')||'🛒 Pazar'; }
+        else if(near.animal){ actBtn.textContent = animalReady(near.def) ? (near.q.ic+' '+animalLabel(near.def)) : (tU('ab_rest')||'🐑 Dinleniyor'); }
+        else if(near.gather){ actBtn.textContent = nodeReady(near.def) ? (gverb(near.def.item)||(near.q.ic+' '+(tU('ab_gather')||'Topla'))) : (tU('ab_ripening')||'🌱 Olgunlaşıyor'); }
+        else if(near.exam){ actBtn.textContent = S.conquered[near.islId] ? (tU('ab_exam_done')||'Meydan ✓') : (examReady(near.islId) ? (tU('ab_exam_enter')||'📝 İmtihana Gir') : (tU('ab_exam_lock')||'🔒 Önce dersler')); }
+        else actBtn.textContent = S.done[near.q.id] ? (tU('ab_look')||'Bak ✓')
+          : (questAvailable(near.q) ? (tU('ab_interact')||'Etkileşim')+' '+near.q.ic : (tU('ab_notyet')||'🔒 Sırası değil'));
         actBtn.innerHTML=emo(actBtn.textContent); }   // emojileri özel ikonlarla değiştir
     }
     if(near){ // etkileşim yazısı: sabit ALT-ORTA altyazı (kamera odağıyla birlikte belirir) — projeksiyon yok
       promptEl.style.display='block'; promptEl.classList.add('show');
       promptEl.textContent = near.seccadePickup
-        ? '🧎 Seccadeni al'
+        ? (tU('pr_seccade')||'🧎 Seccadeni al')
         : near.mosque
-        ? '🕌 Mescid\'e gir'
+        ? (tU('pr_mosque')||'🕌 Mescid\'e gir')
         : near.hac
-        ? '🕋 Umre\'ye niyet'
+        ? (tU('pr_hac')||'🕋 Umre\'ye niyet')
         : near.muahat
         ? ('🤝 '+near.q.nm)
         : near.station
@@ -4163,15 +4187,17 @@ function tick(){
         : near.scenario
         ? ((near.renew ? !scenArmed(near) : (near.q && S.done[near.q.id])) ? ('✓ '+near.sTitle) : near.sTitle)
         : near.npc
-        ? (near.q.ic+' '+near.q.nm+(npcReady(near.def)?'':' — verdin'))
+        ? (near.q.ic+' '+near.q.nm+(npcReady(near.def)?'':(tU('pr_gave')||' — verdin')))
         : near.market
-        ? '🛒 Medine Pazarı'
+        ? (tU('pr_market')||'🛒 Medine Pazarı')
         : near.animal
-        ? ((animalReady(near.def)?near.q.ic+' '+near.def.label:'🐑 dinleniyor'))
+        ? ((animalReady(near.def)?near.q.ic+' '+animalLabel(near.def):(tU('pr_rest')||'🐑 dinleniyor')))
         : near.gather
-        ? ((nodeReady(near.def)?near.q.ic+' ':'🌱 ')+near.q.nm+(nodeReady(near.def)?' topla':' — olgunlaşıyor'))
+        ? (S.lang==='en'
+            ? (nodeReady(near.def) ? (near.q.ic+' '+(tU('pr_gatherv')||'Gather')+' '+goodName(near.def.item)) : ('🌱 '+goodName(near.def.item)+(tU('pr_ripen')||' — ripening')))
+            : ((nodeReady(near.def)?near.q.ic+' ':'🌱 ')+near.q.nm+(nodeReady(near.def)?' topla':' — olgunlaşıyor')))
         : near.exam
-        ? ((S.conquered[near.islId]?'✓ ':examReady(near.islId)?'📝 ':'🔒 ')+'İmtihan Meydanı')
+        ? ((S.conquered[near.islId]?'✓ ':examReady(near.islId)?'📝 ':'🔒 ')+(tU('pr_exam')||'İmtihan Meydanı'))
         : (!S.done[near.q.id]&&!questAvailable(near.q)?'🔒 ':'')+near.q.nm;
       promptEl.innerHTML=emo(promptEl.textContent);   // altyazıdaki emojileri özel ikonlarla değiştir
     } else { actBtn.style.display='none'; promptEl.classList.remove('show'); promptEl.style.display='none'; }   // near BOŞSA her kare gizle → harici null'lama (ör. seccade alımı: removeLaidSeccade near=null) sonrası takılı yazı kalmaz
