@@ -1752,7 +1752,8 @@ function prayNamaz(){
   if(vn==='Öğle' && isFriday() && cumaActive()){ toast('🕌 Cuma günü öğle namazı sadece camide kılınır — Mescid\'e git'); return; }
   // kerahat vakti: namaz mekruh
   if(isKerahat(gameTime)){ toast('🕗 Kerahat vakti (güneş doğuş/tepe/batış) — namaz mekruh, biraz bekle'); return; }
-  const _preY=player.rotation.y; laySeccade(); playAction(4.4,'namaz'); player.rotation.y=_preY;   // #2 seccade kıbleye serilir; kıbleye dönüşü tick YUMUŞAK yapsın (snap değil) + kıyam→rükû→secde
+  namazRekat=rekatCount(vn);   // vaktin rekat sayısı (Sabah 2, Öğle/İkindi/Yatsı 4, Akşam 3; nafile 2)
+  const _preY=player.rotation.y; laySeccade(); playAction(namazDur(namazRekat),'namaz'); player.rotation.y=_preY;   // #2 seccade kıbleye serilir; kıbleye dönüşü tick YUMUŞAK yapsın + rekatlar + her 2 rekatta teşehhüd
   if(!S.qiblaLearned){ S.qiblaLearned=true; setTimeout(()=>toast('🧭 Kıbleye yöneldin — kıbleye dönmek namazın şartıdır (Bakara 144)'),700); }
   const farz = FARZ_VAKIT.includes(vn) && !S.done['ev_namaz'];
   if(farz){
@@ -2256,7 +2257,7 @@ function updateWoolHint(){
 }
 
 /* ============ ÇALIŞMA ANİMASYONU (toplama/sağma/kırpma) ============ */
-let actionT=0, actionKind='work', actionDur=0.9;
+let actionT=0, actionKind='work', actionDur=0.9, namazRekat=2;
 let camFocus=0;   // kamera sinematik odak (0=kuşbakışı … 1=alçak/yakın) — eylem/etkileşim sırasında yükselir
 let SIT_FOLD=-1.0, SIT_CROSS=-1.15;   // bağdaş: bacak ÖNE katlanır (negatif fold=ön) + dizler dışa/ayaklar içe yaw (setSitLegs ile ayarlanabilir)
 // OCCLUSION: kamera ile oyuncu arasında dev palmiye kalırsa kamerayı yukarı kaldır (palmiyenin üstünden bak)
@@ -2271,21 +2272,36 @@ function occlusionLift(px,pz,cx,cz){
   return lift;
 }
 function playAction(dur,kind){ actionT=dur||0.9; actionDur=actionT; actionKind=kind||'work'; }
-// Namaz sekansı: ilerleme p(0→1) → [kolAçısı, gövdeEğimi]. kıyam→rükû→kıyam→secde→celse→secde→kıyam.
-// (kol: swingLeg X açısı, 0=yanda; gövde: player.rotation.x öne eğim, 0=dik)
+// Namaz: vaktin REKAT sayısı + her 2 rekatta TEŞEHHÜD (diz kırık otur). poz = [kolAçısı, gövdeEğimi, dizKırma(0=ayakta,1=otur)].
+// (kol: swingLeg X açısı, 0=yanda; gövde: player.rotation.x öne eğim, 0=dik; diz: swingLeg bacak → teşehhüd/secde'de kırılır)
 function _lp(a,b,t){ t=t<0?0:t>1?1:t; return a+(b-a)*t; }
-function namazPose(p){
-  const Ka=-0.85, Kb=0.0;   // kıyam (eller önde bağlı, dik)
-  const Ra=-0.35, Rb=1.00;  // rükû (eğil, eller dize)
-  const Sa=-1.40, Sb=1.36;  // secde (derin eğil, eller yerde)
-  if(p<0.15) return [Ka,Kb];
-  if(p<0.30) return [_lp(Ka,Ra,(p-0.15)/0.15), _lp(Kb,Rb,(p-0.15)/0.15)];   // → rükû
-  if(p<0.40) return [_lp(Ra,Ka,(p-0.30)/0.10), _lp(Rb,Kb,(p-0.30)/0.10)];   // → kıyam
-  if(p<0.60) return [_lp(Ka,Sa,(p-0.40)/0.20), _lp(Kb,Sb,(p-0.40)/0.20)];   // → secde
-  if(p<0.68) return [_lp(Sa,-0.6,(p-0.60)/0.08), _lp(Sb,0.35,(p-0.60)/0.08)];// → celse (otur)
-  if(p<0.88) return [_lp(-0.6,Sa,(p-0.68)/0.20), _lp(0.35,Sb,(p-0.68)/0.20)];// → secde 2
-  return [_lp(Sa,Ka,(p-0.88)/0.12), _lp(Sb,Kb,(p-0.88)/0.12)];              // → kıyam (bitiş)
+const REKAT_SAYI={Fecir:2, 'Öğle':4, 'İkindi':4, 'Akşam':3, 'Yatsı':4};   // farz rekat sayıları
+function rekatCount(vn){ return REKAT_SAYI[vn] || 2; }                     // nafile/kuşluk/gece: 2
+function namazEnding(i,R){ return (i===R)?'sitStay':((i%2===0)?'sitStand':'stand'); }   // son→final teşehhüd, çift→orta teşehhüd(kalk), tek→ayakta
+function namazWeight(e){ return e==='sitStand'?1.5:(e==='sitStay'?1.4:1.0); }
+function namazDur(R){ let w=0; for(let i=1;i<=R;i++) w+=namazWeight(namazEnding(i,R)); return w*1.7; }   // toplam süre (sn)
+function _mix(A,B,t){ return [_lp(A[0],B[0],t),_lp(A[1],B[1],t),_lp(A[2],B[2],t)]; }
+const _KIYAM=[-0.85,0,0], _RUKU=[-0.35,1.00,0], _SECDE=[-1.40,1.36,1], _CELSE=[-0.55,0.30,1], _TESH=[-0.30,0.12,1];   // duruşlar [kol,gövde,diz]
+function rekatFrame(q, ending){   // tek rekat q(0→1); ending: stand / sitStand(orta teşehhüd, kalkar) / sitStay(final teşehhüd)
+  if(q<0.12) return _KIYAM.slice();                                 // kıyam
+  if(q<0.24) return _mix(_KIYAM,_RUKU,(q-0.12)/0.12);               // → rükû
+  if(q<0.34) return _mix(_RUKU,_KIYAM,(q-0.24)/0.10);               // → kıyam
+  if(q<0.50) return _mix(_KIYAM,_SECDE,(q-0.34)/0.16);              // → secde (diz kırılır)
+  if(q<0.58) return _mix(_SECDE,_CELSE,(q-0.50)/0.08);              // → celse
+  if(q<0.72) return _mix(_CELSE,_SECDE,(q-0.58)/0.14);              // → secde 2
+  if(ending==='stand') return _mix(_SECDE,_KIYAM,(q-0.72)/0.28);    // → kıyam (sonraki rekat)
+  if(ending==='sitStay'){ return q<0.86 ? _mix(_SECDE,_TESH,(q-0.72)/0.14) : _TESH.slice(); }   // → TEŞEHHÜD otur + hold (final)
+  if(q<0.82) return _mix(_SECDE,_TESH,(q-0.72)/0.10);              // sitStand: → teşehhüd
+  if(q<0.90) return _TESH.slice();                                 // hold
+  return _mix(_TESH,_KIYAM,(q-0.90)/0.10);                          // → kalk (sonraki rekat)
 }
+function namazPoseN(p, R){   // p: tüm namaz 0→1 → rekatlara böl
+  const w=[]; let tot=0; for(let i=1;i<=R;i++){ const e=namazEnding(i,R), ww=namazWeight(e); w.push([ww,e]); tot+=ww; }
+  let pw=Math.max(0,Math.min(0.999999,p))*tot, acc=0;
+  for(let i=0;i<R;i++){ if(pw<acc+w[i][0]) return rekatFrame((pw-acc)/w[i][0], w[i][1]); acc+=w[i][0]; }
+  return rekatFrame(1, w[R-1][1]);
+}
+let NAMAZ_FOLD=1.35;   // teşehhüd/secde diz kırma miktarı (intro oturma legBend=1.45 referans)
 
 /* ============ KİŞİSEL PROFİL / MÜKELLEFİYET ============
    "İhya Etmeye Devam Et" → yaş/cinsiyet/… sorulur; oyun ona göre yönlendirir.
@@ -4004,7 +4020,8 @@ function tick(){
   if(hacVortexT<=0 && PP && PP.legL){
     // OTURUŞ = BAĞDAŞ: bacaklar öne katlanır (X) + içe YAW'lanır (Y) → önde çaprazlanır (ne uzatılmış ne arkada).
     const sw = moving ? Math.sin(walkPhase) : 0, legSit = sitAmount*SIT_FOLD;
-    swingLeg(PP.legL, legSit + sw*0.5); swingLeg(PP.legR, legSit - sw*0.5);
+    const _namazLegs = (actionT>0 && actionKind==='namaz');   // namaz sırasında bacakları namaz bloğu kontrol etsin (çekişme yok)
+    if(!_namazLegs){ swingLeg(PP.legL, legSit + sw*0.5); swingLeg(PP.legR, legSit - sw*0.5); }
     // İÇE yaw (çapraz) — ayaklar önde karşı tarafa geçsin (bağdaş). yürürken 0. order='YXZ' (yaw dıştan)
     const cross = sitAmount*SIT_CROSS;
     for(const p of PP.legL.parts){ p.rotation.order='YXZ'; p.rotation.y = cross; }
@@ -4022,8 +4039,10 @@ function tick(){
       else if(actionKind==='namaz'){                                                               // #2 kıbleye dönüş + kıyam→rükû→secde
         let dy=QIBLA_ANGLE-player.rotation.y; while(dy>Math.PI)dy-=6.28318530718; while(dy<-Math.PI)dy+=6.28318530718;
         player.rotation.y += dy*0.12;                                                              // kıbleye YUMUŞAK dön (namaz başında belirgin)
-        const p=1-Math.max(0,actionT)/Math.max(0.01,actionDur); const ps=namazPose(p); aL=ps[0]; aR=ps[0];
-        player.rotation.x += (ps[1] - player.rotation.x)*0.22; }                                   // gövde eğimi (rükû/secde)
+        const p=1-Math.max(0,actionT)/Math.max(0.01,actionDur); const ps=namazPoseN(p, namazRekat); aL=ps[0]; aR=ps[0];
+        player.rotation.x += (ps[1] - player.rotation.x)*0.22;                                     // gövde eğimi (rükû/secde)
+        const fold=ps[2]; if(PP.legL){ swingLeg(PP.legL, fold*NAMAZ_FOLD); swingLeg(PP.legR, fold*NAMAZ_FOLD); }   // teşehhüd/secde: dizler kırılır, ayaklar üzerinde otur
+        player.position.y = -fold*0.28; }                                                          // otururken kalça iner
       else if(actionKind==='draw'){                                                                  // KUYUDAN SU ÇEK: ipi hand-over-hand yukarı çek
         const l=Math.sin(et*3.4), r=Math.sin(et*3.4+Math.PI);                                        // iki el ters faz (yavaş → belirgin)
         aL=-1.5+l*1.25; aR=-1.5+r*1.25;                                                               // -2.75 (yukarı uzanıp ipi tut) ↔ -0.25 (aşağı çek)
