@@ -1069,6 +1069,15 @@ const UI_STR={ en:{
   dl_justgave:'🤲 You just gave — try again shortly.',
   sc_title_a:'🏅 Title: ', sc_title_toast_a:'🏅 ', sc_title_toast_b:' title: «', sc_title_toast_c:'» — +', sc_title_toast_d:' nur',
   sc_ledger_a:'📖 ', sc_ledger_b:' ledger: case #', sc_ledger_c:' solved',
+  nur_suffix:' nur',
+  // --- Faz 3: cami eylem toast/banner ---
+  m_next_prayer:'⏳ Next prayer: ',
+  ma_cuma_banner:'🕌 May your Jumu\'ah prayer be accepted', ma_cuma_toast:'You listened to the sermon and prayed with the congregation (+30 nur)',
+  ma_cemaat_a:'🤲 You prayed ', ma_cemaat_b:' in congregation (+12 nur)',
+  ma_nafile_toast:'🤲 You prayed a voluntary prayer (+5 nur) — you cannot repeat it this hour',
+  ma_vazife_banner:'📜 The imam gave you a duty',
+  ma_vazife_toast:'The imam: «I have seen justice and mercy in you. From now on, reconcile people (🕊️), judge injustice fairly (⚖️), and deliver trusts to their owners (📿). Your Case Ledger is now open.» (+15 nur)',
+  ma_sohbet_banner:'💬 Talk with the imam', ma_sit_toast:'🤲 You sat quietly and listened — peace and light (+3)',
 }};
 function hayirNm(h){ return tU('hy_'+h.id) || (h && h.nm) || ''; }   // hayır kalemi adı (dil)
 // Faz 2b: senaryo unvanları — Türkçe başlık → İngilizce
@@ -1235,7 +1244,7 @@ function updateMosqueCountdown(){
   const lbl=document.getElementById('mcdLabel'), fill=document.getElementById('mcdFill');
   if(ring) ring.style.setProperty('--p', (info.frac*100).toFixed(1));
   if(rtxt) rtxt.textContent=tstr;
-  if(lbl) lbl.innerHTML='⏳ Sonraki namaz: <b>'+info.name+'</b>';
+  if(lbl) lbl.innerHTML=(tU('m_next_prayer')||'⏳ Sonraki namaz: ')+'<b>'+vakitName(info.name)+'</b>';
   if(fill) fill.style.width=(info.frac*100).toFixed(1)+'%';
 }
 const NAMAZ_LABEL={Fecir:'Sabah', Öğle:'Öğle', İkindi:'İkindi', Akşam:'Akşam', Yatsı:'Yatsı'};
@@ -2141,6 +2150,16 @@ const IMAM_SOZ=[
   '"Kişi sevdiğiyle beraberdir." (Buhârî) — sâlihleri sev, meclislerine katıl.',
   '"Müslüman, elinden ve dilinden diğer Müslümanların emin olduğu kimsedir." (Buhârî)',
 ];
+// EN İ18N — imam sözleri (Faz 3; TERCUME_SOZLUGU.md)
+const IMAM_SOZ_EN=[
+  '"Religion is sincere counsel," we said: "To whom, O Messenger of Allah?" "To Allah, His Book, His Messenger, the leaders of the Muslims and their common people." (Muslim)',
+  '"There are two blessings in which many people are deceived: health and free time." (Bukhari)',
+  '"Make things easy, do not make them hard; give glad tidings, do not drive people away." (Bukhari)',
+  '"The best of you is the one who learns the Qur\'an and teaches it." (Bukhari)',
+  '"A person is with the one he loves." (Bukhari) — love the righteous and join their gatherings.',
+  '"The Muslim is the one from whose hand and tongue other Muslims are safe." (Bukhari)',
+];
+function imamSoz(i){ return (S.lang==='en' && IMAM_SOZ_EN[i]) || IMAM_SOZ[i]; }
 // ZİKİR: mescitte (özellikle kerahat / namaz kılınmayan vakitlerde) — vakit başına bir kez her biri
 const ZIKIR=[
   {id:'hamdele', ad:'Hamdele', ic:'🌿', nur:3, txt:'Elhamdü lillâhi Rabbil âlemîn — Hamd, âlemlerin Rabbi Allah\'a mahsustur. Şükrün başıdır.'},
@@ -2149,12 +2168,24 @@ const ZIKIR=[
   {id:'esma',    ad:'Esmâü\'l-Hüsnâ', ic:'✨', nur:4, txt:'Yâ Rahmân, yâ Rahîm, yâ Kuddûs, yâ Selâm, yâ Azîz, yâ Ğaffâr, yâ Rezzâk, yâ Latîf... "En güzel isimler Allah\'ındır; O\'na bunlarla dua edin." (A\'râf 180)'},
 ];
 const TESBIHAT_TXT='33 Sübhânallah · 33 Elhamdülillah · 33 Allâhü Ekber, sonra "Lâ ilâhe illallâhü vahdehû lâ şerîke leh, lehü\'l-mülkü ve lehü\'l-hamd..." ve Âyetü\'l-Kürsî. "Bunları her namaz ardından söyleyenin günahları bağışlanır." (Müslim)';
+// EN İ18N — zikir (Faz 3; TERCUME_SOZLUGU.md)
+const ZIKIR_EN={
+  hamdele:{ad:'Hamdala (praise)', txt:'Al-hamdu lillahi Rabbil-\'alamin — All praise belongs to Allah, Lord of the worlds. It is the beginning of gratitude.'},
+  salvele:{ad:'Salawat', txt:'Allahumma salli \'ala Muhammadin wa \'ala ali Muhammad. "Whoever sends one blessing upon me, Allah sends ten mercies upon him." (Muslim)'},
+  istigfar:{ad:'Istighfar', txt:'Astaghfirullah al-\'azim wa atubu ilayh — I seek forgiveness from Allah the Mighty and turn to Him in repentance.'},
+  esma:{ad:'The Beautiful Names', txt:'Ya Rahman, ya Rahim, ya Quddus, ya Salam, ya \'Aziz, ya Ghaffar, ya Razzaq, ya Latif... "To Allah belong the most beautiful names, so call upon Him by them." (Al-A\'raf 180)'},
+};
+const TESBIHAT_EN={ad:'Post-prayer Tasbih', txt:'33 Subhanallah · 33 Alhamdulillah · 33 Allahu akbar, then "La ilaha illallahu wahdahu la sharika lah, lahul-mulku wa lahul-hamd..." and Ayat al-Kursi. "Whoever says these after every prayer, his sins are forgiven." (Muslim)'};
+function zikirAd(z){ return (S.lang==='en' && z && ZIKIR_EN[z.id]) ? ZIKIR_EN[z.id].ad : (z&&z.ad)||''; }
+function zikirTxt(z){ return (S.lang==='en' && z && ZIKIR_EN[z.id]) ? ZIKIR_EN[z.id].txt : (z&&z.txt)||''; }
 let zikirDone={};   // vakit başına sıfırlanır (onVakitChange)
 window.__zikir=function(id){
   if(zikirDone[id]){ renderMosque(); return; }
-  const z=(id==='tesbihat')?{ad:'Namaz Tesbihâtı',nur:8,txt:TESBIHAT_TXT}:ZIKIR.find(x=>x.id===id);
+  const z=(id==='tesbihat')?{id:'tesbihat',ad:'Namaz Tesbihâtı',nur:8,txt:TESBIHAT_TXT}:ZIKIR.find(x=>x.id===id);
   if(!z) return; zikirDone[id]=true; addNur(z.nur); save(); refreshHUD(); sndChime();
-  banner((id==='tesbihat'?'📿 ':'')+z.ad); setTimeout(()=>toast(z.txt+' (+'+z.nur+' nûr)'),200); renderMosque();
+  const ad=(id==='tesbihat')?((S.lang==='en')?TESBIHAT_EN.ad:z.ad):zikirAd(z);
+  const txt=(id==='tesbihat')?((S.lang==='en')?TESBIHAT_EN.txt:z.txt):zikirTxt(z);
+  banner((id==='tesbihat'?'📿 ':'')+ad); setTimeout(()=>toast(txt+' (+'+z.nur+(tU('nur_suffix')||' nûr')+')'),200); renderMosque();
 };
 function renderMosque(){
   const vn=vakitOf(gameTime)[1];
@@ -2187,7 +2218,7 @@ function renderMosque(){
   // ZİKİR meclisi — vakit çıkana kadar (kerahat / namaz kılınmayan zamanlarda da)
   h+='<div class="ezsec" style="margin-top:10px">'+(tU('m_zikir_head')||'Zikir Meclisi')+'</div><div class="ezgrid">';
   for(const z of ZIKIR){ const dn=zikirDone[z.id];
-    h+='<button class="ezcard'+(dn?' done':'')+'" onclick="__zikir(\''+z.id+'\')">'+z.ic+' '+z.ad+(dn?' ✓':'')+'</button>'; }
+    h+='<button class="ezcard'+(dn?' done':'')+'" onclick="__zikir(\''+z.id+'\')">'+z.ic+' '+zikirAd(z)+(dn?' ✓':'')+'</button>'; }
   h+='</div>';
   const key=S.dayNum+'_'+vn;
   h+= (S.mosqueSat===key) ? '<div class="sub" style="opacity:.7;text-align:center;margin-top:8px">'+(tU('m_sit_done')||'🤲 Bu vakit oturup dinledin')+'</div>'
@@ -2220,22 +2251,22 @@ window.__mosqueAct=function(kind){
   if(kind==='cuma'){ if(S.cumaDone===S.dayNum){ renderMosque(); return; }
     S.cumaDone=S.dayNum; S.done['ev_namaz']=true; addNur(30); sndFanfare(); recordMosquePrayer('Öğle');
     const ev=document.getElementById('vakit'); if(ev) ev.classList.remove('urgent');
-    banner('🕌 Cuma namazın kabul olsun'); setTimeout(()=>toast('Hutbeyi dinledin, cemaatle kıldın (+30 nûr)'),200); if(islandDone('ev')) checkStreak(); }
+    banner(tU('ma_cuma_banner')||'🕌 Cuma namazın kabul olsun'); setTimeout(()=>toast(tU('ma_cuma_toast')||'Hutbeyi dinledin, cemaatle kıldın (+30 nûr)'),200); if(islandDone('ev')) checkStreak(); }
   else if(kind==='cemaat'){ if(S.done['ev_namaz']){ renderMosque(); return; }
     S.done['ev_namaz']=true; addNur(12); sndChime(); recordMosquePrayer(vn);
     const rec=interactables.find(r=>r.q.id==='ev_namaz'); if(rec) rec.done=true;
     const ev=document.getElementById('vakit'); if(ev) ev.classList.remove('urgent');
-    setTimeout(()=>toast('🤲 Cemaatle '+(NAMAZ_LABEL[vn]||vn)+' kıldın (+12 nûr)'),200); if(islandDone('ev')) checkStreak(); }
+    setTimeout(()=>toast((tU('ma_cemaat_a')||'🤲 Cemaatle ')+namazLabel(vn)+(tU('ma_cemaat_b')||' kıldın (+12 nûr)')),200); if(islandDone('ev')) checkStreak(); }
   else if(kind==='nafile'){ const nkey=S.dayNum+'_'+vn; if(S.mosqueNafile===nkey){ renderMosque(); return; }
-    S.mosqueNafile=nkey; addNur(5); sndChime(); setTimeout(()=>toast('🤲 Nâfile kıldın (+5 nûr) — bu vakit tekrar kılamazsın'),150); }
+    S.mosqueNafile=nkey; addNur(5); sndChime(); setTimeout(()=>toast(tU('ma_nafile_toast')||'🤲 Nâfile kıldın (+5 nûr) — bu vakit tekrar kılamazsın'),150); }
   else if(kind==='vazife'){ if(S.imamMet || S.mosqueConsec<5){ renderMosque(); return; }
-    S.imamMet=true; addNur(15); sndFanfare(); banner('📜 İmam sana vazife verdi');
-    setTimeout(()=>toast('İmam: «Sende adalet ve merhamet gördüm. Bundan sonra insanların arasını bul (🕊️ barıştır), haksızlığa âdil hükmet (⚖️), emaneti ehline ulaştır (📿). Senaryo Defterin açıldı.» (+15 nûr)'),250); }
+    S.imamMet=true; addNur(15); sndFanfare(); banner(tU('ma_vazife_banner')||'📜 İmam sana vazife verdi');
+    setTimeout(()=>toast(tU('ma_vazife_toast')||'İmam: «Sende adalet ve merhamet gördüm. Bundan sonra insanların arasını bul (🕊️ barıştır), haksızlığa âdil hükmet (⚖️), emaneti ehline ulaştır (📿). Senaryo Defterin açıldı.» (+15 nûr)'),250); }
   else if(kind==='sohbet'){ if(!S.mosqueUnlocked){ renderMosque(); return; }
-    addNur(5); sndChime(); const soz=IMAM_SOZ[(S.dayNum*3+ (vakitOf(gameTime)[0]*7|0))%IMAM_SOZ.length];
-    banner('💬 İmam sohbeti'); setTimeout(()=>toast(soz+' (+5 nûr)'),200); }
+    addNur(5); sndChime(); const soz=imamSoz((S.dayNum*3+ (vakitOf(gameTime)[0]*7|0))%IMAM_SOZ.length);
+    banner(tU('ma_sohbet_banner')||'💬 İmam sohbeti'); setTimeout(()=>toast(soz+' (+5 '+(tU('nur_suffix')||'nûr')+')'),200); }
   else if(kind==='sit'){ const key=S.dayNum+'_'+vn; if(S.mosqueSat===key){ renderMosque(); return; }
-    S.mosqueSat=key; addNur(3); sndChime(); setTimeout(()=>toast('🤲 Sessizce oturup dinledin — huzur ve nûr (+3)'),150); }
+    S.mosqueSat=key; addNur(3); sndChime(); setTimeout(()=>toast(tU('ma_sit_toast')||'🤲 Sessizce oturup dinledin — huzur ve nûr (+3)'),150); }
   save(); refreshHUD(); applyIslandLock(); renderMosque();
 };
 function updateSeccadeBtn(){ const b=document.getElementById('prayBtn'); if(b) b.style.display=S.hasSeccade?'block':'none'; }
