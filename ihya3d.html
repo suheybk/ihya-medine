@@ -1149,6 +1149,39 @@ const UI_STR={ en:{
   sc_title_a:'🏅 Title: ', sc_title_toast_a:'🏅 ', sc_title_toast_b:' title: «', sc_title_toast_c:'» — +', sc_title_toast_d:' nur',
   sc_ledger_a:'📖 ', sc_ledger_b:' ledger: case #', sc_ledger_c:' solved',
   nur_suffix:' nur',
+  // --- Faz 3: Umre (renderHac) ---
+  hac_ihram_title:'Ihram & Intention',
+  hac_ihram_sub:'Wrap yourself in two seamless white cloths, make your intention, and recite the talbiyah: <i>"Labbayk Allahumma labbayk…"</i> — "Here I am, O Allah, here I am." While in ihram it is forbidden to cut hair or nails, wear perfume, or hunt.',
+  hac_ihram_btn:'🤍 Enter ihram and recite the talbiyah',
+  hac_tavaf_title:'Tawaf ', hac_tavaf_sub:'Starting from the level of the Black Stone, circle the Kaaba <b>keeping it on your left</b> seven times; in each circuit, remember Allah and supplicate.',
+  hac_tavaf_done:'✅ Tawaf complete — 2 rak\'ah prayer', hac_tavaf_btn_a:'🕋 Perform one circuit of tawaf (', hac_tavaf_btn_b:'/7)',
+  hac_namaz_title:'Tawaf Prayer (2 rak\'ahs)', hac_namaz_sub:'After the seven circuits, two rak\'ahs are prayed behind <b>Maqam Ibrahim</b> (if possible). <i>"Take the standing-place of Abraham as a place of prayer."</i> (Al-Baqarah 125)',
+  hac_namaz_btn:'🧎 Pray two rak\'ahs (+6 nur)',
+  hac_say_title:'Sa\'y ', hac_say_sub:'Now walk in the <b>Mas\'a</b> (separate from the Kaaba) between <b>Safa and Marwah</b>: <b>4 goings + 3 returns = 7</b>, remembering our mother Hagar\'s running as she sought water for Ishmael.<div style="font-size:1.15em;margin:6px 0;direction:rtl">﴿إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ﴾</div><i>"Indeed, Safa and Marwah are among the symbols of Allah."</i> (Al-Baqarah 158)',
+  hac_say_done:'✅ Sa\'y complete — shave', hac_say_go:'Safa → Marwah (going)', hac_say_back:'Marwah → Safa (return)',
+  hac_tiras_title:'Shaving / Trimming', hac_tiras_sub:'Shave or trim your hair; thus you exit ihram and the Umrah is complete.',
+  hac_tiras_btn:'✂️ Shave — complete the Umrah (+40 nur)', hac_exit:'🚪 Leave Mecca',
+  hac_namaz_banner:'🧎 Two rak\'ahs complete', hac_say_verse:'"Indeed, Safa and Marwah are among the symbols of Allah." (Al-Baqarah 158)',
+  hac_done_banner:'🕋 May your Umrah be accepted', hac_done_toast:'"One Umrah to the next is an expiation for the (minor) sins between them." (Bukhari, Umrah 1)',
+  // --- Faz 3: NPC ikram ---
+  npc_cd_a:'🙏 You just gave — try again in ', npc_cd_b:' s', npc_food:'food',
+  npc_need_a:'🔒 First gather ', npc_need_b:' (', npc_need_c:' needed', npc_need_food:'; dates/mulberries/milk',
+  npc_banner_suf:' May your good deed be accepted',
+  // --- Faz 3: profil (intro) ---
+  prof_answer_all:'Answer all three questions.', rank_up:'🌟 New rank: ',
+  prof_start_banner:'🌱 Your personal journey of revival has begun',
+  prof_start_child:'Come: pray your prayers, learn the surahs and supplications 📖🧎',
+  prof_start_adult:'Worship, lawful earning and giving — with you from A to Z 🕌',
+  px_opened:' opened!', px_reconquer:' conquered again', world_revived:'☾ The World Is Revived ☾',
+  hy_banner_suf:' Ongoing charity', hy_toast_a:' — may it be accepted (+',
+  zulum_banner:'⚠️ Injustice', zulum_loss_a:' (−', zulum_loss_b:' 💰 dirhams plundered)',
+  zulum_hadith:'"Beware of injustice, for injustice will be darkness on the Day of Judgment." (Muslim) — care for the needy so the city finds peace.',
+  // --- Faz 3: Muâhât (kardeşlik) ---
+  mu_banner:'🤝 Mu\'akhat — The Pact of Brotherhood',
+  mu_t1:'In Medina the Messenger of Allah ﷺ declared each Muhajir a brother to an Ansari; the Ansar wholeheartedly shared their wealth and homes.',
+  mu_t2:'Sa\'d ibn Rabi\' offered half his wealth to Abd al-Rahman ibn Awf. But he said, "Show me the way to the market" — he chose lawful earning. (Bukhari, Manaqib al-Ansar 3)',
+  mu_reward:'✦ +25 nur — You have gained an Ansari brother',
+  mu_greet:'🤝 Your Ansari brother greets you: "Seek your provision lawfully in the market, give from your earnings — brotherhood is sharing."',
   // --- Faz 3: imtihan meydanı ---
   ex_title_suf:' Trial', ex_prog:'Question ', ex_lock_done:'✓ This isle is already conquered', ex_lock_first:'🔒 First complete the lessons on this isle',
   ex_school_fiqh:'⚖️ Fiqh School', ex_school_hadith:'🕌 Hadith School', ex_school_verse:'📖 Verse Council',
@@ -1186,7 +1219,7 @@ const RANKS=[[0,'Niyet'],[60,'Tâlib'],[180,'Gayret Ehli'],[360,'İhyâ Yolcusu'
 function rankIndex(n){ let i=0; for(let k=0;k<RANKS.length;k++){ if(n>=RANKS[k][0]) i=k; } return i; }
 function rankName(n){ const i=rankIndex(n); return tU('rank_'+i)||RANKS[i][1]; }
 function addNur(n){ const b=rankIndex(S.nur); S.nur+=n; const a=rankIndex(S.nur);
-  if(a>b) setTimeout(()=>{ banner('🌟 Yeni rütbe: '+RANKS[a][1]); sndFanfare(); }, 550); }
+  if(a>b) setTimeout(()=>{ banner((tU('rank_up')||'🌟 Yeni rütbe: ')+rankName(S.nur)); sndFanfare(); }, 550); }
 /* ---- İSTİKAMET (streak): ardışık gün günlük ibadeti tamamlama ---- */
 function checkStreak(){
   if(!islandDone('ev')) return;          // günün ibadeti (Hâne) tamam mı
@@ -2155,25 +2188,25 @@ function exitHac(){ hacMode=false; hacVortexT=0; warpBlock=false; document.body.
 function renderHac(){
   const st=document.getElementById('hacStep'), body=document.getElementById('hacBody'); if(!body)return;
   const P=hacState; let title='', h='';
-  if(P.phase==='ihram'){ title='İhrâm & Niyet';
-    h+='<div class="sub" style="margin-bottom:8px">İki dikişsiz beyaz örtüye bürün, niyet et ve telbiye getir: <i>"Lebbeyk Allâhümme lebbeyk…"</i> — "Buyur Allah\'ım buyur." İhrâmlıyken saç/tırnak kesmek, koku sürünmek, avlanmak yasaktır.</div>';
-    h+='<button class="do" onclick="__hacAct(\'ihram\')">🤍 İhrâma gir ve telbiye getir</button>'; }
-  else if(P.phase==='tavaf'){ title='Tavâf '+P.tavaf+'/7';
-    h+='<div class="sub" style="margin-bottom:8px">Hacerü\'l-Esved hizasından başlayarak Kâbe\'yi <b>sola alarak</b> yedi kez dön; her şavtta zikret ve duâ et.</div>';
-    h+= P.tavaf>=7 ? '<button class="do" onclick="__hacAct(\'toNamaz\')">✅ Tavâf tamam — 2 rekât namaz</button>'
-      : '<button class="do" onclick="__hacAct(\'tavaf\')">🕋 Bir şavt tavâf et ('+(P.tavaf+1)+'/7)</button>'; }
-  else if(P.phase==='namaz'){ title='Tavâf Namazı (2 rekât)';
-    h+='<div class="sub" style="margin-bottom:8px">Yedi şavt tavâftan sonra <b>Makām-ı İbrâhîm</b> arkasında (mümkünse) <b>iki rekât</b> namaz kılınır. <i>"Makām-ı İbrâhîm\'i namaz yeri edinin."</i> (Bakara 125)</div>';
-    h+='<button class="do" onclick="__hacAct(\'namaz\')">🧎 İki rekât namaz kıl (+6 nûr)</button>'; }
-  else if(P.phase==='say'){ title='Sa\'y '+P.say+'/7';
-    h+='<div class="sub" style="margin-bottom:8px">Şimdi (Kâbe\'den ayrı) <b>Mes\'â</b>\'da <b>Safâ ile Merve</b> arasında yürü: <b>4 gidiş + 3 geliş = 7</b>. Hâcer annemizin İsmâil\'e su ararken koşusunu anarak.<div style="font-size:1.15em;margin:6px 0;direction:rtl">﴿إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ﴾</div><i>"Şüphesiz Safâ ile Merve, Allah\'ın nişânelerindendir."</i> (Bakara 158)</div>';
-    h+= P.say>=7 ? '<button class="do" onclick="__hacAct(\'toTiras\')">✅ Sa\'y tamam — tıraş</button>'
-      : '<button class="do" onclick="__hacAct(\'say\')">🚶 '+(P.say%2===0?'Safâ → Merve (gidiş)':'Merve → Safâ (geliş)')+' — '+(P.say+1)+'/7</button>'; }
-  else { title='Tıraş / Kısaltma';
-    h+='<div class="sub" style="margin-bottom:8px">Saçını tıraş et veya kısalt; böylece ihrâmdan çıkarsın ve Umre tamamlanır.</div>';
-    h+='<button class="do" onclick="__hacAct(\'tiras\')">✂️ Tıraş ol — Umre\'yi tamamla (+40 nûr)</button>'; }
+  if(P.phase==='ihram'){ title=tU('hac_ihram_title')||'İhrâm & Niyet';
+    h+='<div class="sub" style="margin-bottom:8px">'+(tU('hac_ihram_sub')||'İki dikişsiz beyaz örtüye bürün, niyet et ve telbiye getir: <i>"Lebbeyk Allâhümme lebbeyk…"</i> — "Buyur Allah\'ım buyur." İhrâmlıyken saç/tırnak kesmek, koku sürünmek, avlanmak yasaktır.')+'</div>';
+    h+='<button class="do" onclick="__hacAct(\'ihram\')">'+(tU('hac_ihram_btn')||'🤍 İhrâma gir ve telbiye getir')+'</button>'; }
+  else if(P.phase==='tavaf'){ title=(tU('hac_tavaf_title')||'Tavâf ')+P.tavaf+'/7';
+    h+='<div class="sub" style="margin-bottom:8px">'+(tU('hac_tavaf_sub')||'Hacerü\'l-Esved hizasından başlayarak Kâbe\'yi <b>sola alarak</b> yedi kez dön; her şavtta zikret ve duâ et.')+'</div>';
+    h+= P.tavaf>=7 ? '<button class="do" onclick="__hacAct(\'toNamaz\')">'+(tU('hac_tavaf_done')||'✅ Tavâf tamam — 2 rekât namaz')+'</button>'
+      : '<button class="do" onclick="__hacAct(\'tavaf\')">'+(tU('hac_tavaf_btn_a')||'🕋 Bir şavt tavâf et (')+(P.tavaf+1)+(tU('hac_tavaf_btn_b')||'/7)')+'</button>'; }
+  else if(P.phase==='namaz'){ title=tU('hac_namaz_title')||'Tavâf Namazı (2 rekât)';
+    h+='<div class="sub" style="margin-bottom:8px">'+(tU('hac_namaz_sub')||'Yedi şavt tavâftan sonra <b>Makām-ı İbrâhîm</b> arkasında (mümkünse) <b>iki rekât</b> namaz kılınır. <i>"Makām-ı İbrâhîm\'i namaz yeri edinin."</i> (Bakara 125)')+'</div>';
+    h+='<button class="do" onclick="__hacAct(\'namaz\')">'+(tU('hac_namaz_btn')||'🧎 İki rekât namaz kıl (+6 nûr)')+'</button>'; }
+  else if(P.phase==='say'){ title=(tU('hac_say_title')||'Sa\'y ')+P.say+'/7';
+    h+='<div class="sub" style="margin-bottom:8px">'+(tU('hac_say_sub')||'Şimdi (Kâbe\'den ayrı) <b>Mes\'â</b>\'da <b>Safâ ile Merve</b> arasında yürü: <b>4 gidiş + 3 geliş = 7</b>. Hâcer annemizin İsmâil\'e su ararken koşusunu anarak.<div style="font-size:1.15em;margin:6px 0;direction:rtl">﴿إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ﴾</div><i>"Şüphesiz Safâ ile Merve, Allah\'ın nişânelerindendir."</i> (Bakara 158)')+'</div>';
+    h+= P.say>=7 ? '<button class="do" onclick="__hacAct(\'toTiras\')">'+(tU('hac_say_done')||'✅ Sa\'y tamam — tıraş')+'</button>'
+      : '<button class="do" onclick="__hacAct(\'say\')">🚶 '+(P.say%2===0?(tU('hac_say_go')||'Safâ → Merve (gidiş)'):(tU('hac_say_back')||'Merve → Safâ (geliş)'))+' — '+(P.say+1)+'/7</button>'; }
+  else { title=tU('hac_tiras_title')||'Tıraş / Kısaltma';
+    h+='<div class="sub" style="margin-bottom:8px">'+(tU('hac_tiras_sub')||'Saçını tıraş et veya kısalt; böylece ihrâmdan çıkarsın ve Umre tamamlanır.')+'</div>';
+    h+='<button class="do" onclick="__hacAct(\'tiras\')">'+(tU('hac_tiras_btn')||'✂️ Tıraş ol — Umre\'yi tamamla (+40 nûr)')+'</button>'; }
   if(st) st.textContent=title;
-  h+='<button class="cl" onclick="__hacAct(\'exit\')">🚪 Mekke\'den ayrıl</button>';
+  h+='<button class="cl" onclick="__hacAct(\'exit\')">'+(tU('hac_exit')||'🚪 Mekke\'den ayrıl')+'</button>';
   body.innerHTML=h;
 }
 window.__hacAct=function(kind){
@@ -2182,13 +2215,13 @@ window.__hacAct=function(kind){
   if(kind==='ihram'){ telbiye(); P.phase='tavaf'; renderHac(); return; }
   if(kind==='tavaf'){ if(P.tavaf<7){ P.tavaf++; P.angT-=Math.PI*2; addNur(2); sndChime(); } renderHac(); return; }
   if(kind==='toNamaz'){ P.phase='namaz'; renderHac(); return; }
-  if(kind==='namaz'){ addNur(6); sndChime(); banner('🧎 İki rekât tamam'); P.phase='say'; P.sayPos=-1; P.sayT=-1; renderHac();
+  if(kind==='namaz'){ addNur(6); sndChime(); banner(tU('hac_namaz_banner')||'🧎 İki rekât tamam'); P.phase='say'; P.sayPos=-1; P.sayT=-1; renderHac();
     setTimeout(()=>banner('﴿إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ﴾'),400);
-    setTimeout(()=>toast('"Şüphesiz Safâ ile Merve, Allah\'ın nişânelerindendir." (Bakara 158)'),1700); return; }
+    setTimeout(()=>toast(tU('hac_say_verse')||'"Şüphesiz Safâ ile Merve, Allah\'ın nişânelerindendir." (Bakara 158)'),1700); return; }
   if(kind==='say'){ if(P.say<7){ P.say++; P.sayT=(P.say%2===1)?1:-1; addNur(2); sndChime(); } renderHac(); return; }
   if(kind==='toTiras'){ P.phase='tiras'; renderHac(); return; }
-  if(kind==='tiras'){ S.umreCount=(S.umreCount||0)+1; addNur(40); save(); refreshHUD(); sndFanfare(); banner('🕋 Umre kabul olsun');
-    setTimeout(()=>toast('"Bir umre, diğer umreye kadar aralarındaki (küçük) günahlara keffârettir." (Buhârî, Umre 1)'),1200);
+  if(kind==='tiras'){ S.umreCount=(S.umreCount||0)+1; addNur(40); save(); refreshHUD(); sndFanfare(); banner(tU('hac_done_banner')||'🕋 Umre kabul olsun');
+    setTimeout(()=>toast(tU('hac_done_toast')||'"Bir umre, diğer umreye kadar aralarındaki (küçük) günahlara keffârettir." (Buhârî, Umre 1)'),1200);
     setTimeout(()=>exitHac(),700); return; }
 };
 function hacTick(dt){
@@ -2613,24 +2646,38 @@ const PROFILE_Q=[
   {key:'gender',   q:'Cinsiyet?', opts:[{v:'erkek',l:'Erkek'},{v:'kadin',l:'Kadın'}]},
   {key:'quran',    q:'Kur\'an okuyabiliyor musun?', opts:[{v:'evet',l:'Okuyabiliyorum'},{v:'ogreniyor',l:'Öğreniyorum'}]},
 ];
+// EN İ18N — profil soruları (Faz 3; TERCUME_SOZLUGU.md)
+const PROFILE_Q_EN={
+  ageGroup:{q:'Which is closest to your age?', opts:{cocuk:'Child (before puberty)', yetiskin:'Youth / Adult (past puberty)'}},
+  gender:{q:'Gender?', opts:{erkek:'Male', kadin:'Female'}},
+  quran:{q:'Can you read the Qur\'an?', opts:{evet:'I can read it', ogreniyor:'I\'m learning'}},
+};
+function profQ(q){ return (S.lang==='en' && PROFILE_Q_EN[q.key]) ? PROFILE_Q_EN[q.key].q : q.q; }
+function profOpt(q,o){ return (S.lang==='en' && PROFILE_Q_EN[q.key]) ? PROFILE_Q_EN[q.key].opts[o.v] : o.l; }
 let profSel={};
 function openProfile(){ profSel = S.profile.set ? {ageGroup:S.profile.ageGroup,gender:S.profile.gender,quran:S.profile.quran} : {}; renderProfile(); document.getElementById('profile').classList.add('show'); }
 function renderProfile(){
   const w=document.getElementById('profQuestions'); w.innerHTML='';
   for(const q of PROFILE_Q){
     const g=document.createElement('div'); g.style.marginBottom='13px';
-    const t=document.createElement('div'); t.className='exq'; t.style.margin='0 0 7px'; t.textContent=q.q; g.appendChild(t);
+    const t=document.createElement('div'); t.className='exq'; t.style.margin='0 0 7px'; t.textContent=profQ(q); g.appendChild(t);
     const opts=document.createElement('div'); opts.className='exopts';
-    for(const o of q.opts){ const b=document.createElement('button'); b.className='exOpt'+(profSel[q.key]===o.v?' correct':''); b.textContent=o.l;
+    for(const o of q.opts){ const b=document.createElement('button'); b.className='exOpt'+(profSel[q.key]===o.v?' correct':''); b.textContent=profOpt(q,o);
       b.onclick=()=>{ profSel[q.key]=o.v; renderProfile(); }; opts.appendChild(b); }
     g.appendChild(opts); w.appendChild(g);
   }
   const all=PROFILE_Q.every(q=>profSel[q.key]);
   document.getElementById('profStart').disabled=!all;
   document.getElementById('profStart').style.opacity=all?'1':'0.5';
-  document.getElementById('profSummary').innerHTML = all ? obligationsText(profSel) : 'Üç soruyu da yanıtla.';
+  document.getElementById('profSummary').innerHTML = all ? obligationsText(profSel) : (tU('prof_answer_all')||'Üç soruyu da yanıtla.');
 }
 function obligationsText(p){
+  if(S.lang==='en'){
+    if(p.ageGroup==='cocuk') return '🌱 <b>You are not yet accountable (mukallaf)</b> — but to help you get used to it, the game guides you toward <b>prayer, surahs and supplications</b>. Your prayer rug is ready; you can pray right away.'+(p.quran==='ogreniyor'?' First, try to learn to read the Qur\'an.':'');
+    const cumaE = p.gender==='erkek' ? ' <b>the Friday prayer</b> (in congregation),' : '';
+    const cumaNotE = p.gender==='kadin' ? ' <i>(Friday prayer is not obligatory for you; you pray Dhuhr.)</i>' : '';
+    return '🕌 Among what is obligatory for you: <b>the five daily prayers</b>,'+cumaE+' fasting, <b>zakat</b> (once you reach the nisab), and Hajj. The game guides and reminds you in prayer, lawful earning, zakat and charity.'+cumaNotE+(p.quran==='ogreniyor'?' Also focus on learning to read the Qur\'an.':'');
+  }
   if(p.ageGroup==='cocuk') return '🌱 <b>Henüz mükellef değilsin</b> — ama alışman için oyun seni <b>namaza, sûre ve dualara</b> yönlendirir. Seccaden hazır olur, hemen kılabilirsin.'+(p.quran==='ogreniyor'?' Önce Kur\'an okumayı öğrenmeye çalış.':'');
   const cuma = p.gender==='erkek' ? ' <b>Cuma namazı</b> (cemaatle),' : '';
   const cumaNot = p.gender==='kadin' ? ' <i>(Cuma sana farz değil; öğleni kılarsın.)</i>' : '';
@@ -2698,6 +2745,14 @@ const NPC_DEFS=[
   {id:'misafir1', model:'traveler', islId:'sehir',   pos:[63,0,-4.6], need:2, nur:14, cd:28000, scale:1.95,
    nm:'Misafiri ağırla',    ic:'🧳', ref:'"Allah\'a ve âhiret gününe iman eden misafirine ikram etsin." (Buhârî, Edeb 85)'},
 ];
+// EN İ18N — muhtaç NPC ikram görevleri (Faz 3; TERCUME_SOZLUGU.md)
+const NPC_EN={
+  yetim1:{nm:'Take food to an orphan', ref:'"I and the one who cares for an orphan will be like this in Paradise, side by side." (Bukhari)'},
+  komsu1:{nm:'Show kindness to a neighbor', ref:'Gabriel urged the neighbor\'s right so much that (the Prophet) thought he would make him an heir. (Bukhari)'},
+  misafir1:{nm:'Honor a guest', ref:'"Whoever believes in Allah and the Last Day, let him honor his guest." (Bukhari, Adab 85)'},
+};
+function npcNm(def){ return (S.lang==='en' && def && NPC_EN[def.id]) ? NPC_EN[def.id].nm : (def&&def.nm)||''; }
+function npcRef(def){ return (S.lang==='en' && def && NPC_EN[def.id]) ? NPC_EN[def.id].ref : (def&&def.ref)||''; }
 let npcNodes=[], npcWander=[];
 // ★ NPC RENKLERİ — Suheyb'in referans görsellerine (models/*.glb.jpg) göre sıcak Medine paleti.
 // Mesh'ler <model>_<n> isimli: _1=cübbe/gövde, _2=ten(baş/el), _3=başörtü/saç, _4=koyu aksan(saç/kaş), _5/_6=ekstra.
@@ -2800,19 +2855,19 @@ function updateNeedyDistress(){ const tt=performance.now()/1000;
     if(m>0){ rec.distress.position.y=1.35+Math.sin(tt*2.4+rec.g.position.x)*0.05; rec.distress.material.opacity=0.7+0.3*(0.5+0.5*Math.sin(tt*3.2)); } } }
 function doGiveHayir(rec){
   const def=rec.def, item=def.needItem;
-  if(!isUnlocked(def.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
-  if(!npcReady(def)){ const s=Math.max(1,Math.ceil((S.gather['npc_'+def.id]-Date.now())/1000)); toast('🙏 Az önce verdin — '+s+' sn sonra tekrar'); return; }
+  if(!isUnlocked(def.islId)){ toast(tU('t_locked_place')||'🔒 Burası henüz açılmadı'); return; }
+  if(!npcReady(def)){ const s=Math.max(1,Math.ceil((S.gather['npc_'+def.id]-Date.now())/1000)); toast((tU('npc_cd_a')||'🙏 Az önce verdin — ')+s+(tU('npc_cd_b')||' sn sonra tekrar')); return; }
   const have = item ? (S.inv[item]||0) : foodCount();
-  if(have<def.need){ toast('🔒 Önce '+(item?GOODS[item].nm:'yiyecek')+' topla ('+def.need+' gerek'+(item?'':'; hurma/dut/süt')+')'); return; }
+  if(have<def.need){ toast((tU('npc_need_a')||'🔒 Önce ')+(item?goodName(item):(tU('npc_food')||'yiyecek'))+(tU('npc_need_b')||' topla (')+def.need+(tU('npc_need_c')||' gerek')+(item?'':(tU('npc_need_food')||'; hurma/dut/süt'))+')'); return; }
   facePlayer(rec.g.position); playAction(1.5,'give');   // #1 ikram: iki elle uzatıp hafif eğilme jesti
   if(item){ S.inv[item]-=def.need; if(S.inv[item]<=0) delete S.inv[item]; } else takeFood(def.need);
   addNur(def.nur);
   S.gather['npc_'+def.id]=Date.now()+def.cd;
   careNeedy(def.id);   // bu muhtaç bu hafta gözetildi → mutsuzluğu azalır
   save(); refreshHUD(); sndChime();
-  banner(def.ic+' Hayrın kabul olsun');
-  toast('+'+def.nur+' nûr — '+def.nm+' (−'+def.need+' '+(item?GOODS[item].ic+' '+GOODS[item].nm:'yiyecek')+')');
-  setTimeout(()=>toast(def.ref),1500);
+  banner(def.ic+(tU('npc_banner_suf')||' Hayrın kabul olsun'));
+  toast('+'+def.nur+(tU('nur_suffix')||' nûr')+' — '+npcNm(def)+' (−'+def.need+' '+(item?GOODS[item].ic+' '+goodName(item):(tU('npc_food')||'yiyecek'))+')');
+  setTimeout(()=>toast(npcRef(def)),1500);
 }
 
 /* ============ MUÂHÂT — Ensâr-Muhâcir kardeşliği (Faz 6: hikâye) ============ */
@@ -2829,27 +2884,27 @@ function makeMuahat(){
   return muahatRec;
 }
 function doMuahat(rec){
-  if(!isUnlocked('mahalle')){ toast('🔒 Burası henüz açılmadı'); return; }
+  if(!isUnlocked('mahalle')){ toast(tU('t_locked_place')||'🔒 Burası henüz açılmadı'); return; }
   rec.g.rotation.y=Math.atan2(player.position.x-rec.g.position.x, player.position.z-rec.g.position.z);
   facePlayer(rec.g.position); playAction(1.4,'hug');   // kardeşi selâmla/sarıl (garip 'çalışma' jesti yerine)
   if(!S.muahat){
     S.muahat=true; addNur(25); save(); refreshHUD(); sndFanfare();
-    banner('🤝 Muâhât — Kardeşlik Ahdi');
-    setTimeout(()=>toast('Rasûlullah ﷺ Medine\'de her muhâciri bir ensâr ile kardeş ilân etti; ensâr, malını ve evini gönülden paylaştı.'),1500);
-    setTimeout(()=>toast('Sa\'d b. Rebî\', malının yarısını Abdurrahman b. Avf\'a teklif etti. O ise "Bana pazarın yolunu göster" dedi — kesb-i helâli seçti. (Buhârî, Menâkıbü\'l-Ensâr 3)'),4400);
-    setTimeout(()=>banner('✦ +25 nûr — Ensâr kardeşin oldu'),7600);
+    banner(tU('mu_banner')||'🤝 Muâhât — Kardeşlik Ahdi');
+    setTimeout(()=>toast(tU('mu_t1')||'Rasûlullah ﷺ Medine\'de her muhâciri bir ensâr ile kardeş ilân etti; ensâr, malını ve evini gönülden paylaştı.'),1500);
+    setTimeout(()=>toast(tU('mu_t2')||'Sa\'d b. Rebî\', malının yarısını Abdurrahman b. Avf\'a teklif etti. O ise "Bana pazarın yolunu göster" dedi — kesb-i helâli seçti. (Buhârî, Menâkıbü\'l-Ensâr 3)'),4400);
+    setTimeout(()=>banner(tU('mu_reward')||'✦ +25 nûr — Ensâr kardeşin oldu'),7600);
     return;
   }
   sndChime();
-  toast('🤝 Ensâr kardeşin seni selâmlıyor: "Rızkını pazarda helâlden ara, kazancından infak et — kardeşlik paylaşmaktır."');
+  toast(tU('mu_greet')||'🤝 Ensâr kardeşin seni selâmlıyor: "Rızkını pazarda helâlden ara, kazancından infak et — kardeşlik paylaşmaktır."');
 }
 function startProfile(){
   S.profile={ set:true, ageGroup:profSel.ageGroup, gender:profSel.gender, quran:profSel.quran };
   applyProfile();
   document.getElementById('profile').classList.remove('show');
   document.getElementById('endscreen').classList.remove('show');
-  banner('🌱 Kişisel ihyâ yolculuğun başladı');
-  setTimeout(()=>toast(isChild()?'Haydi: namazını kıl, sûre ve dualarını öğren 📖🧎':'İbadet, kesb-i helâl ve infak — a\'dan z\'ye seninle 🕌'),800);
+  banner(tU('prof_start_banner')||'🌱 Kişisel ihyâ yolculuğun başladı');
+  setTimeout(()=>toast(isChild()?(tU('prof_start_child')||'Haydi: namazını kıl, sûre ve dualarını öğren 📖🧎'):(tU('prof_start_adult')||'İbadet, kesb-i helâl ve infak — a\'dan z\'ye seninle 🕌')),800);
 }
 /* ============ ATMOSFER: yıldızlar + bulutlar + nûr zerreleri (gece) ============ */
 let starField=null, dayMotes=null, dayMoteData=[], fireflies=null, fireflyData=[], nightF=0;
@@ -2981,7 +3036,7 @@ function donateHayir(id){
   if((id==='sebil'||id==='golge') && !S.done['hayir']){   // faydalı iş senaryosu: sebil/gölgelik inşası "hayir" quest'ini tamamlar
     S.done['hayir']=true; const r=scenarioRecs.find(x=>x.sid==='faydali'); if(r) r.done=true; applyIslandLock(); }
   save(); refreshHUD(); renderHayir();
-  sndChime(); banner(def.ic+' Sadaka-i câriye'); toast('🤲 '+def.nm+' — kabul olsun (+'+def.reward+' nûr)');
+  sndChime(); banner(def.ic+(tU('hy_banner_suf')||' Sadaka-i câriye')); toast('🤲 '+hayirNm(def)+(tU('hy_toast_a')||' — kabul olsun (+')+def.reward+(tU('nur_suffix')||' nûr')+')');
 }
 /* ============ MEDİNE ADALETİ — muhtaç ihmali → mutsuzluk → şehir huzursuzluğu/zulüm ============ */
 // Zekât/sadaka/hayrın düştüğü muhtaçlar. Haftalık gözetilmezlerse mutsuzlaşır; mutsuzluk
@@ -3004,15 +3059,19 @@ function weeklyJustice(){   // onNewDay'den — muhtaç ihmali değerlendirmesi 
 }
 function zulumEvent(total){   // yüksek mutsuzluk → yağma/eşkıya/saldırı → adaletsizlik
   S.zulum++;
-  const evs=['🗡️ Şehirde eşkıya türedi — yoksul gözetilmedi, kervan yağmalandı.',
+  const evsTR=['🗡️ Şehirde eşkıya türedi — yoksul gözetilmedi, kervan yağmalandı.',
     '🔥 Aç kalanlar çarşıyı bastı — yağma çıktı.',
     '⚔️ Zayıfın hakkı yendi — sokakta saldırılar arttı.'];
+  const evsEN=['🗡️ Bandits appeared in the city — the poor were neglected, a caravan was plundered.',
+    '🔥 The hungry stormed the market — looting broke out.',
+    '⚔️ The weak were wronged — attacks in the streets increased.'];
+  const evs=(S.lang==='en')?evsEN:evsTR;
   const ev=evs[S.zulum%evs.length]; const loss=Math.min(S.dirhem||0, 12+total*3);
   if(loss>0) S.dirhem=Math.max(0,(S.dirhem||0)-loss);
   save(); refreshHUD();
-  banner('⚠️ Adaletsizlik');
-  setTimeout(()=>toast(ev+(loss>0?' (−'+loss+' 💰 dirhem yağmalandı)':'')),300);
-  setTimeout(()=>toast('"Zulümden sakının; zulüm kıyamet günü karanlıklardır." (Müslim) — muhtaçları gözet ki şehir huzur bulsun.'),2000);
+  banner(tU('zulum_banner')||'⚠️ Adaletsizlik');
+  setTimeout(()=>toast(ev+(loss>0?((tU('zulum_loss_a')||' (−')+loss+(tU('zulum_loss_b')||' 💰 dirhem yağmalandı)')):'')),300);
+  setTimeout(()=>toast(tU('zulum_hadith')||'"Zulümden sakının; zulüm kıyamet günü karanlıklardır." (Müslim) — muhtaçları gözet ki şehir huzur bulsun.'),2000);
 }
 function adaletState(){ const t=moodTotal(); return t<=2?{ic:'⚖️',lbl:tU('ad_ok')||'Huzur',cls:'ok'}:t<=4?{ic:'😟',lbl:tU('ad_warn')||'Huzursuz',cls:'warn'}:{ic:'🗡️',lbl:tU('ad_bad')||'Zulüm',cls:'bad'}; }
 function updateAdaletHud(){ const el=document.getElementById('adalet'); if(!el) return;
@@ -4134,17 +4193,25 @@ const STORY={
   cami:'🕌 Mescid yükseldi; Suffa ehli ilimle meşgul. İlmini artır, cemaate koş.',
   sehir:'🏙️ Medine bir şehir oldu: Sûk kuruldu, adalet yayıldı. Helâlinden kazan, kazancından infak et.',
 };
+// EN İ18N — ada açılış sîret satırları (Faz 3; TERCUME_SOZLUGU.md)
+const STORY_EN={
+  bahce:'🌱 The Muhajirun brought Medina\'s barren soil to life with date groves — work, harvest, and live by lawful earning.',
+  mahalle:'🤝 The Ansar took their Muhajir brothers into their homes. In the neighborhood, find your bond-brother (🤝) and care for the neighbor and the orphan.',
+  cami:'🕌 The Mosque rose; the People of the Suffa devote themselves to knowledge. Increase your learning, hasten to the congregation.',
+  sehir:'🏙️ Medina became a city: the market was built and justice spread. Earn from what is lawful, and give from your earnings.',
+};
+function storyEn(id){ return (S.lang==='en' && STORY_EN[id]) || STORY[id]; }
 function passExam(islId){
   const before=WORLD.islands.map(i=>isUnlocked(i.id));
   const firstConquer=!S.conquered[islId];
   S.conquered[islId]=true; addNur(30); save();
   const after=WORLD.islands.map(i=>isUnlocked(i.id));
   applyIslandLock(); refreshHUD();
-  WORLD.islands.forEach((is,idx)=>{ if(!before[idx]&&after[idx]){ setTimeout(()=>toast('🔓 '+is.name+' açıldı!'),1900);
-    if(STORY[is.id]) setTimeout(()=>toast(STORY[is.id]),3400); } });
+  WORLD.islands.forEach((is,idx)=>{ if(!before[idx]&&after[idx]){ setTimeout(()=>toast('🔓 '+islandName(is)+(tU('px_opened')||' açıldı!')),1900);
+    if(STORY[is.id]) setTimeout(()=>toast(storyEn(is.id)),3400); } });
   if(firstConquer){ celebrate(islId);
-    if(WORLD.islands.filter(i=>!i.side).every(i=>S.conquered[i.id])){ setTimeout(()=>banner('☾ Dünya İhyâ Edildi ☾'),2900); setTimeout(showEnd,4700); } }
-  else { sndFanfare(); const is=WORLD.islands.find(i=>i.id===islId); toast('✓ '+(is?is.name:'')+' yine fethedildi'); }
+    if(WORLD.islands.filter(i=>!i.side).every(i=>S.conquered[i.id])){ setTimeout(()=>banner(tU('world_revived')||'☾ Dünya İhyâ Edildi ☾'),2900); setTimeout(showEnd,4700); } }
+  else { sndFanfare(); const is=WORLD.islands.find(i=>i.id===islId); toast('✓ '+islandName(is)+(tU('px_reconquer')||' yine fethedildi')); }
 }
 function failExam(islId){
   // "tekrar başa": o adanın dersleri sıfırlanır, tekrar öğrenilir
