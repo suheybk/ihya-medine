@@ -413,7 +413,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.12</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.13</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -821,12 +821,63 @@ const NAMAZ_STEPS_EN=[
   {t:'8) Sitting (qa\'dah)',d:'Recite At-tahiyyat, Allahumma salli-barik, and the Rabbana supplications.'},
   {t:'9) Salam',d:'End by saying "As-salamu alaykum wa rahmatullah," first to the right, then to the left.'},
 ];
-// accessor: görev/adım için EN payload (yoksa null → TR)
-function qEn(q){ if(S.lang!=='en'||!q) return null;
-  if(q.topic==='namaz'||q.id==='ev_namaz'){ for(const v in NAMAZ_BY_VAKIT){ if(NAMAZ_BY_VAKIT[v].nm===q.nm) return NAMAZ_EN[v]; } return null; }
-  return QUEST_EN[q.id]||null; }
-function stepsEn(steps){ if(S.lang!=='en'||!steps) return null;
-  if(steps===ABDEST_STEPS) return ABDEST_STEPS_EN; if(steps===NAMAZ_STEPS) return NAMAZ_STEPS_EN; return null; }
+/* AR — görev ad+hatırlatma (oyun ipuçları, MSA). Âyet/hadîs REF'leri burada YOK → TR'ye düşer
+   (AR'da dinî metin ASIL Arapça'dan alınacak; bkz. TERCUME_SOZLUGU.md §8). */
+const QUEST_AR={
+  fidan:{nm:'اغرِس فَسيلة', rem:'ولو قامت الساعة وفي يدك فَسيلة فاغرِسها.'},
+  canli:{nm:'اسقِ كائنًا حيًّا أو أطعِمه', rem:'في كل كبدٍ رطبةٍ أجر.'},
+  selam:{nm:'سلِّم على خمسة أشخاص', rem:'أفشوا السلام بينكم لتحابّوا.'},
+  komsu:{nm:'أكرِم الجار', rem:'صحن طعامٍ، أو سلامٌ، أو عون.'},
+  sadaka:{nm:'تصدّق', rem:'ما نقصت صدقةٌ من مال؛ بل تزيد البركة.'},
+  cemaat:{nm:'صلِّ في جماعة', rem:'صلاة الجماعة تفضل صلاة الفذّ بسبعٍ وعشرين درجة.'},
+  ilim:{nm:'احضُر مجلس العلم', rem:'من سلك طريقًا يلتمس فيه علمًا سهّل الله له طريقًا إلى الجنة.'},
+  davet:{nm:'ادعُ أحدًا إلى الخير', rem:'أن يهدي الله بك رجلًا واحدًا خيرٌ لك من الدنيا.'},
+  adalet:{nm:'كن عادلًا واحمِ حقًّا', rem:'احكم بالعدل؛ إن الله يحب المقسطين.'},
+  emanet:{nm:'أدِّ الأمانة إلى أهلها', rem:'أدِّ الأمانة إلى صاحبها، وأوفِ بوعدك.'},
+  hayir:{nm:'اعمل عملًا نافعًا للناس', rem:'خير الناس أنفعهم للناس.'},
+  ev_taharet:{nm:'آداب الخلاء', rem:'ادخل باليسرى مع البسملة، واخرج باليمنى قائلًا «غفرانك».'},
+  ev_abdest:{nm:'توضّأ', rem:'الطهور شطر الإيمان؛ ومع كل عضوٍ تتساقط الذنوب.'},
+  ev_quran:{nm:'اقرأ صفحةً من القرآن', rem:'قطرةٌ كل يوم تصير بحرًا في العام.'},
+  ev_dua:{nm:'اقرأ أذكار الصباح والمساء', rem:'انسج للنهار درعًا بالذكر؛ ليبقَ قلبك محفوظًا.'},
+};
+const NAMAZ_AR={
+  'Fecir':{nm:'صلِّ الفجر', rem:'افتح يومك بالفريضة؛ البركة تبدأ في الفجر.'},
+  'Kuşluk':{nm:'صلِّ الضحى', rem:'إذا ارتفعت الشمس فركعتان؛ سجدة شكر اليوم.'},
+  'Öğle':{nm:'صلِّ الظهر', rem:'قِف بين يدي ربك في وسط النهار.'},
+  'İkindi':{nm:'صلِّ العصر', rem:'حافظ على الصلاة الوسطى؛ أكثر الأوقات تفريطًا.'},
+  'Akşam':{nm:'صلِّ المغرب', rem:'اختم يومك بالشكر.'},
+  'Yatsı':{nm:'صلِّ العشاء', rem:'اختم الليل بالصلاة.'},
+  'Gece':{nm:'صلِّ التهجّد', rem:'آخر الليل وقت إجابة الدعاء.'},
+};
+const ABDEST_STEPS_AR=[
+  {t:'1) النِّيّة',d:'«نويت أن أتوضّأ لله تعالى». النية بالقلب، والتلفّظ بها مستحب.'},
+  {t:'2) البسملة',d:'ابدأ قائلًا «بسم الله الرحمن الرحيم».'},
+  {t:'3) غسل اليدين',d:'إلى الرسغين ثلاثًا؛ وأوصِل الماء بين الأصابع.'},
+  {t:'4) المضمضة',d:'بيدك اليمنى خذ الماء في فمك وتمضمض ثلاثًا.'},
+  {t:'5) الاستنشاق',d:'استنشق الماء في أنفك ثلاثًا، ونظّف باليسرى.'},
+  {t:'6) غسل الوجه — فرض',d:'من منابت الشعر إلى أسفل الذقن، وبين الأذنين، ثلاثًا.'},
+  {t:'7) غسل الذراعين — فرض',d:'اليمنى ثم اليسرى مع المرفقين، ثلاثًا لكلٍّ.'},
+  {t:'8) مسح الرأس — فرض',d:'بيدٍ مبلولة امسح رُبع الرأس (على الأقل) مرة.'},
+  {t:'9) الأذنان والعنق',d:'بنفس البلل امسح الأذنين داخلًا وخارجًا والعنق.'},
+  {t:'10) غسل القدمين — فرض',d:'اليمنى ثم اليسرى مع الكعبين وبين الأصابع، ثلاثًا لكلٍّ. ثم اقرأ الشهادة.'},
+];
+const NAMAZ_STEPS_AR=[
+  {t:'1) استقبال القبلة',d:'توجّه نحو الكعبة؛ افرش سجادتك في مكان طاهر.'},
+  {t:'2) النِّيّة',d:'«نويت أن أصلّي فرض هذا الوقت لله تعالى».'},
+  {t:'3) تكبيرة الإحرام',d:'ارفع يديك وابدأ بـ«الله أكبر»، ثم اعقد يديك.'},
+  {t:'4) القيام',d:'اقرأ سبحانك، والتعوّذ والبسملة، والفاتحة وسورة.'},
+  {t:'5) الركوع',d:'اركع بـ«الله أكبر»؛ قل «سبحان ربي العظيم» ثلاثًا.'},
+  {t:'6) السجود',d:'اسجد على الأرض؛ قل «سبحان ربي الأعلى» ثلاثًا؛ سجدتان.'},
+  {t:'7) الركعة الثانية',d:'قم؛ أتمّ الركعة الثانية بالفاتحة وسورة، والركوع والسجدتين.'},
+  {t:'8) القعود',d:'اقرأ التحيّات، واللهم صلِّ وبارك، وأدعية ربّنا.'},
+  {t:'9) السلام',d:'اختم بـ«السلام عليكم ورحمة الله» يمينًا ثم شمالًا.'},
+];
+// accessor: görev/adım için dil payload'u (en/ar; yoksa null → TR). refs YOKSA çağrı yeri TR ref'e düşer.
+function qEn(q){ if(!q) return null; const L=S.lang; if(L!=='en'&&L!=='ar') return null;
+  if(q.topic==='namaz'||q.id==='ev_namaz'){ for(const v in NAMAZ_BY_VAKIT){ if(NAMAZ_BY_VAKIT[v].nm===q.nm) return (L==='ar'?NAMAZ_AR[v]:NAMAZ_EN[v]); } return null; }
+  return (L==='ar'?QUEST_AR[q.id]:QUEST_EN[q.id])||null; }
+function stepsEn(steps){ const L=S.lang; if((L!=='en'&&L!=='ar')||!steps) return null;
+  if(steps===ABDEST_STEPS) return L==='ar'?ABDEST_STEPS_AR:ABDEST_STEPS_EN; if(steps===NAMAZ_STEPS) return L==='ar'?NAMAZ_STEPS_AR:NAMAZ_STEPS_EN; return null; }
 const ISLAND_EN={ ev:'Home', bahce:'Date Grove', mahalle:'Ansar Neighborhood', cami:'Mosque', sehir:'Medina', atolye:'Workshop', sadaka:'Charity Garden' };
 const ISLAND_AR={ ev:'الدار', bahce:'بستان التمر', mahalle:'حيّ الأنصار', cami:'المسجد', sehir:'المدينة', atolye:'الورشة', sadaka:'بستان الصدقة' };
 function islandName(is){ if(!is) return ''; if(S.lang==='en'&&ISLAND_EN[is.id]) return ISLAND_EN[is.id]; if(S.lang==='ar'&&ISLAND_AR[is.id]) return ISLAND_AR[is.id]; return is.name||''; }
@@ -1289,7 +1340,7 @@ ar:{
   sl_baris:'صُلح', sl_adalet:'عَدل', sl_emanet:'أمانة',
   q_didit:'تمّ ✓', q_undo:'تراجع ↺', q_done:'تمّ ✓', q_prereq:'🔒 أولًا: ', q_nextstep:'الخطوة التالية',
   dlg_ok:'حسنًا', t_locked_place:'🔒 هذا المكان لم يُفتَح بعد', t_locked_medina:'🔒 المدينة لم تُفتَح بعد',
-  g_step:'خطوة ', g_next:'التالي ▶', g_learned:'تعلّمت ✓',
+  g_step:'خطوة ', g_next:'التالي ▶', g_learned:'تعلّمت ✓', g_learned_suf:' — تعلّمت',
   ex_prog:'سؤال ', ex_next:'التالي ➤', ex_result:'اعرض النتيجة',
   hd_map:'🗺️ خريطة المدينة', map_sub:'حوّل يثرب إلى المدينة: افتح كل جزيرة. 📍 نشطة · ✓ مفتوحة · 🔒 مقفلة.',
   map_locked:'مقفلة', map_locked_d:'افتح الجزيرة السابقة', map_open:'مفتوحة', map_atolye:'رحى · تنّور · نَول', map_sadaka:'أعمال الصدقة الجارية',
