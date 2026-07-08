@@ -205,6 +205,19 @@
   .href{font-size:11px;color:var(--muted);line-height:1.4;margin-top:3px}
   .hbuy{flex-shrink:0;border:none;border-radius:12px;padding:10px 13px;font-weight:800;font-size:14px;cursor:pointer;background:linear-gradient(135deg,#e9c478,#d9a441);color:#33240a}
   .hbuy.off{background:#dfe4df;color:#9aa;cursor:default}
+  /* ---- HARİTA ---- */
+  .mapchain{display:flex;align-items:center;justify-content:flex-start;gap:0;overflow-x:auto;padding:6px 2px 12px;margin-bottom:6px}
+  .mapnode{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;width:62px}
+  .mapnode .mapic{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;border:2.5px solid #cdd8ce;background:#eef3ee}
+  .mapnode .mapnm{font-size:10px;font-weight:700;color:var(--muted);text-align:center;line-height:1.15}
+  .mapnode.active .mapic{border-color:#e0a63a;background:#fff4dd;box-shadow:0 0 0 3px #e0a63a22}
+  .mapnode.active .mapnm{color:#b7791a}
+  .mapnode.done .mapic{border-color:#3fae6a;background:#e4f6ea}
+  .mapnode.done .mapnm{color:#2f8f63}
+  .mapnode.lock{opacity:.5}
+  .mapbridge{flex:0 0 auto;width:16px;height:3px;border-radius:2px;background:#cdd8ce;margin-top:-14px}
+  .mapbridge.open{background:#3fae6a}
+  .mapdot{font-size:11px;font-weight:800}
   /* ---- DAĞARCIK (envanter) ---- */
   .invgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:8px}
   .invcell{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;border-radius:13px;background:#f3f7f3;border:1px solid #e3ece5}
@@ -316,7 +329,7 @@
 <div class="top">
   <div class="pill nur">✦ <b id="nur">0</b> <small id="rank">Niyet</small></div>
   <div class="pill streak" id="streakPill" style="display:none">🔥 <b>0</b></div>
-  <div class="pill" id="cntPill">0/0</div>
+  <div class="pill" id="cntPill" style="cursor:pointer" title="Harita">0/0</div>
   <div class="skyclock" id="skyclock" style="margin-left:auto">
     <svg id="skySvg" viewBox="0 0 140 62" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -484,6 +497,16 @@
     <div class="sub" data-i18n="scen_sub" style="margin-bottom:10px">Medine'nin meselelerini çöz: adaletle hükmet, dargınları barıştır, emaneti ulaştır. Her mesele bir unvana götürür.</div>
     <div id="scenList"></div>
     <button class="cl" data-i18n="u_close" id="scenClose">Kapat</button>
+  </div>
+</div>
+
+<div class="veil" id="map">
+  <div class="sheet">
+    <div class="grip"></div>
+    <div class="exhead"><h3 data-i18n="hd_map">🗺️ Medine Haritası</h3><span class="exprog"><b id="mapProg">0/0</b></span></div>
+    <div class="sub" data-i18n="map_sub" style="margin-bottom:10px">Yesrib'i Medine'ye çevir: her adayı fethet. 📍 aktif · ✓ fethedildi · 🔒 kilitli.</div>
+    <div id="mapList"></div>
+    <button class="cl" data-i18n="u_close" id="mapClose">Kapat</button>
   </div>
 </div>
 
@@ -1202,6 +1225,10 @@ const UI_STR={ en:{
   ma_vazife_banner:'📜 The imam gave you a duty',
   ma_vazife_toast:'The imam: «I have seen justice and mercy in you. From now on, reconcile people (🕊️), judge injustice fairly (⚖️), and deliver trusts to their owners (📿). Your Case Ledger is now open.» (+15 nur)',
   ma_sohbet_banner:'💬 Talk with the imam', ma_sit_toast:'🤲 You sat quietly and listened — peace and light (+3)',
+  // --- Harita ---
+  hd_map:'🗺️ Map of Medina', map_sub:'Turn Yathrib into Medina: conquer each isle. 📍 active · ✓ conquered · 🔒 locked.',
+  map_locked:'Locked', map_locked_d:'Conquer the previous isle', map_open:'Open', map_atolye:'Mill · oven · loom', map_sadaka:'Ongoing-charity works',
+  map_done:'Conquered', map_active_task:'📍 Active task/case', map_peaceful:'Peaceful', map_active:'Active', map_lessons:'lessons', map_exam_ready:'Ready for the trial 📝', map_explore:'Explore',
 },
 // ===== AR — Arapça (Faz 1: kabuk + dünya-içi etkileşim). Dinî içerik (QUEST/QBANK/diyalog) sonraki AR fazlarında; şimdilik TR'ye düşer. =====
 ar:{
@@ -1258,6 +1285,9 @@ ar:{
   dlg_ok:'حسنًا', t_locked_place:'🔒 هذا المكان لم يُفتَح بعد', t_locked_medina:'🔒 المدينة لم تُفتَح بعد',
   g_step:'خطوة ', g_next:'التالي ▶', g_learned:'تعلّمت ✓',
   ex_prog:'سؤال ', ex_next:'التالي ➤', ex_result:'اعرض النتيجة',
+  hd_map:'🗺️ خريطة المدينة', map_sub:'حوّل يثرب إلى المدينة: افتح كل جزيرة. 📍 نشطة · ✓ مفتوحة · 🔒 مقفلة.',
+  map_locked:'مقفلة', map_locked_d:'افتح الجزيرة السابقة', map_open:'مفتوحة', map_atolye:'رحى · تنّور · نَول', map_sadaka:'أعمال الصدقة الجارية',
+  map_done:'مفتوحة', map_active_task:'📍 مهمّة/قضية نشطة', map_peaceful:'هادئة', map_active:'نشطة', map_lessons:'دروس', map_exam_ready:'جاهز للامتحان 📝', map_explore:'استكشف',
 }};
 function hayirNm(h){ return tU('hy_'+h.id) || (h && h.nm) || ''; }   // hayır kalemi adı (dil)
 // EN İ18N — Hayır kalemi ref hadîsleri (Faz 3; TERCUME_SOZLUGU.md)
@@ -3168,6 +3198,46 @@ function closeHayir(){ document.getElementById('hayir').classList.remove('show')
 const SCEN_META={ adalet:{ic:'⚖️',nm:'Adalet — Kadı'}, baris:{ic:'🕊️',nm:'Sulh — Barıştır'}, emanet:{ic:'📿',nm:'Emanet — Ulaştır'} };
 function openScen(){ audio(); renderScen(); document.getElementById('scen').classList.add('show'); }
 function closeScen(){ document.getElementById('scen').classList.remove('show'); }
+/* ---- HARİTA (adalar + durum + görev) ---- */
+const ISLAND_EMO={ ev:'🏠', bahce:'🌴', mahalle:'🤝', cami:'🕌', sehir:'🏙️', atolye:'🔨', sadaka:'🤲' };
+function hasActiveQuest(id){
+  const qs=islandQuests(id);
+  if(qs.some(q=>!S.done[q.id] && questAvailable(q))) return true;   // yapılmamış + sıradaki ders
+  if(typeof scenarioRecs!=='undefined') return scenarioRecs.some(r=>r.islId===id && (function(){ try{ return scenArmed(r); }catch(e){ return false; } })());   // hazır senaryo vakası
+  return false;
+}
+function openMap(){ audio(); renderMap(); document.getElementById('map').classList.add('show'); }
+function closeMap(){ document.getElementById('map').classList.remove('show'); }
+function renderMap(){
+  const mains=WORLD.islands.filter(i=>!i.side);
+  const total=mains.length, done=mains.filter(i=>S.conquered[i.id]).length;
+  const pe=document.getElementById('mapProg'); if(pe) pe.textContent=done+'/'+total+' '+(tU('isles')||'ada');
+  const w=document.getElementById('mapList'); if(!w) return; w.innerHTML='';
+  // üst: ana ada zinciri (köprülerle)
+  const chain=document.createElement('div'); chain.className='mapchain';
+  mains.forEach((is,idx)=>{
+    const unlocked=isUnlocked(is.id), conq=!!S.conquered[is.id];
+    const st=conq?'done':(unlocked?'active':'lock');
+    const node=document.createElement('div'); node.className='mapnode '+st;
+    node.innerHTML='<div class="mapic">'+emo(ISLAND_EMO[is.id]||'🏝️')+'</div><div class="mapnm">'+islandName(is)+'</div>';
+    chain.appendChild(node);
+    if(idx<mains.length-1){ const br=document.createElement('div'); br.className='mapbridge'+(conq?' open':''); chain.appendChild(br); }
+  });
+  w.appendChild(chain);
+  // detay liste (yan adalar dahil)
+  for(const is of WORLD.islands){
+    const unlocked=isUnlocked(is.id), conq=!!S.conquered[is.id], side=!!is.side;
+    const qs=islandQuests(is.id), qdone=qs.filter(q=>S.done[q.id]).length, active=hasActiveQuest(is.id);
+    let badge, detail, dotCls;
+    if(!unlocked){ dotCls='lock'; badge='🔒 '+(tU('map_locked')||'Kilitli'); detail=tU('map_locked_d')||'Önceki adayı feth et'; }
+    else if(side){ dotCls='done'; badge='✓ '+(tU('map_open')||'Açık'); detail=(is.id==='atolye'?(tU('map_atolye')||'Değirmen · tandır · tezgâh'):(tU('map_sadaka')||'Sadaka-i câriye eserleri')); }
+    else if(conq){ dotCls='done'; badge='✓ '+(tU('map_done')||'Fethedildi'); detail=active?(tU('map_active_task')||'📍 Aktif görev/vaka var'):(tU('map_peaceful')||'Huzurlu'); }
+    else { dotCls='active'; badge='📍 '+(tU('map_active')||'Aktif'); detail = qs.length ? (qdone+'/'+qs.length+' '+(tU('map_lessons')||'ders')+(examReady(is.id)?' · '+(tU('map_exam_ready')||'İmtihana hazır 📝'):'')) : (tU('map_explore')||'Keşfet'); }
+    const card=document.createElement('div'); card.className='hcard';
+    card.innerHTML='<div class="hic">'+emo(ISLAND_EMO[is.id]||'🏝️')+'</div><div class="hbody"><div class="hnm">'+islandName(is)+' <span class="hcnt mapdot '+dotCls+'">'+badge+'</span></div><div class="href">'+detail+'</div></div>';
+    w.appendChild(card);
+  }
+}
 function renderScen(){
   document.getElementById('scenXP').textContent=scenXP();
   const w=document.getElementById('scenList'); w.innerHTML='';
@@ -4412,6 +4482,10 @@ document.getElementById('tutNext').onclick=()=>{ if(tutIdx<tutSteps().length-1){
 document.getElementById('tutSkip').onclick=closeTut;
 document.getElementById('helpBtn').onclick=()=>openTut(0);
 document.getElementById('scenClose').onclick=closeScen;
+document.getElementById('scen').addEventListener('click',e=>{ if(e.target.id==='scen') closeScen(); });
+document.getElementById('mapClose').onclick=closeMap;
+document.getElementById('map').addEventListener('click',e=>{ if(e.target.id==='map') closeMap(); });
+document.getElementById('cntPill').onclick=openMap;
 document.getElementById('hayir').addEventListener('click',e=>{ if(e.target.id==='hayir') closeHayir(); });
 document.getElementById('invBtn').onclick=openInv;
 document.getElementById('invClose').onclick=closeInv;
@@ -4891,6 +4965,7 @@ console.log('%cİHYA sürüm: Faz 11.30 — SENARYO MEKANİĞİ: 13 model diyalo
     openHayir:()=>openHayir(), donate:(id)=>donateHayir(id),
     openScen:()=>openScen(), scenState:()=>({xp:scenXP(), baris:scenOf('baris'), adalet:scenOf('adalet'), emanet:scenOf('emanet'), titles:{baris:scenTitle('baris'), adalet:scenTitle('adalet'), emanet:scenTitle('emanet')}}),
     openScenSid:(sid)=>{ const r=scenarioRecs.find(x=>x.sid===sid); if(r) doScenario(r); return !!r; },   // senaryo diyaloğunu tetikle (test)
+    openMap:()=>openMap(),
     hayirCounts:()=>({agac:S.hayir.agac.length,kandil:S.hayir.kandil.length,cesme:S.hayir.cesme.length,ilim:S.hayir.ilim.length}),
     openInv:()=>openInv(), inv:()=>Object.assign({},S.inv),
     gatherNodes:()=>gatherNodes.map(r=>({id:r.def.id, ready:nodeReady(r.def), bareNow:r.bareNow, item:r.def.item})),
