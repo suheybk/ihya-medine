@@ -415,7 +415,7 @@
     <div class="sub" id="sS">Delil ve tavsiye</div>
     <div id="sRefs"></div>
     <button class="cl" data-i18n="u_steps" id="sSteps" style="display:none;margin-bottom:8px">📖 Adımları göster</button>
-    <button class="do" id="sDo">Yaptım ✓</button>
+    <button class="do" data-i18n="q_didit" id="sDo">Yaptım ✓</button>
     <button class="cl" data-i18n="u_close" id="sCl">Kapat</button>
   </div>
 </div>
@@ -940,7 +940,26 @@ const UI_STR={ en:{
   market_sub:'Sell your lawful earnings. <i>"Whoever deceives us is not one of us."</i> (Muslim) — be honest in measure and weight.',
   mosque_sub:'Be mannerly in the mosque; sit in stillness, listen to the imam, join the congregation.',
   hac_intro:'Intend ihram at the miqat; circle the Kaaba (tawaf), walk between Safa and Marwah (sa\'y), then shave.',
+  // --- Faz 2b-2: Pazar (renderMarket) ---
+  mk_empty:'You have nothing to sell. Gather and herd on the isles, then bring it here 🌴🐑',
+  mk_seccade:'Prayer rug', mk_seccade_ref:'Sell the prayer rug you hold', mk_sell:'Sell ', mk_unit:'Unit price: ',
+  mk_sell1:'Sell 1', mk_all:'All (', mk_lock:'🔒 Medina (City) isn\'t open yet',
+  mk_earn_a:'💰 +', mk_earn_b:' dirhams (',
+  // --- Faz 2b-2: Dağarcık (renderInv) ---
+  iv_carry:'Carrying', iv_nobag:' · no satchel', iv_full:'FULL',
+  iv_baghint:'To carry more, go to the loom on the Workshop isle (weave with wool).',
+  iv_empty:'You haven\'t gathered anything yet. Gather from the trees and animals on the isles 🌴🐑',
+  iv_prod_head:'Crafting: on the Workshop isle', iv_prod_body:'Cross the bridge south of the Date Grove to the Workshop: 🌾 mill (flour), 🍞 oven (bread), 🧶 loom (prayer rug).',
+  iv_zekat_head:'🕌 <b>Zakat</b> — goods that reach the nisab (tithe 1/10). Sheep nisab: 40 head.',
+  iv_zekat_suf:' zakat',
+  // --- Faz 2b-2: Hayır Çeşmesi kalemleri (adlar; ref'ler Faz 3) ---
+  hy_agac:'Plant a tree', hy_kandil:'Light a lantern', hy_cesme:'Build a fountain',
+  hy_ilim:'Endow a Qur\'an', hy_sebil:'Build a public water post (sabil)', hy_golge:'Build a shade shelter',
+  // --- Faz 2b-2: ortak ---
+  t_locked_place:'🔒 This place isn\'t open yet', dlg_ok:'OK', q_done:'Done ✓',
+  q_didit:'Done ✓', q_undo:'Undo ↺', q_prereq:'🔒 First: ', q_nextstep:'the next step',
 }};
+function hayirNm(h){ return tU('hy_'+h.id) || (h && h.nm) || ''; }   // hayır kalemi adı (dil)
 // Faz 2b: senaryo unvanları — Türkçe başlık → İngilizce
 const SCEN_T_EN={
   'Barıştırıcı':'Reconciler','Muslih':'Peacemaker','Ara Bulan':'Mediator','Sulh Ustası':'Master of Reconciliation',
@@ -2417,24 +2436,24 @@ function sellGood(k, all){
   const n=all?have:1, price=PRICES[k]||1, earn=n*price;
   S.inv[k]-=n; if(S.inv[k]<=0) delete S.inv[k]; S.dirhem=(S.dirhem||0)+earn;
   save(); refreshHUD(); renderMarket(); sndChime();
-  toast('💰 +'+earn+' dirhem ('+n+' '+GOODS[k].ic+' '+GOODS[k].nm+')');
+  toast((tU('mk_earn_a')||'💰 +')+earn+(tU('mk_earn_b')||' dirhem (')+n+' '+GOODS[k].ic+' '+goodName(k)+')');
 }
-function openMarket(){ if(!isUnlocked(MARKET_POS.islId)){ toast('🔒 Medine (Şehir) henüz açılmadı'); return; } audio(); renderMarket(); document.getElementById('market').classList.add('show'); }
+function openMarket(){ if(!isUnlocked(MARKET_POS.islId)){ toast(tU('mk_lock')||'🔒 Medine (Şehir) henüz açılmadı'); return; } audio(); renderMarket(); document.getElementById('market').classList.add('show'); }
 function closeMarket(){ document.getElementById('market').classList.remove('show'); }
 function renderMarket(){
   document.getElementById('mktDirhem').textContent=S.dirhem||0;
   const w=document.getElementById('mktList'); w.innerHTML='';
   const keys=Object.keys(PRICES).filter(k=>(S.inv[k]||0)>0);
-  if(!keys.length && !S.hasSeccade){ w.innerHTML='<div class="invempty">Satacak malın yok. Adalarda topla/güt, sonra buraya getir 🌴🐑</div>'; return; }
+  if(!keys.length && !S.hasSeccade){ w.innerHTML='<div class="invempty">'+(tU('mk_empty')||'Satacak malın yok. Adalarda topla/güt, sonra buraya getir 🌴🐑')+'</div>'; return; }
   if(S.hasSeccade){ const card=document.createElement('div'); card.className='hcard';
-    card.innerHTML='<div class="hic">🧎</div><div class="hbody"><div class="hnm">Seccade <span class="hcnt">×1</span></div><div class="href">Elindeki seccadeyi sat</div></div><button class="hbuy" style="padding:7px 11px">Sat ('+SECCADE_FIYAT+'💰)</button>';
+    card.innerHTML='<div class="hic">🧎</div><div class="hbody"><div class="hnm">'+(tU('mk_seccade')||'Seccade')+' <span class="hcnt">×1</span></div><div class="href">'+(tU('mk_seccade_ref')||'Elindeki seccadeyi sat')+'</div></div><button class="hbuy" style="padding:7px 11px">'+(tU('mk_sell')||'Sat ')+'('+SECCADE_FIYAT+'💰)</button>';
     card.querySelector('.hbuy').onclick=()=>sellSeccade(); w.appendChild(card); }
   for(const k of keys){ const g=GOODS[k], have=S.inv[k], price=PRICES[k];
     const card=document.createElement('div'); card.className='hcard';
-    card.innerHTML='<div class="hic">'+g.ic+'</div><div class="hbody"><div class="hnm">'+g.nm+' <span class="hcnt">×'+have+'</span></div><div class="href">Birim fiyat: '+price+' 💰</div></div>';
+    card.innerHTML='<div class="hic">'+g.ic+'</div><div class="hbody"><div class="hnm">'+goodName(k)+' <span class="hcnt">×'+have+'</span></div><div class="href">'+(tU('mk_unit')||'Birim fiyat: ')+price+' 💰</div></div>';
     const bs=document.createElement('div'); bs.style.display='flex'; bs.style.flexDirection='column'; bs.style.gap='5px';
-    const b1=document.createElement('button'); b1.className='hbuy'; b1.style.padding='7px 11px'; b1.textContent='Sat 1'; b1.onclick=()=>sellGood(k,false);
-    const b2=document.createElement('button'); b2.className='hbuy'; b2.style.padding='7px 11px'; b2.style.background='#e9c478'; b2.textContent='Tümü ('+(have*price)+'💰)'; b2.onclick=()=>sellGood(k,true);
+    const b1=document.createElement('button'); b1.className='hbuy'; b1.style.padding='7px 11px'; b1.textContent=(tU('mk_sell1')||'Sat 1'); b1.onclick=()=>sellGood(k,false);
+    const b2=document.createElement('button'); b2.className='hbuy'; b2.style.padding='7px 11px'; b2.style.background='#e9c478'; b2.textContent=(tU('mk_all')||'Tümü (')+(have*price)+'💰)'; b2.onclick=()=>sellGood(k,true);
     bs.appendChild(b1); bs.appendChild(b2); card.appendChild(bs); w.appendChild(card);
   }
 }
@@ -2806,9 +2825,9 @@ function renderHayir(){
     const have=(S.hayir[h.id]||[]).length, maxed=have>=h.max, poor=(S.dirhem||0)<h.cost;
     const card=document.createElement('div'); card.className='hcard';
     card.innerHTML='<div class="hic">'+h.ic+'</div>'+
-      '<div class="hbody"><div class="hnm">'+h.nm+' <span class="hcnt">'+have+'/'+h.max+'</span></div>'+
+      '<div class="hbody"><div class="hnm">'+hayirNm(h)+' <span class="hcnt">'+have+'/'+h.max+'</span></div>'+
       '<div class="href">'+h.ref+'</div></div>'+
-      '<button class="hbuy'+(maxed||poor?' off':'')+'">'+(maxed?'Tamam ✓':'💰 '+h.cost+' → ✦'+h.reward)+'</button>';
+      '<button class="hbuy'+(maxed||poor?' off':'')+'">'+(maxed?(tU('q_done')||'Tamam ✓'):'💰 '+h.cost+' → ✦'+h.reward)+'</button>';
     const btn=card.querySelector('.hbuy');
     if(!maxed) btn.onclick=()=>donateHayir(h.id);
     w.appendChild(card);
@@ -2823,28 +2842,28 @@ function renderInv(){
   // taşıma kapasitesi (çanta) göstergesi
   { const cnt=invCount(), cap=invCap(), pct=Math.min(100,Math.round(cnt/cap*100));
     const d=document.createElement('div'); d.style.cssText='margin:0 2px 9px;padding:8px 11px;background:#0000000f;border-radius:11px;font:700 12px system-ui;line-height:1.5';
-    d.innerHTML=emo('🎒')+' <b>Taşıma</b> '+cnt+'/'+cap+(S.bag?' · '+bagName():' · çanta yok')+(cnt>=cap?' <span style="color:#c0341f">DOLU</span>':'')+
+    d.innerHTML=emo('🎒')+' <b>'+(tU('iv_carry')||'Taşıma')+'</b> '+cnt+'/'+cap+(S.bag?' · '+bagName():(tU('iv_nobag')||' · çanta yok'))+(cnt>=cap?' <span style="color:#c0341f">'+(tU('iv_full')||'DOLU')+'</span>':'')+
       '<div class="pbar" style="margin-top:5px"><div class="pfill" style="width:'+pct+'%'+(cnt>=cap?';background:linear-gradient(90deg,#e08a3a,#c0341f)':'')+'"></div></div>'+
-      (S.bag<2?'<div style="opacity:.7;font-weight:600;margin-top:4px">Daha büyük çanta için Atölye\'deki tezgâha git (yünle ör).</div>':'');
+      (S.bag<2?'<div style="opacity:.7;font-weight:600;margin-top:4px">'+(tU('iv_baghint')||'Daha büyük çanta için Atölye\'deki tezgâha git (yünle ör).')+'</div>':'');
     w.appendChild(d); }
   const keys=Object.keys(GOODS).filter(k=>(S.inv[k]||0)>0);
   if(keys.length){
     const grid=document.createElement('div'); grid.className='invgrid';
     for(const k of keys){ const g=GOODS[k], z=ZEKAT[k], have=S.inv[k]; const c=document.createElement('div'); c.className='invcell'+((z&&have>=z.nisab)?' zek':'');
-      c.innerHTML='<div class="ii">'+g.ic+'</div><div class="iq">'+have+'</div><div class="in">'+g.nm+((z&&have>=z.nisab)?' 🕌':'')+'</div>'; grid.appendChild(c); }
+      c.innerHTML='<div class="ii">'+g.ic+'</div><div class="iq">'+have+'</div><div class="in">'+goodName(k)+((z&&have>=z.nisab)?' 🕌':'')+'</div>'; grid.appendChild(c); }
     w.appendChild(grid);
-  } else { w.innerHTML='<div class="invempty">Henüz bir şey toplamadın. Adalardaki ağaçlardan/hayvanlardan topla 🌴🐑</div>'; }
+  } else { w.innerHTML='<div class="invempty">'+(tU('iv_empty')||'Henüz bir şey toplamadın. Adalardaki ağaçlardan/hayvanlardan topla 🌴🐑')+'</div>'; }
   // --- üretim ATÖLYE adasına taşındı (değirmen/tandır/tezgâh) ---
   { const d=document.createElement('div'); d.style.cssText='margin:4px 2px 8px;padding:8px 11px;background:#0000000f;border-radius:11px;font:700 12px system-ui;line-height:1.5';
-    d.innerHTML=emo('🔨')+' <b>Üretim: Atölye adasında</b><br><span style="opacity:.82">Hurma Bahçesi\'nin güneyindeki köprüden Atölye\'ye geç: '+emo('🌾')+' değirmen (un), '+emo('🍞')+' tandır (ekmek), '+emo('🧶')+' tezgâh (seccade).</span>';
+    d.innerHTML=emo('🔨')+' <b>'+(tU('iv_prod_head')||'Üretim: Atölye adasında')+'</b><br><span style="opacity:.82">'+emo(tU('iv_prod_body')||'Hurma Bahçesi\'nin güneyindeki köprüden Atölye\'ye geç: 🌾 değirmen (un), 🍞 tandır (ekmek), 🧶 tezgâh (seccade).')+'</span>';
     w.appendChild(d); }
   // --- zekât ver (nisaba ulaşan mallar) — çocuk mükellef değil ---
   const zk=zekatMukellef()?Object.keys(ZEKAT).filter(k=>(S.inv[k]||0)>=ZEKAT[k].nisab):[];
   if(zk.length){
-    const zt=document.createElement('div'); zt.className='sub'; zt.innerHTML='🕌 <b>Zekât</b> — nisaba ulaşan mallar (öşür 1/10). Koyun nisabı: 40 baş.'; w.appendChild(zt);
+    const zt=document.createElement('div'); zt.className='sub'; zt.innerHTML=(tU('iv_zekat_head')||'🕌 <b>Zekât</b> — nisaba ulaşan mallar (öşür 1/10). Koyun nisabı: 40 baş.'); w.appendChild(zt);
     for(const k of zk){ const z=ZEKAT[k], have=S.inv[k], amt=Math.max(1,Math.ceil(have*z.rate));
       const card=document.createElement('div'); card.className='hcard';
-      card.innerHTML='<div class="hic">'+GOODS[k].ic+'</div><div class="hbody"><div class="hnm">'+GOODS[k].nm+' zekâtı <span class="hcnt">'+z.tur+'</span></div><div class="href">'+z.ref+'</div></div><button class="hbuy">🤲 '+amt+'</button>';
+      card.innerHTML='<div class="hic">'+GOODS[k].ic+'</div><div class="hbody"><div class="hnm">'+goodName(k)+(tU('iv_zekat_suf')||' zekâtı')+' <span class="hcnt">'+z.tur+'</span></div><div class="href">'+z.ref+'</div></div><button class="hbuy">🤲 '+amt+'</button>';
       card.querySelector('.hbuy').onclick=()=>giveZekat(k); w.appendChild(card);
     }
   }
@@ -3163,7 +3182,7 @@ function renderDlgStep(key){
   document.getElementById('dlgNar').innerHTML=emo(st.txt);
   const rf=document.getElementById('dlgRef'); if(st.ref){ rf.style.display='block'; rf.innerHTML=emo(st.ref); } else rf.style.display='none';
   const w=document.getElementById('dlgOpts'); w.innerHTML='';
-  const opts=st.opts&&st.opts.length?st.opts:[{l:'Tamam'}];
+  const opts=st.opts&&st.opts.length?st.opts:[{l:(tU('dlg_ok')||'Tamam')}];
   for(const o of opts){ const b=document.createElement('button'); b.className='exOpt'; b.innerHTML=emo(o.l);
     b.onclick=()=>{ if(o.toast) toast(o.toast); if(typeof o.act==='function') o.act(); if(o.go){ renderDlgStep(o.go); } else closeDialog(); };
     w.appendChild(b); }
@@ -3372,7 +3391,7 @@ function buildScenarios(){
 }
 const IMAM_SCEN=['baris','adalet','emanet','emanet_deliver'];   // imam vazifesine bağlı senaryolar (barıştır/hükmet/emanet); diğer hayırlar (sebil/dilenci/taharet) serbest
 function doScenario(rec){
-  if(rec.islId && !isUnlocked(rec.islId)){ toast('🔒 Burası henüz açılmadı'); return; }
+  if(rec.islId && !isUnlocked(rec.islId)){ toast(tU('t_locked_place')||'🔒 Burası henüz açılmadı'); return; }
   // İMAM QUEST-GIVER yumuşak kapısı: barıştır/hükmet/emanet, imamdan vazife alınana dek kilitli (eski oyuncular grandfather ile açık)
   if(!S.imamMet && IMAM_SCEN.includes(rec.sid)){
     toast('🔒 Önce İmam\'dan vazife al — Mescid\'e git, 5 vakti üst üste cemaatle kıl'+(S.mosqueConsec>0?' ('+Math.min(S.mosqueConsec,5)+'/5)':''));
@@ -3759,7 +3778,7 @@ function openSheet(q){
   (q.refs||[]).forEach(rf=>{ const d=document.createElement('div'); d.className='ref';
     d.innerHTML=`<div class="tag">${rf.tag}</div><div class="txt">${rf.txt}</div>${rf.cite?`<div class="cite">— ${rf.cite}</div>`:''}`; w.appendChild(d); });
   const done=!!S.done[q.id];
-  const db=document.getElementById('sDo'); db.textContent=done?'Geri al ↺':'Yaptım ✓'; db.style.background=done?'#9aa':'linear-gradient(135deg,#5fb98a,#2f8f63)';
+  const db=document.getElementById('sDo'); db.textContent=done?(tU('q_undo')||'Geri al ↺'):(tU('q_didit')||'Yaptım ✓'); db.style.background=done?'#9aa':'linear-gradient(135deg,#5fb98a,#2f8f63)';
   document.getElementById('sSteps').style.display = q.steps ? 'block' : 'none';
   document.getElementById('veil').classList.add('show');
 }
@@ -3767,7 +3786,7 @@ function closeSheet(){ document.getElementById('veil').classList.remove('show');
 /* ---- ADIM ADIM ÖĞRETİM (abdest, namaz…) ---- */
 let guideQ=null, guideSteps=[], guideIdx=0;
 function interact(q){
-  if(!S.done[q.id] && !questAvailable(q)){ const p=prereqOf(q); toast('🔒 Önce: '+(p?p.nm:'sıradaki adım')); return; }
+  if(!S.done[q.id] && !questAvailable(q)){ const p=prereqOf(q); toast((tU('q_prereq')||'🔒 Önce: ')+(p?p.nm:(tU('q_nextstep')||'sıradaki adım'))); return; }
   // Cuma günü öğle: namaz evde kılınmaz — sadece camide
   if(q.id==='ev_namaz' && !S.done[q.id] && vakitOf(gameTime)[1]==='Öğle' && isFriday() && cumaActive()){
     toast('🕌 Cuma günü öğle namazı evde değil, camide kılınır — Mescid\'e git'); return; }
