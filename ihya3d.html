@@ -462,7 +462,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.42</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.43</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -2795,9 +2795,16 @@ function buildModern(){
   const ox=MODERN_ORIGIN[0], oz=MODERN_ORIGIN[2]; const g=new THREE.Group(); modernGroup=g;
   const ground=new THREE.Mesh(new THREE.CircleGeometry(26,48), new THREE.MeshStandardMaterial({color:0x606670,roughness:1})); ground.rotation.x=-Math.PI/2; ground.position.set(ox,0.02,oz); g.add(ground);
   const grass=new THREE.Mesh(new THREE.RingGeometry(26,34,48), new THREE.MeshStandardMaterial({color:0x6f9a54,roughness:1})); grass.rotation.x=-Math.PI/2; grass.position.set(ox,0.01,oz); g.add(grass);
-  const road=new THREE.Mesh(new THREE.PlaneGeometry(3.2,48), new THREE.MeshStandardMaterial({color:0x4a4f57,roughness:1})); road.rotation.x=-Math.PI/2; road.position.set(ox,0.03,oz); g.add(road);
+  const road=new THREE.Mesh(new THREE.PlaneGeometry(3.2,44), new THREE.MeshStandardMaterial({color:0x4a4f57,roughness:1})); road.rotation.x=-Math.PI/2; road.position.set(ox,0.03,oz); g.add(road);
+  // EN DIŞ RING YOL (otobüsün özel yolu) — meydan kenarında asfalt halka + kesikli şerit
+  const ringRoad=new THREE.Mesh(new THREE.RingGeometry(21.5,24.2,72), new THREE.MeshStandardMaterial({color:0x393e44,roughness:1})); ringRoad.rotation.x=-Math.PI/2; ringRoad.position.set(ox,0.035,oz); g.add(ringRoad);
+  const laneMat=new THREE.MeshStandardMaterial({color:0xd8d2b8,roughness:1});
+  for(let a=0;a<Math.PI*2;a+=Math.PI/18){ const dash=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.02,0.22),laneMat); dash.position.set(ox+22.85*Math.cos(a),0.05,oz+22.85*Math.sin(a)); dash.rotation.y=-a; g.add(dash); }   // orta şerit çizgileri
   const bldKind = isChild()?'okul':'is';
-  const defs=[ {kind:'ev',ic:'🏢',bx:ox-11,bz:oz-7}, {kind:bldKind,ic:(bldKind==='okul'?'🏫':'💼'),bx:ox+11,bz:oz-7}, {kind:'cami',ic:'🕌',bx:ox,bz:oz+12}, {kind:'market',ic:'🛒',bx:ox+12,bz:oz+6}, {kind:'banka',ic:'🏦',bx:ox-12,bz:oz+6}, {kind:'durak',ic:'🚌',bx:ox+14,bz:oz+7} ];
+  // YERLEŞİM: market ÖNDE (+z, dış yola bakar), durak marketin önünde; otobüs en dış ring yolda döner
+  const defs=[ {kind:'market',ic:'🛒',bx:ox,bz:oz+13}, {kind:'durak',ic:'🚌',bx:ox,bz:oz+18},
+    {kind:'ev',ic:'🏢',bx:ox-13,bz:oz-2}, {kind:'banka',ic:'🏦',bx:ox+13,bz:oz-2},
+    {kind:bldKind,ic:(bldKind==='okul'?'🏫':'💼'),bx:ox-8,bz:oz-13}, {kind:'cami',ic:'🕌',bx:ox+8,bz:oz-13} ];
   for(const d of defs){
     if(d.kind==='ev'){ g.add(mkBox(6,11,6,0xcdb892,d.bx,5.5,d.bz));
       for(let fy=1.6;fy<10;fy+=2.1) for(let wx=-1.7;wx<=1.7;wx+=1.7) g.add(mkBox(1.1,1.2,0.12,0x8fc7e0,d.bx+wx,fy,d.bz+3.06));
@@ -2821,7 +2828,7 @@ function buildModern(){
     else { const col=d.kind==='okul'?0xe6c25a:0x7f93b8; g.add(mkBox(9,5.5,7,col,d.bx,2.75,d.bz));
       for(let wx=-3;wx<=3;wx+=1.6) for(let fy=2;fy<5;fy+=2) g.add(mkBox(1.1,1.1,0.12,0x8fc7e0,d.bx+wx,fy,d.bz+3.56));
       g.add(mkBox(2,2.6,0.16,0x5b3f27,d.bx,1.3,d.bz+3.56)); }
-    const doorZ=(d.kind==='cami')?d.bz+5.0:d.bz+4.0;
+    const doorZ=(d.kind==='cami')?d.bz+5.0:(d.kind==='durak')?d.bz+3.0:d.bz+4.0;
     const rec={ modern:d.kind, q:{id:'m_'+d.kind, pos:[d.bx,0,doorZ], nm:'', ic:d.ic}, g:new THREE.Object3D(), meshes:[], reach:3.8 };
     rec.g.position.set(d.bx,0,doorZ); modernRecs.push(rec); interactables.push(rec);
     const br=(d.kind==='cami')?3.8:(d.kind==='durak')?1.6:(d.kind==='ev'||d.kind==='market')?3.2:3.6;   // bina ayak-izi (kapı önü bz+4/+5 dışarıda kalır; durak küçük)
@@ -3082,15 +3089,18 @@ function openCongregationChoice(){ if(!inModern) return; const M=moCong();
   ] } }});
 }
 // ---- GERÇEK OTOBÜS: şehir çevresinde ring rotada dolaşır, durakta durur, komşular biner/iner ----
-const BUS_R=18, BUS_SPEED=0.30, DWELL=4.2, STOP_ANGLE=Math.atan2(7,14);   // durak (ox+14,oz+7) açısı
+const BUS_R=23, BUS_SPEED=0.22, DWELL=4.2, STOP_ANGLE=Math.PI/2;   // en dış ring yol; durak/market önü (+z) = θ=π/2
 let modernBus=null;
 function buildBus(){ if(modernBus||!modernGroup) return; const g=new THREE.Group();
   g.add(mkBox(2.6,2.0,5.4,0xE0A93A,0,1.35,0));            // gövde (sarı otobüs)
   g.add(mkBox(2.64,0.85,4.4,0x2f4a6b,0,1.95,0.15));       // pencere şeridi (mavi cam)
   g.add(mkBox(2.7,0.3,5.6,0xcf972f,0,2.4,0));             // tavan
-  g.add(mkBox(1.7,0.8,0.12,0xdfe7ef,0,1.45,2.72));        // ön cam
+  g.add(mkBox(1.7,0.8,0.12,0xdfe7ef,0,1.45,2.72));        // ÖN cam (+z = ön)
+  for(const wx of [0.85,-0.85]) g.add(mkBox(0.5,0.45,0.14,0xfff2b0,wx,0.75,2.74));   // ÖN farlar (sarı-beyaz)
+  for(const wx of [0.85,-0.85]) g.add(mkBox(0.5,0.45,0.14,0xcc2020,wx,0.85,-2.74));  // ARKA stop lambaları (kırmızı)
+  g.add(mkBox(1.5,0.7,0.1,0x223,0,1.5,-2.72));            // ARKA cam (koyu)
   for(const wz of [1.9,-1.9]) for(const wx of [1.0,-1.0]) g.add(mkBox(0.55,0.55,0.55,0x1c1c1c,wx,0.45,wz));   // tekerler
-  g.add(mkBox(0.7,1.5,0.1,0x3a2f26,-0.95,1.05,2.7));      // kapı (ön sağ)
+  g.add(mkBox(0.7,1.5,0.1,0x3a2f26,-0.95,1.05,2.2));      // ön kapı (sağ ön)
   modernGroup.add(g);
   modernBus={ g, theta:STOP_ANGLE+0.5, state:'run', dwellT:0, passenger:null, armed:true };
 }
@@ -3109,7 +3119,7 @@ function busTick(dt){ const b=modernBus; if(!b) return; const ox=MODERN_ORIGIN[0
     if(b.armed && phase<0.10){ b.state='dwell'; b.dwellT=DWELL; b.armed=false; b.theta=STOP_ANGLE; busAtStop(); }
     if(phase>Math.PI) b.armed=true;   // ring'in yarısını geçince tekrar durmaya hazır
   }
-  const x=ox+BUS_R*Math.cos(b.theta), z=oz+BUS_R*Math.sin(b.theta); b.g.position.set(x,0,z); b.g.rotation.y=-b.theta+Math.PI/2;   // teğet (hareket yönü)
+  const x=ox+BUS_R*Math.cos(b.theta), z=oz+BUS_R*Math.sin(b.theta); b.g.position.set(x,0,z); b.g.rotation.y=-b.theta;   // ÖN (+z) hareket yönüne bakar (önüne doğru gider)
   if(b.passenger) b.passenger.rec.g.position.set(x,0,z);   // yolcu otobüsle taşınır (gizli)
 }
 function enterModern(){
@@ -3117,7 +3127,7 @@ function enterModern(){
   buildModern(); if(!player) return;
   if(!inModern){ modernReturn={ x:player.position.x, z:player.position.z }; }
   inModern=true; near=null;
-  player.position.set(MODERN_ORIGIN[0],0,MODERN_ORIGIN[2]+18); player.rotation.y=Math.PI;
+  player.position.set(MODERN_ORIGIN[0],0,MODERN_ORIGIN[2]+6); player.rotation.y=0;   // meydanda; market/durak/otobüs önde (+z)
   camera.position.copy(player.position).add(CAM_OFF); wake(); hacFade();
   banner('🏙️ '+(tU('mo_enter')||'İhya — Bugün: şehrine döndün')); updateModernBtn();
   spawnModernNeighbors();   // meydanda dolaşan komşular (selâmlaşma)
