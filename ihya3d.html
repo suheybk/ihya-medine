@@ -250,6 +250,13 @@
   .exOpt:disabled{cursor:default}
   .exOpt.correct{border-color:#2f8f63;background:#dff3e7;color:#1d5f3f}
   .exOpt.wrong{border-color:#d9534f;background:#fbe4e3;color:#a3302c}
+  /* SEÇENEK NUMARALARI (imtihan + diyalog) — klavyeyle 1-2-3 ile cevap; SADECE masaüstü (dokunmatikte gizli) */
+  #exOpts, #dlgOpts{counter-reset:opt}
+  #exOpts .exOpt, #dlgOpts .exOpt{position:relative;padding-left:46px}
+  #exOpts .exOpt::before, #dlgOpts .exOpt::before{counter-increment:opt;content:counter(opt);
+    position:absolute;left:9px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:8px;
+    background:#2f8f63;color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px #0002}
+  @media(pointer:coarse){ #exOpts .exOpt, #dlgOpts .exOpt{padding-left:15px} #exOpts .exOpt::before, #dlgOpts .exOpt::before{display:none} }
   .excite{font-size:12px;color:var(--muted);min-height:16px;margin:2px 0 8px;font-style:italic}
   .exresic{font-size:48px;text-align:center;margin:8px 0 2px}
   /* ---- SENARYO DİYALOĞU ---- */
@@ -532,7 +539,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.55</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.56</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -6307,6 +6314,13 @@ addEventListener('keydown',e=>{
   if(introMode) return;   // dil-seçme/sinematikte kısayol yok
   // ESC — açık paneli/diyaloğu kapat (geri dön)
   if(e.key==='Escape'){ if(anyOverlayOpen()){ e.preventDefault(); closeTopOverlay(); } return; }
+  // SEÇMELİ UI (İmtihan / Diyalog) açıkken 1-9 → o seçeneği seç (mouse'a dokunmadan cevap)
+  if(/^[1-9]$/.test(e.key)){
+    const exam=document.getElementById('exam'), dlg=document.getElementById('dlg');
+    const wrap=(exam&&exam.classList.contains('show'))?document.getElementById('exOpts')
+             :(dlg&&dlg.classList.contains('show'))?document.getElementById('dlgOpts'):null;
+    if(wrap){ const b=wrap.querySelectorAll('.exOpt')[+e.key-1]; if(b && !b.disabled){ e.preventDefault(); b.click(); } return; }
+  }
   // SPACE — dünyada etkileşim VEYA diyalogda "devam" (ilk seçenek / birincil eylem)
   if(e.code==='Space' || e.key===' '){
     if(mosqueMode||hacMode||warpBlock) return;
