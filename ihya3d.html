@@ -498,6 +498,7 @@
 
 <div id="leftHud">
   <div id="needs" style="display:none">
+    <div class="need" id="fitRow" style="display:none" title="Kondisyon / disiplin — güçlü mü'min"><span>💪</span><div class="nbar"><i id="fitBar"></i></div></div>
     <div class="need"><span>💧</span><div class="nbar"><i id="thirstBar"></i></div></div>
     <div class="need"><span>🍞</span><div class="nbar"><i id="hungerBar"></i></div></div>
     <div class="need"><span>🚻</span><div class="nbar"><i id="toiletBar"></i></div></div>
@@ -540,7 +541,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.62</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.63</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -1491,6 +1492,7 @@ const UI_STR={ en:{
   dl_justgave:'🤲 You just gave — try again shortly.',
   sc_title_a:'🏅 Title: ', sc_title_toast_a:'🏅 ', sc_title_toast_b:' title: «', sc_title_toast_c:'» — +', sc_title_toast_d:' nur',
   sc_ledger_a:'📖 ', sc_ledger_b:' ledger: case #', sc_ledger_c:' solved',
+  disc_sabr:'💪 Your strong, disciplined body resisted the ego — it blessed your patience.',
   nur_suffix:' nur',
   // --- Faz 3: Umre (renderHac) ---
   hac_ihram_title:'Ihram & Intention',
@@ -1697,6 +1699,7 @@ ar:{
   dl_banner:'🤲 صدقة السرّ', dl_toast:'لا تعلم شمالك ما أنفقت يمينك — لم تردّ محتاجًا.', dl_justgave:'🤲 أعطيتَ قبل قليل — أعِد بعد قليل.',
   sc_title_a:'🏅 لقب: ', sc_title_toast_a:'🏅 ', sc_title_toast_b:' لقب: «', sc_title_toast_c:'» — +', sc_title_toast_d:' نور',
   sc_ledger_a:'📖 ', sc_ledger_b:' دفتر: القضية #', sc_ledger_c:' حُلّت',
+  disc_sabr:'💪 بدنك القويّ المنضبط قاوم هوى النفس — فبارك في صبرك.',
   // Mescid paneli (m_*) + aksiyonları (ma_*) — Faz 6.15; âyet ASIL Arapça (mushaf lafzı)
   m_next_prayer:'⏳ الصلاة القادمة: ',
   m_cuma_desc:'اليومُ جُمُعة. تُلقى الخطبة — أنصِت بسكينة، ثم صلِّ ركعتين مع الجماعة. <i>﴿إِذَا نُودِيَ لِلصَّلَاةِ مِن يَوْمِ الْجُمُعَةِ فَاسْعَوْا إِلَىٰ ذِكْرِ اللَّهِ﴾</i> (الجمعة ٩)',
@@ -3471,7 +3474,7 @@ const SABIR_EVENTS={ tr:[
 function openSabirEvent(rec){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; const pool=SABIR_EVENTS[L]||SABIR_EVENTS.tr;
   let i; do{ i=Math.floor(Math.random()*pool.length); }while(pool.length>1 && i===_sabirLast); _sabirLast=i; const ev=pool[i];
   openDialog({ ic:ev.ic, title:(tU('mo_durak')||'Otobüs Durağı')+' · '+ev.who, start:'s0', steps:{ s0:{ who:ev.who, txt:ev.x, ref:ev.ref, opts:[
-    { l:ev.p, act:()=>{ if(!(S.sabirCd&&Date.now()<S.sabirCd)){ addNur(15); S.sabirCd=Date.now()+SABIR_CD; save(); refreshHUD(); sndChime(); banner('⏳ +15'+(tU('nur_suffix')||' nûr')); } setTimeout(()=>toast(ev.pd),350); if(typeof closeDialog==='function') closeDialog(); } },
+    { l:ev.p, act:()=>{ if(!(S.sabirCd&&Date.now()<S.sabirCd)){ const disc=Math.round((S.fitness||0)/100*6); addNur(15+disc); S.sabirCd=Date.now()+SABIR_CD; save(); refreshHUD(); sndChime(); banner('⏳ +'+(15+disc)+(tU('nur_suffix')||' nûr')+(disc>0?' · 💪':'')); if(disc>0) setTimeout(()=>toast((tU('disc_sabr')||'💪 Güçlü/disiplinli bedenin nefse direndi — sabrına bereket kattı')),700); } setTimeout(()=>toast(ev.pd),350); if(typeof closeDialog==='function') closeDialog(); } },
     { l:ev.i, act:()=>{ toast(ev.id); if(typeof dismissGuardian==='function') dismissGuardian(); if(typeof closeDialog==='function') closeDialog(); } }   // sabırsızlık/öfke → melek ayrılır
   ] } }});
 }
@@ -3778,7 +3781,11 @@ function updateNeeds(dt){
 }
 function updateNeedsHud(){
   const nd=document.getElementById('needs'); if(!nd) return;
-  nd.style.display=(S.thirst>18||S.hunger>18||(S.toilet||0)>18)?'flex':'none';
+  const fv=S.fitness||0;
+  nd.style.display=(S.thirst>18||S.hunger>18||(S.toilet||0)>18||fv>0.5)?'flex':'none';
+  const fr=document.getElementById('fitRow'), fb=document.getElementById('fitBar');
+  if(fr) fr.style.display=fv>0.5?'flex':'none';                   // KONDİSYON çubuğu (pozitif — doluluk İYİ): sadece kondisyon varsa göster
+  if(fb){ fb.style.width=fv.toFixed(0)+'%'; fb.style.background=fv>66?'#3fa85f':(fv>33?'#5cb85c':'#8fce58'); }
   const tb=document.getElementById('thirstBar'), hb=document.getElementById('hungerBar'), ob=document.getElementById('toiletBar');
   if(tb){ tb.style.width=S.thirst.toFixed(0)+'%'; tb.style.background=S.thirst>75?'#e05a5a':(S.thirst>45?'#e0a23e':'#4aa3d8'); }
   if(hb){ hb.style.width=S.hunger.toFixed(0)+'%'; hb.style.background=S.hunger>75?'#e05a5a':(S.hunger>45?'#e0a23e':'#c98a3a'); }
