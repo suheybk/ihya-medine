@@ -164,6 +164,8 @@
   .eztest{display:flex;flex-direction:column;gap:7px}
   .eztbtn{text-align:left;padding:11px 12px;border:none;border-radius:12px;background:var(--panel);font-weight:700;font-size:13.5px;cursor:pointer;box-shadow:0 2px 8px #0002}
   .eztbtn.placed{background:#cfe9c0;color:#2b5323;opacity:.85;cursor:default}
+  #miniMap{width:72px;height:72px;border-radius:16px;background:var(--panel);box-shadow:0 4px 14px #0002;pointer-events:auto;cursor:pointer;flex:0 0 auto}
+  @media(max-width:440px){ #miniMap{width:60px;height:60px} }
   .skyclock{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 4px 3px;border-radius:16px;background:var(--panel);box-shadow:0 4px 14px #0002}
   #vakitRing{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:2}
   #vakitRingPath{transition:stroke .5s ease, stroke-dashoffset .5s linear}
@@ -376,7 +378,8 @@
   <div class="pill nur">✦ <b id="nur">0</b> <small id="rank">Niyet</small></div>
   <div class="pill streak" id="streakPill" style="display:none">🔥 <b>0</b></div>
   <div class="pill" id="cntPill" style="cursor:pointer;padding:6px 10px;font-size:15px" title="Harita">🗺️</div>
-  <div class="skyclock" id="skyclock" style="margin-left:auto">
+  <canvas id="miniMap" width="150" height="150" title="Mini harita — 🟢 sen · 🟡 hedefin" style="margin-left:auto"></canvas>
+  <div class="skyclock" id="skyclock"></div>
     <svg id="skySvg" viewBox="0 0 140 62" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
@@ -462,7 +465,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.44</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.45</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -6008,6 +6011,7 @@ document.getElementById('scen').addEventListener('click',e=>{ if(e.target.id==='
 document.getElementById('mapClose').onclick=closeMap;
 document.getElementById('map').addEventListener('click',e=>{ if(e.target.id==='map') closeMap(); });
 document.getElementById('cntPill').onclick=openMap;
+{ const mm=document.getElementById('miniMap'); if(mm) mm.onclick=openMap; }   // mini haritaya tıkla → tam harita
 // vazife/dgoal HUD kartları: dokununca aç/kapa (varsayılan küçük+sönük — mobilde ekranı boğmasın; senaryo defteri zaten toolbar 📜'de)
 (function(){ const vz=document.getElementById('vazife'), dg=document.getElementById('dgoal');
   if(vz) vz.addEventListener('click',()=>vz.classList.toggle('hudmin'));
@@ -6067,6 +6071,41 @@ function renderVazife(){
   el.innerHTML=h;
   el.classList.toggle('pend', rows.some(r=>r.cls==='todo'));   // küçükken bekleyen vazife noktası
 }
+// ---- CANLI MİNİ HARİTA (üst bar): 🟢 sen · 🟡 hedefin — yolunu bul ----
+function _rr(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function _miniDark(){ const dt=document.documentElement.getAttribute('data-theme'); if(dt==='dark')return true; if(dt==='light')return false; return !!(window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches); }
+function drawPlayerDot(ctx,p,ry){ ctx.save(); ctx.translate(p[0],p[1]); ctx.rotate(Math.atan2(Math.cos(ry),Math.sin(ry)));   // yön oku (baktığı yön)
+  ctx.fillStyle='#4ade80'; ctx.strokeStyle='#0b3b22'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(5.5,0); ctx.lineTo(-3.2,3.4); ctx.lineTo(-1,0); ctx.lineTo(-3.2,-3.4); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); }
+function drawTargetDot(ctx,p,et){ if(!p)return; const pr=3.4+Math.sin(et*4.5)*1.3; ctx.beginPath(); ctx.arc(p[0],p[1],pr+2.5,0,7); ctx.fillStyle='rgba(245,197,24,0.22)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(p[0],p[1],pr,0,7); ctx.fillStyle='#f5c518'; ctx.fill(); ctx.strokeStyle='#7a5a00'; ctx.lineWidth=1; ctx.stroke(); }
+function modernObjectivePos(){ if(!modernRecs||!modernRecs.length) return null; const rec=k=>{ const r=modernRecs.find(x=>x.modern===k); return r?[r.g.position.x,r.g.position.z]:null; };
+  const g=(typeof dgToday==='function')?dgToday():null;
+  if(g){ if(g.id==='m_pray') return rec('cami'); if(g.id==='m_market') return rec('market'); if(g.id==='m_work') return rec('is')||rec('okul');
+    if(g.id==='m_emanet') return (typeof modernWallet!=='undefined'&&modernWallet)?[modernWallet.g.position.x,modernWallet.g.position.z]:rec('durak');
+    if(g.id==='m_greet'){ let best=null,bd=1e9; for(const r of interactables){ if(r.modern!=='komsu'||!r.g.visible) continue; const d=Math.hypot(r.g.position.x-player.position.x,r.g.position.z-player.position.z); if(d<bd){bd=d;best=r;} } return best?[best.g.position.x,best.g.position.z]:rec('cami'); } }
+  return rec('cami'); }
+function drawMiniModern(ctx,W,H,et){ const ox=MODERN_ORIGIN[0], oz=MODERN_ORIGIN[2], cx=W/2, cy=H/2, s=(W/2-9)/(MODERN_R+3);
+  const to=(x,z)=>[cx+(x-ox)*s, cy+(z-oz)*s];
+  ctx.fillStyle=_miniDark()?'#3a4038':'#7d8a78'; ctx.beginPath(); ctx.arc(cx,cy,MODERN_R*s,0,7); ctx.fill();   // meydan
+  ctx.strokeStyle=_miniDark()?'#20242a':'#2b2f34'; ctx.lineWidth=2.6; ctx.beginPath(); ctx.arc(cx,cy,45*s,0,7); ctx.stroke();   // dış ring yol
+  const bcol={cami:'#2f8f63',market:'#d0492f',ev:'#cdb892',banka:'#c9cdd2',is:'#7f93b8',okul:'#e6c25a',durak:'#9fb0bf'};
+  for(const r of modernRecs){ const p=to(r.g.position.x,r.g.position.z); ctx.fillStyle=bcol[r.modern]||'#999'; const sz=r.modern==='cami'?6:4; ctx.fillRect(p[0]-sz/2,p[1]-sz/2,sz,sz); }
+  if(typeof modernBus!=='undefined'&&modernBus){ const bp=to(modernBus.g.position.x,modernBus.g.position.z); ctx.fillStyle='#cc3a2f'; ctx.beginPath(); ctx.arc(bp[0],bp[1],2,0,7); ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=0.6; ctx.stroke(); }
+  const obj=modernObjectivePos(); if(obj) drawTargetDot(ctx,to(obj[0],obj[1]),et);
+  drawPlayerDot(ctx,to(player.position.x,player.position.z),player.rotation.y); }
+function drawMiniMedine(ctx,W,H,et){ const isl=WORLD.islands.filter(i=>!(i.side&&!isUnlocked(i.id)));
+  let minx=1e9,maxx=-1e9,minz=1e9,maxz=-1e9; for(const is of isl){ minx=Math.min(minx,is.c[0]-is.r); maxx=Math.max(maxx,is.c[0]+is.r); minz=Math.min(minz,is.c[1]-is.r); maxz=Math.max(maxz,is.c[1]+is.r); }
+  minx=Math.min(minx,player.position.x); maxx=Math.max(maxx,player.position.x); minz=Math.min(minz,player.position.z); maxz=Math.max(maxz,player.position.z);
+  const wx=(maxx-minx)||1, wz=(maxz-minz)||1, pad=10, s=Math.min((W-2*pad)/wx,(H-2*pad)/wz);
+  const offx=(W-wx*s)/2, offz=(H-wz*s)/2; const to=(x,z)=>[offx+(x-minx)*s, offz+(z-minz)*s];
+  for(const is of isl){ const p=to(is.c[0],is.c[1]), rr=is.r*s; ctx.fillStyle = isUnlocked(is.id) ? (S.conquered[is.id]?'#3f8f63cc':'#6f9a54cc') : '#5a5a5a88';
+    _rr(ctx,p[0]-rr,p[1]-rr,rr*2,rr*2,2.5); ctx.fill(); }
+  const obj=(typeof currentObjective==='function')?currentObjective():null; if(obj&&obj.pos) drawTargetDot(ctx,to(obj.pos[0],obj.pos[2]),et);
+  drawPlayerDot(ctx,to(player.position.x,player.position.z),player.rotation.y); }
+function renderMiniMap(){ const cv=document.getElementById('miniMap'); if(!cv||!player||introMode||mosqueMode||hacMode) return; const ctx=cv.getContext('2d'); const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle=_miniDark()?'#141a14':'#eef1e8'; _rr(ctx,2,2,W-4,H-4,16); ctx.fill();
+  const et=clock.elapsedTime; try{ if(inModern) drawMiniModern(ctx,W,H,et); else drawMiniMedine(ctx,W,H,et); }catch(e){} }
+let _miniMapT=0;
 function refreshHUD(){
   document.getElementById('nur').textContent=S.nur;
   if(typeof updateModernBtn==='function') updateModernBtn();   // İhya BUGÜN butonu (Hac sonrası görünür)
@@ -6415,6 +6454,7 @@ function tick(){
   }
   if(npcWander.length) updateNpcs(dt);
   if(modernBus) busTick(dt);   // şehir otobüsü ring rotada dolaşır + durakta durur
+  _miniMapT-=dt; if(_miniMapT<=0){ _miniMapT=0.1; renderMiniMap(); }   // canlı mini harita (~10fps)
   updateSceneAmbient(dt);
   updateNeeds(dt);
   // ilim meclisi gölgeliği: oyuncu altına girince saydamlaş (altı görünsün)
