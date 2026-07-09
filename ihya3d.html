@@ -531,7 +531,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.53</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.54</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -1412,6 +1412,7 @@ const UI_STR={ en:{
   // --- Faz 2b: statik panel kabuğu (data-i18n) ---
   hd_inv:'🎒 Satchel', hd_scen:'📖 Case Ledger', hd_market:'🛒 Medina Market', hd_mosque:'🕌 Mosque',
   hd_hayir:'🤲 Fountain of Good', hd_hac:'🕋 Umrah', hd_ezber:'📖 Memorization Book',
+  guard_leave:'🕊️ You did wrong — the guarding angel left your side', guard_leave_ref:'«When a servant sins, a black spot is placed on his heart; if he repents and desists, his heart is polished.» (Tirmidhi — hasan)',
   hd_settings:'⚙️ Settings', set_controls_h:'🎮 Controls', set_move:'Move (direction keys)', set_act:'Interact · advance dialog', set_esc:'Close panel / go back', set_nums:'Action bar: prayer·water·food·wudu·fast·memorize·satchel·charity·cases·qibla', set_mc:'M map · C modern city', set_touch:'Touch: joystick + 🔘 action button', set_prefs_h:'Preferences', spacekey_s:'Space', set_sound:'🔊 Sound', set_guide:'💡 Guide light', set_lang:'🌐 Language', set_on:'On', set_off:'Off',
   u_close:'Close', u_dirhem:'dirhams', u_meselesuf:'cases', u_steps:'📖 Show steps',
   scen_sub:'Solve Medina\'s cases: judge with justice, reconcile the estranged, deliver the trust. Each case leads to a title.',
@@ -1579,6 +1580,7 @@ ar:{
   'vk_Gece':'الليل', 'vk_Fecir':'الفجر', 'vk_Kuşluk':'الضحى', 'vk_Öğle':'الظهر', 'vk_İkindi':'العصر', 'vk_Akşam':'المغرب', 'vk_Yatsı':'العشاء',
   'nml_Fecir':'الفجر', 'nml_Öğle':'الظهر', 'nml_İkindi':'العصر', 'nml_Akşam':'المغرب', 'nml_Yatsı':'العشاء',
   hd_inv:'🎒 الجَعبة', hd_scen:'📖 دفتر القضايا', hd_market:'🛒 سوق المدينة', hd_mosque:'🕌 المسجد',
+  guard_leave:'🕊️ أخطأتَ — فارقك الملَكُ الحافظ', guard_leave_ref:'«إنّ العبد إذا أذنب نُكتت في قلبه نكتةٌ سوداء، فإن تاب ونزع صُقل قلبه.» (الترمذي — حسن)',
   hd_settings:'⚙️ الإعدادات', set_controls_h:'🎮 التحكّم', set_move:'الحركة (مفاتيح الاتجاه)', set_act:'التفاعل · متابعة الحوار', set_esc:'إغلاق اللوحة / رجوع', set_nums:'شريط الإجراءات: صلاة·ماء·طعام·وضوء·صوم·حفظ·جَعبة·صدقة·قضايا·قبلة', set_mc:'M الخريطة · C المدينة العصرية', set_touch:'اللمس: عصا التحكّم + زر 🔘', set_prefs_h:'التفضيلات', spacekey_s:'المسافة', set_sound:'🔊 الصوت', set_guide:'💡 ضوء الإرشاد', set_lang:'🌐 اللغة', set_on:'مُفعّل', set_off:'مُغلق',
   hd_hayir:'🤲 نبع الخير', hd_hac:'🕋 العُمرة', hd_ezber:'📖 دفتر الحِفظ',
   u_close:'إغلاق', u_dirhem:'دراهم', u_meselesuf:'قضايا', u_steps:'📖 اعرض الخطوات',
@@ -1885,12 +1887,16 @@ function updateDayNight(dt){
   moonMesh.position.set(px-Math.sin(az)*16, 5-el*24, pz-34);
   moonMesh.visible=moonRise>0.01; moonMesh.material.transparent=true; moonMesh.material.opacity=moonRise;
   const v=vakitOf(gameTime);
-  if(v!==lastVakit){ const prev=lastVakit; lastVakit=v; const el2=document.getElementById('vakit'); if(el2){ const icon=(v[2]==='☾')?moonPhase().e:v[2]; el2.textContent=(isFriday()?(tU('day_friday')||'🕌 Cuma'):dayName())+' · '+icon+' '+vakitName(v[1]); el2.classList.remove('urgent'); } vakitWarned=false; if(prev) onVakitChange(v); }
+  if(v!==lastVakit){ const prev=lastVakit; lastVakit=v; const el2=document.getElementById('vakit'); if(el2){ const icon=(v[2]==='☾')?moonPhase().e:v[2]; el2.textContent=(isFriday()?(tU('day_friday')||'🕌 Cuma'):dayName())+' · '+icon+' '+vakitName(v[1]); el2.classList.remove('urgent'); } vakitWarned=false; if(prev) onVakitChange(v, prev); }
   checkVakitWarning();
   if(typeof updateRoosterAzan==='function') updateRoosterAzan();   // ezandan 15 sn önce horoz (her adadan)
   skyAcc+=dt; if(dt===0 || skyAcc>=0.15){ skyAcc=0; updateSkyWidget(); }
 }
-function onVakitChange(v){
+function onVakitChange(v, prevV){
+  // NAMAZ KAÇIRMA → koruyucu melek ayrılır: önceki FARZ vakti ne evde ne camide kılınmadıysa (ev_namaz henüz silinmeden kontrol)
+  if(prevV && FARZ_VAKIT.includes(prevV[1]) && !S.done['ev_namaz'] && guardianActive && guardianActive()){
+    if(typeof dismissGuardian==='function') dismissGuardian();
+  }
   delete S.done['ev_namaz'];               // YENİ VAKİT → o vaktin namazı yeniden 'kılınmadı'
   zikirDone={};                            // zikir/tesbihât yeni vakitte tekrar açılır
   rebuildEvQuests(v[1]);
@@ -3075,7 +3081,7 @@ function despawnModernWallet(){ if(!modernWallet) return; if(modernGroup) modern
 function openWalletEvent(rec){ const M=moWallet();
   openDialog({ ic:'👛', title:M.t, start:'s0', steps:{ s0:{ who:M.who, txt:M.x, ref:M.ref, opts:[
     { l:M.ret, act:()=>{ addNur(20); dgBump('m_emanet'); S.walletCd=Date.now()+WALLET_CD; save(); refreshHUD(); sndFanfare(); banner('👛 '+M.retb); setTimeout(()=>toast(M.retd),450); despawnModernWallet(); if(typeof closeDialog==='function') closeDialog(); } },
-    { l:M.keep, act:()=>{ S.walletCd=Date.now()+WALLET_CD; save(); toast(M.keepd); despawnModernWallet(); if(typeof closeDialog==='function') closeDialog(); } }
+    { l:M.keep, act:()=>{ S.walletCd=Date.now()+WALLET_CD; save(); toast(M.keepd); if(typeof dismissGuardian==='function') dismissGuardian(); despawnModernWallet(); if(typeof closeDialog==='function') closeDialog(); } }   // emanete hıyanet → melek ayrılır
   ] } }});
 }
 // ---- HARAMDAN KAÇINMA: FAİZLİ BANKA (uzak dur) ----
@@ -3086,7 +3092,7 @@ function moBanka(){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; return B
 function openBankaEvent(rec){ const M=moBanka();
   openDialog({ ic:'🏦', title:M.t, start:'s0', steps:{ s0:{ who:M.who, txt:M.x, ref:M.ref, opts:[
     { l:M.avoid, act:()=>{ addNur(15); save(); refreshHUD(); sndChime(); banner('🚫 '+M.t+' — +15'+(tU('nur_suffix')||' nûr')); setTimeout(()=>toast(M.avoidd),400); if(typeof closeDialog==='function') closeDialog(); } },
-    { l:M.enter, act:()=>{ toast(M.enterd); if(typeof closeDialog==='function') closeDialog(); } }
+    { l:M.enter, act:()=>{ toast(M.enterd); if(typeof dismissGuardian==='function') dismissGuardian(); if(typeof closeDialog==='function') closeDialog(); } }   // faizli hesap → melek ayrılır
   ] } }});
 }
 // ---- HELÂL GEÇİM: İŞ İLANLARI (düşünüp seç — her iş helâl değil, kolay değil) ----
@@ -3107,7 +3113,7 @@ function moJobs(){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; return JO
 function openJobBoard(rec){ const J=moJobs(); const onCd=()=>S.jobCd&&Date.now()<S.jobCd;
   const refuse=(k)=>()=>{ if(!onCd()){ addNur(15); S.jobCd=Date.now()+HALAL_JOB_CD; save(); refreshHUD(); sndChime(); banner('🚫 +15'+(tU('nur_suffix')||' nûr')); } setTimeout(()=>toast(J[k].nod),300); };
   const sub=(k)=>({ who:J[k].who, txt:J[k].x, ref:J[k].ref, opts:[
-    { l:J[k].no, act:refuse(k), go:'s0' }, { l:J[k].yes, act:()=>{ toast(J[k].yesd); }, go:'s0' }, { l:J.back, go:'s0' } ] });
+    { l:J[k].no, act:refuse(k), go:'s0' }, { l:J[k].yes, act:()=>{ toast(J[k].yesd); if(typeof dismissGuardian==='function') dismissGuardian(); }, go:'s0' }, { l:J.back, go:'s0' } ] });   // haram işi kabul → melek ayrılır
   openDialog({ ic:'💼', title:J.t, start:'s0', steps:{
     s0:{ who:J.t, txt:J.intro, opts:[ {l:J.courier.btn,go:'courier'}, {l:J.bankjob.btn,go:'bankjob'}, {l:J.halal.btn,go:'halal'}, {l:J.bye} ] },
     courier:sub('courier'), bankjob:sub('bankjob'),
@@ -3166,7 +3172,14 @@ function reciteLeaveHome(){ const H=moHome(); addNur(5); save(); refreshHUD(); s
   if(typeof closeDialog==='function') closeDialog();
   spawnGuardian(48); banner(H.leave.ok); setTimeout(()=>toast(H.leave.narr),700); }
 // ---- KORUYUCU MELEK (sancaklı) — oyuncuyu bir süre eşlik eder, ışık saçar ----
-let guardianAngel=null, guardianUntil=0, guardianWings=[], guardianLight=null;
+let guardianAngel=null, guardianUntil=0, guardianWings=[], guardianLight=null, guardianLeaving=0;
+// KORUYUCU MELEK, EN UFAK YANLIŞTA AYRILIR (namaz kaçırma·haram iş·sabırsızlık·emanete hıyanet)
+function guardianActive(){ return guardianAngel && (guardianUntil>Date.now() || guardianLeaving>0); }
+function dismissGuardian(){ if(!guardianAngel || guardianUntil<=Date.now() || guardianLeaving>0) return false;   // sadece AKTİF melek ayrılır
+  guardianUntil=0; guardianLeaving=1.7;   // yükselerek/sönerek semaya çekilir
+  banner('🕊️ '+(tU('guard_leave')||'Bir yanlış işledin — koruyucu melek yanından ayrıldı'));
+  setTimeout(()=>toast(tU('guard_leave_ref')||'«Kul bir günah işlediğinde kalbine siyah bir nokta konur; tövbe edip vazgeçerse kalbi cilâlanır.» (Tirmizî — hasen)'),550);
+  return true; }
 const GUARD_SC=1.15;   // melek ölçeği (oyuncuyu kapamayacak, ince zarif silüet)
 function buildGuardianAngel(){ if(guardianAngel) return guardianAngel;
   const g=new THREE.Group();
@@ -3182,6 +3195,13 @@ function buildGuardianAngel(){ if(guardianAngel) return guardianAngel;
 function spawnGuardian(sec){ buildGuardianAngel(); guardianUntil=Date.now()+(sec||45)*1000;
   if(player){ guardianAngel.position.set(player.position.x+3.0, 0.25, player.position.z-2.4); } }
 function updateGuardian(dt){ if(!guardianAngel) return;
+  if(guardianLeaving>0){ guardianLeaving-=dt; guardianAngel.visible=true; const t=clock.elapsedTime;   // AYRILIŞ: semaya yükselerek söner
+    guardianAngel.position.y += dt*3.4;
+    const k=Math.max(0,guardianLeaving/1.7); guardianAngel.scale.setScalar(GUARD_SC*k);
+    if(guardianLight) guardianLight.intensity=1.4*k;
+    for(const w of guardianWings){ w.m.rotation.y=w.s*(0.8+Math.sin(t*11)*0.32); }
+    if(guardianLeaving<=0){ guardianLeaving=0; guardianAngel.visible=false; if(guardianLight) guardianLight.intensity=0; }
+    return; }
   const active = guardianUntil>Date.now() && !!player;
   if(!active){ if(guardianAngel.visible){ guardianAngel.visible=false; if(guardianLight) guardianLight.intensity=0; } return; }
   guardianAngel.visible=true; const t=clock.elapsedTime;
@@ -3237,7 +3257,7 @@ function openSabirEvent(rec){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'
   let i; do{ i=Math.floor(Math.random()*pool.length); }while(pool.length>1 && i===_sabirLast); _sabirLast=i; const ev=pool[i];
   openDialog({ ic:ev.ic, title:(tU('mo_durak')||'Otobüs Durağı')+' · '+ev.who, start:'s0', steps:{ s0:{ who:ev.who, txt:ev.x, ref:ev.ref, opts:[
     { l:ev.p, act:()=>{ if(!(S.sabirCd&&Date.now()<S.sabirCd)){ addNur(15); S.sabirCd=Date.now()+SABIR_CD; save(); refreshHUD(); sndChime(); banner('⏳ +15'+(tU('nur_suffix')||' nûr')); } setTimeout(()=>toast(ev.pd),350); if(typeof closeDialog==='function') closeDialog(); } },
-    { l:ev.i, act:()=>{ toast(ev.id); if(typeof closeDialog==='function') closeDialog(); } }
+    { l:ev.i, act:()=>{ toast(ev.id); if(typeof dismissGuardian==='function') dismissGuardian(); if(typeof closeDialog==='function') closeDialog(); } }   // sabırsızlık/öfke → melek ayrılır
   ] } }});
 }
 // ---- SOKAKTA CEMAAT: modern'de seccadede namaza durunca komşular gelip saf tutar ----
@@ -3688,6 +3708,7 @@ function updateWoolHint(){
 /* ============ ÇALIŞMA ANİMASYONU (toplama/sağma/kırpma) ============ */
 let actionT=0, actionKind='work', actionDur=0.9, namazRekat=2;
 let camFocus=0;   // kamera sinematik odak (0=kuşbakışı … 1=alçak/yakın) — eylem/etkileşim sırasında yükselir
+let namazCamK=0;  // NAMAZ yan-profil kamerası rampası (0=normal arka … 1=yandan profil); kıyam→rükû→secde yandan görünsün
 let SIT_FOLD=-1.0, SIT_CROSS=-1.15;   // bağdaş: bacak ÖNE katlanır (negatif fold=ön) + dizler dışa/ayaklar içe yaw (setSitLegs ile ayarlanabilir)
 // OCCLUSION: kamera ile oyuncu arasında dev palmiye kalırsa kamerayı yukarı kaldır (palmiyenin üstünden bak)
 function occlusionLift(px,pz,cx,cz){
@@ -6583,8 +6604,18 @@ function tick(){
     const et2=clock.elapsedTime;
     oy += camFocus * (Math.sin(et2*0.7)*0.6 + Math.sin(et2*1.13+1.7)*0.4);      // ±~1.0, yavaş, çok abartmadan
     tmp.set(camWX, player.position.y+oy, camWZ);
+    // NAMAZ → YAN PROFİL: kamera oyuncunun yanına geçer (kıbleye dik), kıyam/rükû/secde yandan görünür
+    const namazActive = (actionT>0 && actionKind==='namaz');
+    namazCamK += ((namazActive?1:0) - namazCamK) * Math.min(1, dt*2.2);
+    let lookTX=player.position.x, lookTY=player.position.y+lookY, lookTZ=player.position.z;
+    if(namazCamK>0.01){
+      const ry=player.rotation.y, R=6.2, H=2.7;                       // yandan, orta mesafe, göğüs hizası
+      const sx=player.position.x+Math.cos(ry)*R, sz=player.position.z-Math.sin(ry)*R;   // kıble yönüne DİK (yan) — forward=(sin,cos) → yan=(cos,−sin)
+      tmp.x=mix(tmp.x,sx,namazCamK); tmp.y=mix(tmp.y,player.position.y+H,namazCamK); tmp.z=mix(tmp.z,sz,namazCamK);
+      lookTY=mix(lookTY,player.position.y+1.0,namazCamK);             // gövde ortasına bak (secdede alçalır)
+    }
     camera.position.lerp(tmp,0.12);
-    camera.lookAt(player.position.x,player.position.y+lookY,player.position.z);
+    camera.lookAt(lookTX,lookTY,lookTZ);
   }
   // nearest interactable (mescit/Mekke/intro'dayken kapalı)
   if(player && !mosqueMode && !hacMode && !introMode){
