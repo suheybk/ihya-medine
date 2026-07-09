@@ -11,7 +11,7 @@
  *     self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.map(x=>caches.delete(x)))).then(()=>self.registration.unregister())));
  *   olacak şekilde deploy et → tüm cache temizlenir, SW kendini kaldırır.
  */
-const CACHE = 'ihya-v1192';
+const CACHE = 'ihya-v1193';
 
 self.addEventListener('install', (e) => {
   // Yeni SW'yi beklemeye almadan hemen etkinleştir → kullanıcı takılıp kalmaz

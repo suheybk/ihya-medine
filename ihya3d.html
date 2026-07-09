@@ -283,10 +283,11 @@
 </style>
 <script type="importmap">
 { "imports": {
-  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  "three": "./vendor/three.module.js",
+  "three/addons/": "./vendor/addons/"
 }}
 </script>
+<!-- three.js SELF-HOST (Faz 6.28): unpkg CDN yerine repoya alındı (three@0.160.0) → tedarik zinciri güvenliği + tam offline. Bağımlılık: three.module.js · addons/loaders/GLTFLoader.js · addons/utils/BufferGeometryUtils.js -->
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -432,7 +433,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.27</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.28</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
