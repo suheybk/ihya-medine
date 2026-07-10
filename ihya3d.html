@@ -541,7 +541,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.77</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.78</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -3399,7 +3399,8 @@ function moGym(){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; return MOD
 function gymTrain(kind, gain, nur){ const G=moGym();
   if(S.gymCd&&Date.now()<S.gymCd){ toast(G.cd); return false; }
   if((S.fitness||0)>=100){ toast(G.full); return false; }
-  S.fitness=Math.min(100,(S.fitness||0)+gain); addNur(nur); S.gymCd=Date.now()+GYM_CD; save(); refreshHUD(); sndChime();
+  S.fitness=Math.min(100,(S.fitness||0)+gain); addNur(nur); S.gymCd=Date.now()+GYM_CD; gymSessionReps++; save(); refreshHUD(); sndChime();
+  if(gymSessionReps===3) setTimeout(()=>toast(tU('gym_coach_ready')||'🧑‍🏫 Antrenör seni izliyor — ringin başına git, vazife versin'),900);   // süreli spor → antrenör aktif
   if(typeof playAction==='function') playAction(2.6, kind);   // 🏃/🏋️/🤸 antrenman animasyonu (kamera actionT>0'da yakınlaşıp sergiler)
   banner('💪 '+G.ok+': '+Math.round(S.fitness)+'/100 · +'+nur+(tU('nur_suffix')||' nûr')); return true;
 }
@@ -3501,15 +3502,15 @@ const BLD_ORIGIN=[280,0,-240], BLD_HW=8, BLD_HD=6;   // eve komşu ayrı iç-mek
 let inBld=false, bldType=null, bldReturn=null, bldGroups={}, bldObstacles=[];
 const BLD_INT={   // her bina: zemin+aksan rengi + istasyonlar (bx,bz origin'e göre, ic ikon, r engel)
   market:{ floor:0xcabf9e, acc:0x4a9e3f, st:[{k:'shop', ic:'🛒', bx:0,    bz:-3.4, r:1.7}] },
-  gym:{    floor:0x6b6b72, acc:0xcc3a2f, st:[{k:'run',ic:'🏃',bx:-4.6,bz:-3,r:1.4},{k:'lift',ic:'🏋️',bx:0,bz:-3.7,r:1.4},{k:'stretch',ic:'🤸',bx:4.6,bz:-3,r:1.4}] },
+  gym:{    floor:0x6b6b72, acc:0xcc3a2f, st:[{k:'run',ic:'🏃',bx:-4.6,bz:-3,r:1.4},{k:'lift',ic:'🏋️',bx:0,bz:-3.7,r:1.4},{k:'stretch',ic:'🤸',bx:4.6,bz:-3,r:1.4},{k:'coach',ic:'🧑‍🏫',bx:-2.2,bz:2.2,r:1.0}] },
   banka:{  floor:0xb9c2cc, acc:0x2f6b8f, st:[{k:'banka', ic:'🏦', bx:0,   bz:-3.4, r:1.7}] },
   klinik:{ floor:0xe6eef0, acc:0xcc3a3a, st:[{k:'hasta', ic:'🛏️', bx:0,   bz:-3.4, r:1.7}] },
   is:{     floor:0xc9c2a8, acc:0x8a6a3a, st:[{k:'job',ic:'💼',bx:-3.6,bz:-3.2,r:1.4},{k:'work',ic:'📋',bx:3.6,bz:-3.2,r:1.4}] },
   cami:{   floor:0xece3cf, acc:0xd4b24a, st:[{k:'pray', ic:'🧎', bx:0,    bz:-3.9, r:1.7}] },
 };
-const BLD_STN={ tr:{shop:'Alışveriş',run:'Koşu',lift:'Ağırlık',stretch:'Esneme',banka:'Gişe',hasta:'Ziyaret',job:'İş İlanları',work:'Dürüstlük',pray:'Namaz kıl',leave:'🚪 Çık'},
-  en:{shop:'Shop',run:'Cardio',lift:'Weights',stretch:'Stretch',banka:'Counter',hasta:'Visit',job:'Jobs',work:'Honesty',pray:'Pray',leave:'🚪 Leave'},
-  ar:{shop:'تسوّق',run:'جري',lift:'أثقال',stretch:'إطالة',banka:'الشبّاك',hasta:'زيارة',job:'الوظائف',work:'الأمانة',pray:'صلِّ',leave:'🚪 خروج'} };
+const BLD_STN={ tr:{shop:'Alışveriş',run:'Koşu',lift:'Ağırlık',stretch:'Esneme',coach:'Antrenör',banka:'Gişe',hasta:'Ziyaret',job:'İş İlanları',work:'Dürüstlük',pray:'Namaz kıl',leave:'🚪 Çık'},
+  en:{shop:'Shop',run:'Cardio',lift:'Weights',stretch:'Stretch',coach:'Coach',banka:'Counter',hasta:'Visit',job:'Jobs',work:'Honesty',pray:'Pray',leave:'🚪 Leave'},
+  ar:{shop:'تسوّق',run:'جري',lift:'أثقال',stretch:'إطالة',coach:'المدرّب',banka:'الشبّاك',hasta:'زيارة',job:'الوظائف',work:'الأمانة',pray:'صلِّ',leave:'🚪 خروج'} };
 function bldObjName(rec){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; const nm=(BLD_STN[L]||BLD_STN.tr)[rec.bldObj]||''; return (rec.bldObj==='leave'?'':rec.q.ic+' ')+nm; }
 function bldWalkable(x,z){ const dx=x-BLD_ORIGIN[0], dz=z-BLD_ORIGIN[2];
   if(Math.abs(dx)>BLD_HW-0.8 || Math.abs(dz)>BLD_HD-0.8) return false;
@@ -3521,6 +3522,7 @@ function drawBldStation(g, type, k, bx, bz, acc){ const M=(w,h,d,c,x,y,z)=>g.add
     else if(k==='lift'){ M(0.14,1.6,0.14,0x3a3d44,bx-0.75,0.8,bz); M(0.14,1.6,0.14,0x3a3d44,bx+0.75,0.8,bz);   // AĞIRLIK SEHPASI: 2 dikme
       M(2.0,0.1,0.1,0x9aa0a8,bx,1.45,bz); for(const p of [-1,1]) M(0.1,0.5,0.5,0xcc3a2f,bx+p*0.9,1.45,bz); M(1.6,0.28,0.7,0x55585f,bx,0.3,bz+0.1); }   // bar + kırmızı plakalar + bench
     else if(k==='stretch'){ M(1.6,0.06,2.0,0x2f8f63,bx,0.05,bz); }   // YOGA/ESNEME MATI
+    // coach: görsel figür buildBldInterior'da çizildi (burada mesh yok, sadece etkileşim reci)
   }
   else if(type==='market'){ M(2.0,1.1,0.9,0x8a5a34,bx,0.55,bz); M(2.0,0.5,0.9,0xcfc0a0,bx,1.35,bz); for(const p of [-0.6,0,0.6]) M(0.3,0.3,0.3,[0xd06a3a,0x6a9a4a,0xe0b040][(p+0.6)*1.66|0],bx+p,1.75,bz); }   // RAF + vitrin + ürünler
   else if(type==='klinik'){ M(2.2,0.5,1.1,0xf0f3f5,bx,0.3,bz); M(2.2,0.25,1.1,0xdfe7ee,bx,0.62,bz); M(0.9,0.4,0.16,0xffffff,bx-0.55,0.95,bz-0.42); M(0.9,0.05,1.1,0xcc3a3a,bx,0.9,bz); }   // YATAK + yastık + kırmızı-hilâl çarşaf
@@ -3542,6 +3544,13 @@ function buildBldInterior(type){ if(bldGroups[type]) return bldGroups[type];
   g.add(mkBox(BLD_HW*1.5,0.5,0.14,cfg.acc,ox,2.35,oz-BLD_HD+0.25));   // arka duvarda aksan tabela şeridi
   const recs=[], obs=[];
   if(type==='gym'){ for(const mx of [-BLD_HW+0.35, BLD_HW-0.35]) g.add(mkBox(0.08,1.8,4.5,0x9fb4c4,ox+mx,1.6,oz+1));  // yan duvarlarda ayna şeritleri (spor salonu hissi)
+    // BOKS RİNGİ (sol-ön) + karşılıklı 2 sparring NPC
+    const rx=ox-4.6, rz=oz+2.6, rw=3.4;
+    g.add(mkBox(rw,0.32,rw,0x27324a,rx,0.16,rz)); g.add(mkBox(rw*0.96,0.06,rw*0.96,0x354060,rx,0.33,rz));   // platform + zemin
+    for(const cx of [-1,1]) for(const cz of [-1,1]) g.add(mkBox(0.13,1.35,0.13,0xdadada,rx+cx*rw*0.45,1.0,rz+cz*rw*0.45));   // 4 köşe direği
+    for(const h of [0.55,0.85,1.15]){ for(const cz of [-1,1]) g.add(mkBox(rw*0.9,0.03,0.03,0xcc3a2f,rx,0.33+h,rz+cz*rw*0.45)); for(const cx of [-1,1]) g.add(mkBox(0.03,0.03,rw*0.9,0xcc3a2f,rx+cx*rw*0.45,0.33+h,rz)); }   // ipler (3 sıra)
+    gymSparNpcs=[]; for(const side of [-1,1]){ const n=buildSparNpc(side>0?0x3f6ea5:0x8a5a34); n.baseY=0.33; n.g.position.set(rx+side*0.75,0.33,rz); n.g.rotation.y=side>0?-Math.PI/2:Math.PI/2; g.add(n.g); gymSparNpcs.push(n); }   // karşılıklı
+    const coach=buildSparNpc(0x2f8f63); coach.g.position.set(rx+2.4,0,rz-0.4); coach.g.rotation.y=-2.2; for(const a of ['L','R']) if(coach.arms[a]) coach.arms[a].rotation.x=-0.2; g.add(coach.g);   // ANTRENÖR (ring kenarı, quest verir)
   }
   const procG = (type==='gym') ? new THREE.Group() : g;   // gym: prosedürel ekipman kaldırılabilir gruba (GLB yüklenince silinir; yüklenmezse fallback)
   for(const s of cfg.st){ const bx=ox+s.bx, bz=oz+s.bz;
@@ -3571,6 +3580,34 @@ function placeGymEquip(g, ox, oz){
   gymEquipLoading=true;
   loader.load('models/gym_equipment.glb?v='+MODELV, gl=>{ gymEquipScene=gl.scene; gymEquipLoading=false; add(gymEquipScene); }, undefined, e=>{ gymEquipLoading=false; });   // hata → prosedürel fallback kalır
 }
+// GYM RING — sparring NPC (basit humanoid, kollar dönüşümlü yumruk)
+function buildSparNpc(cloth){ const g=new THREE.Group();
+  const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.19,0.52,8), new THREE.MeshStandardMaterial({color:cloth})); torso.position.y=0.72; g.add(torso);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.14,10,8), new THREE.MeshStandardMaterial({color:0xe0b48a})); head.position.y=1.06; g.add(head);
+  const lm=new THREE.MeshStandardMaterial({color:0x333844});
+  for(const s of [-1,1]){ const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.065,0.055,0.48,6),lm); leg.position.set(s*0.08,0.25,0); g.add(leg); }
+  const arms={};
+  for(const s of [-1,1]){ const arm=new THREE.Group(); const up=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.045,0.38,6), new THREE.MeshStandardMaterial({color:cloth})); up.position.y=-0.19; arm.add(up); const gl=new THREE.Mesh(new THREE.SphereGeometry(0.085,8,6), new THREE.MeshStandardMaterial({color:0xcc3a2f})); gl.position.y=-0.4; arm.add(gl); arm.position.set(s*0.2,0.9,0); arm.rotation.x=-1.1; g.add(arm); arms[s>0?'R':'L']=arm; }
+  return {g, arms};
+}
+let gymSparNpcs=[], gymSessionReps=0;
+function updateGymNpcs(dt){ if(!(inBld&&bldType==='gym')||!gymSparNpcs.length) return; const t=clock.elapsedTime;
+  for(let i=0;i<gymSparNpcs.length;i++){ const n=gymSparNpcs[i], ph=t*4.5+i*Math.PI;
+    if(n.arms.R) n.arms.R.rotation.x=-1.1+Math.max(0,Math.sin(ph))*1.25;         // sağ-sol yumruk (dönüşümlü öne)
+    if(n.arms.L) n.arms.L.rotation.x=-1.1+Math.max(0,Math.sin(ph+Math.PI))*1.25;
+    n.g.position.y=n.baseY+Math.abs(Math.sin(t*8+i))*0.035;                       // boks adımı zıplaması
+  }
+}
+function openGymCoach(){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr';
+  const T={tr:{t:'Antrenör',wait:'🧑‍🏫 Antrenör: Önce biraz çalış, sonra gel — ',who:'Ringin başında',x:'Antrenör başını salladı: «Maşaallah, azmini gördüm. Güçlü mü\'min, zayıf mü\'minden Allah\'a daha sevimli ve hayırlıdır. Disiplinini nûra çevir.»',ref:'«Kuvvetli mü\'min, zayıf mü\'minden Allah\'a daha sevimli ve hayırlıdır.» (Müslim)',do:'💪 Vazifeyi kabul et (+20 nûr)',done:'Antrenör: Böyle devam — bedenin de senin üzerinde hak sahibidir. (Buhârî)',bye:'Kapat'},
+    en:{t:'Coach',wait:'🧑‍🏫 Coach: Train a bit first, then come — ',who:'By the ring',x:'The coach nodded: «Mashallah, I saw your resolve. The strong believer is more beloved to Allah than the weak one. Turn your discipline into light.»',ref:'«The strong believer is more beloved to Allah than the weak believer.» (Muslim)',do:'💪 Accept the task (+20 nur)',done:'Coach: Keep it up — your body also has a right over you. (Bukhari)',bye:'Close'},
+    ar:{t:'المدرّب',wait:'🧑‍🏫 المدرّب: تمرّن قليلًا ثم تعال — ',who:'عند الحلبة',x:'أومأ المدرّب: «ما شاء الله، رأيتُ عزمك. المؤمن القوي أحبّ إلى الله من الضعيف. حوّل انضباطك إلى نور.»',ref:'«المؤمن القوي خير وأحب إلى الله من المؤمن الضعيف.» (مسلم)',do:'💪 اقبل المهمة (+20 نور)',done:'المدرّب: واصِل — ولبدنك عليك حق. (البخاري)',bye:'إغلاق'}};
+  const M=T[L]||T.tr;
+  if(gymSessionReps<3){ toast(M.wait+gymSessionReps+'/3'); return; }
+  audio(); openDialog({ic:'🧑‍🏫',title:M.t,start:'s0',steps:{s0:{who:M.who,txt:M.x,ref:M.ref,opts:[
+    {l:M.do, act:()=>{ addNur(20); gymSessionReps=0; save(); refreshHUD(); sndFanfare(); banner('💪 +20'+(tU('nur_suffix')||' nûr')); setTimeout(()=>toast(M.done),400); if(typeof closeDialog==='function') closeDialog(); }},
+    {l:M.bye} ]}}});
+}
 function bldRemoveRecs(){ if(bldType&&bldGroups[bldType]){ const g=bldGroups[bldType]; for(const r of g.__recs){ const i=interactables.indexOf(r); if(i>=0) interactables.splice(i,1); } g.visible=false; } bldObstacles=[]; if(near&&near.bld) near=null; }
 function enterBld(type){ if(!BLD_INT[type]||!player) return; const g=buildBldInterior(type);
   bldReturn={ x:player.position.x, z:player.position.z };
@@ -3593,6 +3630,7 @@ function activateBldObj(rec){ const k=rec.bldObj;
   else if(k==='run') gymTrain('run',14,2);
   else if(k==='lift') gymTrain('lift',16,3);
   else if(k==='stretch') gymTrain('stretch',10,2);
+  else if(k==='coach') openGymCoach();
   else if(k==='banka') openBankaEvent(rec);
   else if(k==='hasta') openHastaZiyareti(rec);
   else if(k==='job') openJobBoard(rec);
@@ -7452,6 +7490,7 @@ function tick(){
     const m=meclisRoof.material, tgt=under?0.10:1; m.transparent=under||m.opacity<0.99;   // daha net saydam
     m.opacity += (tgt-m.opacity)*0.18; m.depthWrite=m.opacity>0.9; if(m.opacity>0.995){m.opacity=1;m.transparent=false;} }
   updateGuideBeacon();
+  if(typeof updateGymNpcs==='function') updateGymNpcs(dt);       // gym ring sparring NPC animasyonu (inBld gym)
   if(typeof updateSilkworms==='function') updateSilkworms(dt);   // ipek böceği döngüsü (evre ilerleme + güve kanat)
   if(typeof updateAnts==='function') updateAnts(dt);             // karınca dolaşma
   if(typeof updateGlbPrayer==='function') updateGlbPrayer(dt);   // NAMAZ GLB modeli oynatma (evre penceresi) — aktifse
