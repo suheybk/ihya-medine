@@ -541,7 +541,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.67</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.68</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -1361,6 +1361,7 @@ if(typeof S.walletCd!=='number') S.walletCd=0;   // modern 'bulunan cüzdan' ola
 if(typeof S.jobCd!=='number') S.jobCd=0;         // modern iş (helâl kazanç/haram reddi) ödül cooldown (ms)
 if(typeof S.sabirCd!=='number') S.sabirCd=0;     // modern sabır olayı (otobüs/sıra/trafik) ödül cooldown (ms)
 if(typeof S.workCd!=='number') S.workCd=0;       // modern iş/okul DÜRÜSTLÜK (kul hakkı) senaryosu ödül cooldown (ms)
+if(typeof S.komsuCd!=='number') S.komsuCd=0;     // modern KOMŞU HAKKI senaryosu cooldown (ms) — selâmda ~2.5dk'da bir çıkar
 if(!S.homeCd || typeof S.homeCd!=='object') S.homeCd={};   // modern EV rutini: aksiyon başına ödül cooldown (namaz/aile/ilim/şükür/dinlen)
 if(typeof S.hastaCd!=='number') S.hastaCd=0;     // modern KLİNİK hasta ziyareti ödül cooldown (ms)
 if(typeof S.fitness!=='number') S.fitness=0;     // KONDİSYON/disiplin 0..100 (spor salonu artırır, her gün azıcık düşer)
@@ -1375,7 +1376,7 @@ const UI_STR={ en:{
   rank_0:'Intention', rank_1:'Seeker', rank_2:'Diligent', rank_3:'Ihya Wayfarer', rank_4:'Ihya Devotee', rank_5:'Ihya Master',
   rank_6:'Ihya Guide', rank_7:'Ihya Teacher', rank_8:'People of Light', rank_9:'Ihya Elder',
   dg_head:'Daily Goal', dg_done:'🎯 Daily goal complete', dg_pray:'Congregational prayers', dg_zikir:'Remembrances (dhikr)', dg_hayir:'Ongoing charity', dg_sell:'Market earnings (dirhem)', dg_case:'Resolve a case', dg_ikram:'Give to those in need', dg_exam:'Pass a trial',
-  dg_m_pray:'Pray on time', dg_m_market:'Shop lawfully at the market', dg_m_work:'Be honest at work/school', dg_m_emanet:'Return the trust to its owner', dg_m_greet:'Greet your neighbor', dg_m_sadaka:'Give secret charity to someone in need',
+  dg_m_pray:'Pray on time', dg_m_market:'Shop lawfully at the market', dg_m_work:'Be honest at work/school', dg_m_emanet:'Return the trust to its owner', dg_m_greet:'Greet your neighbor', dg_m_sadaka:'Give secret charity to someone in need', dg_m_komsu:'Honor your neighbor\'s rights',
   mo_greet_lbl:'Greet', mo_greet_toast:'✋ You gave the greeting — «Spread peace among you, and you will love one another.» (Muslim)', mo_durak:'Bus Stop',
   mo_enter:'Ihya — Today: back in your city', mo_exit:'Back in Medina', mo_lock:'🔒 Complete the Hajj first — then you return to today', mo_unlock:'Ihya — Today is open: carry what you learned into today\'s life (city button 🏙️)', mo_btn_go:'Ihya — Today (modern city)', mo_btn_back:'Back to Medina', mo_job_t:'What do you do today?', mo_job_who:'Ihya — Today', mo_job_x:'A quick question — optional, you can skip. Whatever your age or situation, we\'ll guide you to what you need.', mo_job_student:'📚 Student', mo_job_worker:'💼 Working', mo_job_seeker:'🔎 Looking for work', mo_job_home:'🏠 Home / care', mo_job_skip:'Skip', mo_job_set:'Saved — today\'s life will be shaped accordingly.',
   ad_ok:'Peace', ad_warn:'Unrest', ad_bad:'Injustice',
@@ -1582,7 +1583,7 @@ ar:{
   rank_0:'النِّيّة', rank_1:'طالِب', rank_2:'أهل الاجتهاد', rank_3:'سالِك الإحياء', rank_4:'جُنديّ الإحياء', rank_5:'أستاذ الإحياء',
   rank_6:'مُرشِد الإحياء', rank_7:'مُعلِّم الإحياء', rank_8:'أهل النور', rank_9:'شيخ الإحياء',
   dg_head:'هدف اليوم', dg_done:'🎯 تمّ هدف اليوم', dg_pray:'صلوات جماعة', dg_zikir:'أذكار', dg_hayir:'صدقة جارية', dg_sell:'كسب في السوق (درهم)', dg_case:'احلُل قضيّة', dg_ikram:'أطعِم محتاجًا', dg_exam:'اجتَز امتحانًا',
-  dg_m_pray:'صلِّ في وقتك', dg_m_market:'تسوّق من الحلال', dg_m_work:'كن صادقًا في العمل/المدرسة', dg_m_emanet:'رُدّ الأمانة إلى صاحبها', dg_m_greet:'سلِّم على جارك', dg_m_sadaka:'تصدَّق سرًّا على محتاج',
+  dg_m_pray:'صلِّ في وقتك', dg_m_market:'تسوّق من الحلال', dg_m_work:'كن صادقًا في العمل/المدرسة', dg_m_emanet:'رُدّ الأمانة إلى صاحبها', dg_m_greet:'سلِّم على جارك', dg_m_sadaka:'تصدَّق سرًّا على محتاج', dg_m_komsu:'راعِ حقَّ الجار',
   mo_greet_lbl:'سلِّم', mo_greet_toast:'✋ أفشيتَ السلام — «أفشوا السلام بينكم تحابّوا.» (مسلم)', mo_durak:'موقف الحافلة',
   mo_enter:'الإحياء — اليوم: عُدتَ إلى مدينتك', mo_exit:'عُدتَ إلى المدينة', mo_lock:'🔒 أتمِم الحج أولًا — ثم تعود إلى اليوم', mo_unlock:'الإحياء — اليوم مفتوح: احمِل ما تعلَّمتَه إلى حياة اليوم (زر المدينة 🏙️)', mo_btn_go:'الإحياء — اليوم (المدينة العصرية)', mo_btn_back:'العودة إلى المدينة', mo_job_t:'ماذا تعمل اليوم؟', mo_job_who:'الإحياء — اليوم', mo_job_x:'سؤال قصير — اختياري، يمكنك تخطّيه. مهما كان عمرك أو حالك، سنرشدك إلى ما تحتاج.', mo_job_student:'📚 طالب', mo_job_worker:'💼 موظّف/عامل', mo_job_seeker:'🔎 أبحث عن عمل', mo_job_home:'🏠 البيت / رعاية', mo_job_skip:'تخطَّ', mo_job_set:'حُفِظ — ستتشكّل حياتك اليوم وفقًا لذلك.',
   ad_ok:'سكينة', ad_warn:'اضطراب', ad_bad:'ظُلم',
@@ -1800,10 +1801,11 @@ const MODERN_GOALS=[
   {id:'m_emanet', ic:'👛', n:1, evt:'m_emanet', bonus:28},   // bulunan cüzdanı sahibine ulaştır (emanet)
   {id:'m_greet',  ic:'✋', n:2, evt:'m_greet',  bonus:18},   // 2 komşuya selâm ver
   {id:'m_sadaka', ic:'🤲', n:2, evt:'m_sadaka', bonus:24},   // 2 muhtaca gizli sadaka (modern dilenci)
+  {id:'m_komsu',  ic:'🏘️', n:2, evt:'m_komsu',  bonus:22},   // komşu hakkını gözet (komşu hakkı olayı)
 ];
 function isLevel2(){ return !!(S.startInModern && S.modernUnlocked); }   // Hac tamam → Seviye 2 (günlük hedefler modern havuzdan)
 function dgToday(){ const P=isLevel2()?MODERN_GOALS:DAILY_GOALS; return P[(S.dayNum||0) % P.length]; }
-function dgLabel(g){ return tU('dg_'+g.id) || ({pray:'Cemaatle namaz',zikir:'Zikir çek',hayir:'Sadaka-i câriye',sell:'Pazarda kazanç (dirhem)',case:'Bir mesele çöz',ikram:'Muhtaca ikram et',exam:'İmtihanı geç',m_pray:'Vaktinde namaz kıl',m_market:'Markette helâl alışveriş',m_work:'İşinde/okulunda dürüst ol',m_emanet:'Emaneti sahibine ver',m_greet:'Komşuna selâm ver',m_sadaka:'Muhtaca gizli sadaka ver'}[g.id]); }
+function dgLabel(g){ return tU('dg_'+g.id) || ({pray:'Cemaatle namaz',zikir:'Zikir çek',hayir:'Sadaka-i câriye',sell:'Pazarda kazanç (dirhem)',case:'Bir mesele çöz',ikram:'Muhtaca ikram et',exam:'İmtihanı geç',m_pray:'Vaktinde namaz kıl',m_market:'Markette helâl alışveriş',m_work:'İşinde/okulunda dürüst ol',m_emanet:'Emaneti sahibine ver',m_greet:'Komşuna selâm ver',m_sadaka:'Muhtaca gizli sadaka ver',m_komsu:'Komşu hakkını gözet'}[g.id]); }
 function dgBump(evt, amount){
   if(!S.dg) S.dg={prog:0,done:false};
   const g=dgToday(); if(g.evt!==evt || S.dg.done) return;
@@ -3449,6 +3451,7 @@ function greetModernNeighbor(rec){ const now=Date.now();
   if(rec.greetCd && now<rec.greetCd) return;   // yakında selâmladın → animasyon var, ödül yok (farm engeli)
   rec.greetCd=now+60000; addNur(1); dgBump('m_greet'); save(); sndChime();
   toast(tU('mo_greet_toast')||'✋ Selâm verdin — «Selâmı aranızda yayın ki birbirinizi sevesiniz.» (Müslim)');
+  if(!(S.komsuCd&&now<S.komsuCd)){ S.komsuCd=now+KOMSU_CD; setTimeout(()=>{ if(inModern) openKomsuHakki(rec); }, 800); }   // selâmdan sonra ~2.5dk'da bir komşu-hakkı ikilemi (salâm animasyonu oynasın diye gecikmeli)
 }
 // ---- MODERN DİLENCİ: sokak kenarında bir muhtaç → gizli sadaka (Medine dlgDilenci reuse) ----
 let modernBeggarBuilt=false;
@@ -3515,6 +3518,35 @@ function openWorkHonesty(rec){ const P=moWork(); const pool=P.ev;
   openDialog({ ic:ev.ic, title:P.t, start:'s0', steps:{ s0:{ who:ev.who, txt:ev.x, ref:ev.ref, opts:[
     { l:ev.p, act:()=>{ if(!(S.workCd&&Date.now()<S.workCd)){ const d=discBonus(); addNur(15+d); dgBump('m_work'); S.workCd=Date.now()+WORK_CD; save(); refreshHUD(); sndChime(); banner('✅ +'+(15+d)+(tU('nur_suffix')||' nûr')+(d>0?' · 💪':'')); if(d>0) setTimeout(()=>toast(tU('disc_haram')||'💪 Güçlü/disiplinli iraden harama direndi — nûruna bereket kattı'),950); } setTimeout(()=>toast(ev.pd),350); if(typeof closeDialog==='function') closeDialog(); } },
     { l:ev.i, act:()=>{ toast(ev.id); if(typeof dismissGuardian==='function') dismissGuardian(); if(typeof closeDialog==='function') closeDialog(); } }   // hıyanet/kul hakkı → melek ayrılır
+  ] } }});
+}
+// ---- KOMŞU HAKKI: komşuyla selâmlaşınca ~2.5dk'da bir rastgele komşu-hakkı ikilemi (iyilik→nûr+disiplin+m_komsu; eziyet→melek ayrılır) ----
+const KOMSU_CD=150000;   // komşu hakkı olayı ~2.5 dk cooldown
+let _komsuLast=-1;
+const KOMSU_EVENTS={ tr:{ t:'Komşu Hakkı', ev:[
+  {ic:'🔊', who:'Geç saatte…', x:'Evde sesin yüksek; <b>komşun uyumaya çalışıyor</b> ama rahatsız oluyor. Ne yaparsın?', ref:'«Komşusu, kötülüğünden emin olmayan kimse (kâmil) mü\'min değildir.» (Buhârî)', p:'Sesi kıs, komşunu gözet', pd:'Komşunun rahatını gözettin — eziyeti kaldırmak imandandır.', i:'Umursama, devam et', id:'Komşuya eziyet imana gölge düşürür; koruyucu melek üzülür.'},
+  {ic:'🚗', who:'Kapı önünde…', x:'Eşyanı/aracını <b>komşunun kapısına/yoluna</b> bıraktın; geçemiyor. Ne yaparsın?', ref:'«Yoldan eziyet veren şeyi kaldırmak sadakadır.» (Buhârî-Müslim)', p:'Çek, yolunu aç', pd:'Komşunun yolunu açtın — eziyeti kaldırdın (sadaka).', i:'Orada kalsın, işine bak', id:'Komşunun yolunu tıkamak eziyettir; melek üzülür.'},
+  {ic:'🍲', who:'Yemek pişerken…', x:'Yemeğinin kokusu <b>komşuya gidiyor</b>; çocukları var. Ne yaparsın?', ref:'«Ey Ebû Zer! Çorba pişirdiğinde suyunu çoğalt ve komşunu gözet.» (Müslim)', p:'Bir tabak ikram et', pd:'Komşunu gözettin — bir tabak yemek gönül köprüsüdür.', i:'Sadece kendine ayır', id:'Komşu açken tok yatmak komşu hakkına aykırıdır; melek üzülür.'},
+  {ic:'🔧', who:'Ödünç…', x:'Komşundan aldığın şeyi <b>geri vermeyi savsakladın</b>. Ne yaparsın?', ref:'«Emanetleri ehline verin.» (Nisâ 4/58)', p:'Hemen, sağlam iade et', pd:'Emaneti sahibine verdin — komşu hakkını korudun.', i:'Bir süre daha oyala', id:'Emaneti geciktirmek kul hakkıdır; melek üzülür.'},
+  {ic:'🤒', who:'Komşu kapısı…', x:'Komşun <b>hasta</b>; kimse halini sormuyor. Ne yaparsın?', ref:'«Cibrîl komşuyu bana o kadar tavsiye etti ki, onu mirasçı kılacağını sandım.» (Buhârî-Müslim)', p:'Halini sor, yardım et', pd:'Hasta komşunu gözettin — komşu hakkının hakkını verdin.', i:'Beni ilgilendirmez', id:'Hasta komşuyu ihmal komşu hakkını çiğnemektir; melek üzülür.'} ] },
+  en:{ t:'Rights of the Neighbor', ev:[
+  {ic:'🔊', who:'Late at night…', x:'Your home is loud; <b>your neighbor is trying to sleep</b> but is disturbed. What do you do?', ref:'«He is not a (complete) believer whose neighbor is not safe from his harm.» (Bukhari)', p:'Lower the noise, mind your neighbor', pd:'You minded your neighbor\'s peace — removing harm is part of faith.', i:'Ignore it, carry on', id:'Harming a neighbor casts a shadow on faith; the guardian angel is saddened.'},
+  {ic:'🚗', who:'At the door…', x:'You left your things/car <b>blocking your neighbor\'s door/path</b>; they cannot pass. What do you do?', ref:'«Removing a harmful thing from the road is charity.» (Bukhari-Muslim)', p:'Move it, clear the way', pd:'You cleared your neighbor\'s way — you removed harm (charity).', i:'Leave it, mind your own', id:'Blocking a neighbor\'s way is harm; the angel is saddened.'},
+  {ic:'🍲', who:'While cooking…', x:'The smell of your food <b>reaches your neighbor</b>; they have children. What do you do?', ref:'«O Abu Dharr! When you cook a stew, add water and mind your neighbor.» (Muslim)', p:'Share a plate with them', pd:'You minded your neighbor — a shared plate is a bridge of hearts.', i:'Keep it all for yourself', id:'Sleeping full while your neighbor is hungry violates his right; the angel is saddened.'},
+  {ic:'🔧', who:'A loan…', x:'You have <b>delayed returning</b> what you borrowed from your neighbor. What do you do?', ref:'«Render the trusts to whom they are due.» (an-Nisa 4/58)', p:'Return it at once, intact', pd:'You returned the trust to its owner — you guarded your neighbor\'s right.', i:'Stall a while longer', id:'Delaying a trust is a violated right; the angel is saddened.'},
+  {ic:'🤒', who:'The neighbor\'s door…', x:'Your neighbor is <b>ill</b>; no one checks on them. What do you do?', ref:'«Gabriel kept urging me about the neighbor until I thought he would make him an heir.» (Bukhari-Muslim)', p:'Check on them, help', pd:'You cared for your ill neighbor — you gave the neighbor\'s right its due.', i:'None of my business', id:'Neglecting an ill neighbor tramples his right; the angel is saddened.'} ] },
+  ar:{ t:'حقُّ الجار', ev:[
+  {ic:'🔊', who:'في وقتٍ متأخّر…', x:'صوتُك في البيت مرتفع؛ <b>وجارُك يحاول النوم</b> لكنه يتأذّى. ماذا تفعل؟', ref:'«لا يؤمنُ (كاملَ الإيمان) مَن لا يأمنُ جارُه بوائقَه.» (البخاري)', p:'اخفِض الصوتَ وراعِ جارك', pd:'راعيتَ راحةَ جارك — وإماطةُ الأذى من الإيمان.', i:'لا تُبالِ واستمرّ', id:'أذى الجار يُظلِّم الإيمان؛ يحزن الملَكُ الحارس.'},
+  {ic:'🚗', who:'عند الباب…', x:'تركتَ أغراضك/سيارتك <b>تسدُّ بابَ جارك/طريقه</b>؛ فلا يستطيع المرور. ماذا تفعل؟', ref:'«وإماطةُ الأذى عن الطريق صدقة.» (البخاري ومسلم)', p:'أزِلْها وافتَح الطريق', pd:'فتحتَ طريقَ جارك — أزلتَ الأذى (صدقة).', i:'دَعْها واشتغِل بشأنك', id:'سدُّ طريقِ الجار أذًى؛ يحزن الملَك.'},
+  {ic:'🍲', who:'أثناء الطبخ…', x:'رائحةُ طعامك <b>تصلُ إلى جارك</b>؛ وله أطفال. ماذا تفعل؟', ref:'«يا أبا ذرّ! إذا طبختَ مرقةً فأكثِر ماءها وتعاهَد جيرانك.» (مسلم)', p:'أهدِ لهم صحنًا', pd:'راعيتَ جارك — صحنٌ يُهدى جسرُ قلوب.', i:'احتفِظ به لنفسك', id:'أن تشبعَ وجارُك جائعٌ مخالفٌ لحقّه؛ يحزن الملَك.'},
+  {ic:'🔧', who:'عاريّة…', x:'<b>تأخّرتَ في ردِّ</b> ما استعرتَه من جارك. ماذا تفعل؟', ref:'«إنَّ اللهَ يأمرُكم أن تُؤدُّوا الأماناتِ إلى أهلها.» (النساء ٤/٥٨)', p:'رُدَّها فورًا سليمة', pd:'رددتَ الأمانةَ لصاحبها — صُنتَ حقَّ جارك.', i:'ماطِلْ قليلًا بعد', id:'تأخيرُ الأمانة حقُّ عبد؛ يحزن الملَك.'},
+  {ic:'🤒', who:'باب الجار…', x:'جارُك <b>مريض</b>؛ ولا أحدَ يسأل عنه. ماذا تفعل؟', ref:'«ما زال جبريلُ يوصيني بالجار حتى ظننتُ أنه سيُورِّثه.» (البخاري ومسلم)', p:'اسأل عنه وساعِدْه', pd:'تعاهدتَ جارَك المريض — أعطيتَ حقَّ الجار حقَّه.', i:'لا يعنيني', id:'إهمالُ الجار المريض دوسٌ لحقّه؛ يحزن الملَك.'} ] } };
+function moKomsu(){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; return KOMSU_EVENTS[L]||KOMSU_EVENTS.tr; }
+function openKomsuHakki(rec){ const P=moKomsu(); const pool=P.ev;
+  let i; do{ i=Math.floor(Math.random()*pool.length); }while(pool.length>1 && i===_komsuLast); _komsuLast=i; const ev=pool[i];
+  openDialog({ ic:ev.ic, title:P.t, start:'s0', steps:{ s0:{ who:ev.who, txt:ev.x, ref:ev.ref, opts:[
+    { l:ev.p, act:()=>{ const d=discBonus(); addNur(15+d); dgBump('m_komsu'); save(); refreshHUD(); sndChime(); banner('🏘️ +'+(15+d)+(tU('nur_suffix')||' nûr')+(d>0?' · 💪':'')); if(d>0) setTimeout(()=>toast(tU('disc_haram')||'💪 Güçlü/disiplinli iraden harama direndi — nûruna bereket kattı'),950); setTimeout(()=>toast(ev.pd),350); if(typeof closeDialog==='function') closeDialog(); } },
+    { l:ev.i, act:()=>{ toast(ev.id); if(typeof dismissGuardian==='function') dismissGuardian(); if(typeof closeDialog==='function') closeDialog(); } }   // komşuya eziyet/hak ihlali → melek ayrılır
   ] } }});
 }
 // ---- SOKAKTA CEMAAT: modern'de seccadede namaza durunca komşular gelip saf tutar ----
