@@ -541,7 +541,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.68</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.69</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -3040,7 +3040,7 @@ function openModernBuilding(rec){
   if(rec.modern==='is'){ openJobBoard(rec); return; }           // İş İlanları: helâl geçimi düşünüp bul (kolay değil)
   if(rec.modern==='okul'){ openWorkHonesty(rec); return; }       // OKUL: dürüstlük/kul hakkı imtihanı (öğrenci)
   if(rec.modern==='komsu'){ greetModernNeighbor(rec); return; } // modern komşu: selâmlaş (karşılıklı)
-  if(rec.modern==='durak'){ openSabirEvent(rec); return; }      // otobüs durağı: rastgele SABIR olayı
+  if(rec.modern==='durak'){ openDurak(rec); return; }           // otobüs durağı: otobüs geldiyse BİN, yoksa bekleme/SABIR olayı
   const b=moBld(rec.modern), nur=MO_NUR[rec.modern]||6; audio();
   openDialog({ ic:rec.q.ic, title:b.t, start:'s0', steps:{ s0:{ who:b.t, txt:b.x, opts:[
     { l:b.a, act:()=>{ addNur(nur); if(rec.modern==='cami') dgBump('pray'); if(rec.modern==='is'||rec.modern==='okul') dgBump('m_work'); save(); refreshHUD(); sndChime(); banner(rec.q.ic+' +'+nur+(tU('nur_suffix')||' nûr')); setTimeout(()=>toast(b.d),450); if(typeof closeDialog==='function') closeDialog(); } },
@@ -3072,6 +3072,7 @@ const MODERN_MARKET={ tr:{
 function moMkt(){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; return MODERN_MARKET[L]||MODERN_MARKET.tr; }
 function openModernMarket(rec){ const M=moMkt(); const whoTxt=()=>M.t+'  ·  💰 '+(S.dirhem||0);
   const opts=M.items.map(it=>({ l:it.ic+' '+it.l+' — '+it.cost+' 💰', go:'s0', act:()=>{   // go:'s0' → panel AÇIK kalır (motor act sonrası kapatmaz)
+    if(fastingAbstain()){ toast(tU('fast_home')||'🤍 Oruçlusun — şimdi yeme/içme; iftara (Akşam) kadar sabret, sonra al.'); return; }   // oruçluyken market alışverişi açlık/susuzluk gideremez (oruç bozulmasın)
     if((S.dirhem||0)<it.cost){ toast(M.poor); }
     else if((S[it.need]||0)<10){ toast(it.ic+' '+M.full); }
     else { S.dirhem-=it.cost; S[it.need]=Math.max(0,(S[it.need]||0)-it.amt); addNur(1); dgBump('m_market'); save(); refreshHUD();
@@ -3574,7 +3575,37 @@ function openCongregationChoice(){ if(!inModern) return; const M=moCong();
 }
 // ---- GERÇEK OTOBÜS: şehir çevresinde ring rotada dolaşır, durakta durur, komşular biner/iner ----
 const BUS_R=45, BUS_SPEED=0.12, DWELL=4.2, STOP_ANGLE=Math.PI/2;   // en dış ring yol (2× şehir); durak/market önü (+z) = θ=π/2
-let modernBus=null;
+let modernBus=null, busRide=null;
+// OYUNCU OTOBÜS TURU — durakta biner, şehri dolaşır, îsâr âdâbı, durağa döner
+const BUS_STR={ tr:{ stop_t:'Şehir Otobüsü', stop_who:'Durakta', here:'Otobüs durağa geldi. Şehri dolaşmak için biner misin?', board:'🚌 Otobüse bin', wait:'⏳ Binme, sıranı bekle', boarded:'🚌 Otobüse bindin — şehri dolaşıyorsun', off:'🚌 Durağa döndün, indin — selâmetle', adab_who:'Otobüste…', adab_x:'Otobüs kalabalık; yaşlı bir yolcu ayakta kaldı, oturacak yer arıyor. Ne yaparsın?', adab_ref:'«Büyüğümüze saygı, küçüğümüze merhamet göstermeyen bizden değildir.» (Tirmizî)', adab_give:'🪑 Yerini ver (îsâr)', adab_keep:'Otur, görmezden gel', adab_gived:'Yerini verdin — kardeşini nefsine tercih ettin (îsâr).', adab_keptd:'Yerini vermedin; yaşlı yolcu ayakta kaldı.' },
+  en:{ stop_t:'City Bus', stop_who:'At the stop', here:'The bus has arrived at the stop. Will you board for a ride around the city?', board:'🚌 Board the bus', wait:'⏳ Don\'t board, wait your turn', boarded:'🚌 You boarded — riding around the city', off:'🚌 Back at the stop, you got off — in peace', adab_who:'On the bus…', adab_x:'The bus is crowded; an elderly passenger is left standing, looking for a seat. What do you do?', adab_ref:'«He is not one of us who does not respect our elders and show mercy to our young.» (Tirmidhi)', adab_give:'🪑 Give up your seat (ithar)', adab_keep:'Stay seated, ignore it', adab_gived:'You gave your seat — you preferred your brother over yourself (ithar).', adab_keptd:'You kept your seat; the elderly passenger stayed standing.' },
+  ar:{ stop_t:'حافلةُ المدينة', stop_who:'عند الموقف', here:'وصلَتِ الحافلةُ إلى الموقف. أتركبُ لتجولَ في المدينة؟', board:'🚌 اركَبِ الحافلة', wait:'⏳ لا تركب، انتظِر دورك', boarded:'🚌 ركبتَ — تجولُ في المدينة', off:'🚌 عدتَ إلى الموقف ونزلتَ — بسلام', adab_who:'في الحافلة…', adab_x:'الحافلةُ مزدحمة؛ وبقيَ راكبٌ مسنٌّ واقفًا يبحثُ عن مقعد. ماذا تفعل؟', adab_ref:'«ليس منّا مَن لم يوقِّر كبيرنا ويرحم صغيرنا.» (الترمذي)', adab_give:'🪑 أعطِه مقعدك (إيثار)', adab_keep:'ابقَ جالسًا وتجاهَلْه', adab_gived:'أعطيتَ مقعدك — آثرتَ أخاك على نفسك (إيثار).', adab_keptd:'أبقيتَ مقعدك؛ فبقيَ المسنُّ واقفًا.' } };
+function busStr(){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; return BUS_STR[L]||BUS_STR.tr; }
+function openDurak(rec){ const b=modernBus, sp=busStopPos();
+  const busHere = b && Math.hypot(b.g.position.x-sp[0], b.g.position.z-sp[1])<9;
+  if(busHere && !busRide){ const B=busStr(); audio();
+    openDialog({ ic:'🚌', title:B.stop_t, start:'s0', steps:{ s0:{ who:B.stop_who, txt:B.here, opts:[
+      { l:B.board, act:()=>{ if(typeof closeDialog==='function') closeDialog(); boardBus(); } },
+      { l:B.wait, act:()=>{ if(typeof closeDialog==='function') closeDialog(); setTimeout(()=>openSabirEvent(rec),160); } }   // binme → beklerken sabır olayı
+    ] } }});
+  } else { openSabirEvent(rec); }   // otobüs durakta değil → bekleme = sabır
+}
+function boardBus(){ const b=modernBus; if(!b||busRide||!player) return;
+  busRide={ t:0, dur:12, adab:false }; b.state='run'; b.passenger=null;
+  player.visible=false; jVec.x=0; jVec.y=0; near=null; warpBlock=true;   // hareket/etkileşim kilitli, oyuncu gizli (otobüste)
+  banner('🚌 '+busStr().boarded);
+}
+function busDisembark(){ const b=modernBus, sp=busStopPos(); busRide=null; warpBlock=false;
+  if(player){ player.visible=true; player.position.set(sp[0],0,sp[1]+2); player.rotation.y=0; camera.position.copy(player.position).add(CAM_OFF); }
+  if(b){ b.theta=STOP_ANGLE; b.state='run'; b.armed=true; b.g.position.set(sp[0],0,sp[1]); }
+  addNur(1); save(); refreshHUD(); banner('🚌 '+busStr().off);
+}
+function openBusAdab(){ const B=busStr(); audio();
+  openDialog({ ic:'🚌', title:B.stop_t, start:'s0', steps:{ s0:{ who:B.adab_who, txt:B.adab_x, ref:B.adab_ref, opts:[
+    { l:B.adab_give, act:()=>{ const d=discBonus(); addNur(12+d); save(); refreshHUD(); sndChime(); banner('🪑 +'+(12+d)+(tU('nur_suffix')||' nûr')+(d>0?' · 💪':'')); setTimeout(()=>toast(B.adab_gived),300); if(typeof closeDialog==='function') closeDialog(); } },
+    { l:B.adab_keep, act:()=>{ toast(B.adab_keptd); if(typeof closeDialog==='function') closeDialog(); } }
+  ] } }});
+}
 function buildBus(){ if(modernBus||!modernGroup) return; const g=new THREE.Group();
   g.add(mkBox(2.6,2.0,5.4,0xcc3a2f,0,1.35,0));            // gövde (KIRMIZI otobüs)
   g.add(mkBox(2.64,0.85,4.4,0x2f4a6b,0,1.95,0.15));       // pencere şeridi (mavi cam)
@@ -3597,6 +3628,15 @@ function busAtStop(){ const b=modernBus; const sp=busStopPos();
     if(c){ c.onBus=true; c.rec.g.visible=false; busRemoveRec(c.rec); b.passenger=c; } }   // durağa yakın komşu biner
 }
 function busTick(dt){ const b=modernBus; if(!b) return; const ox=MODERN_ORIGIN[0], oz=MODERN_ORIGIN[2];
+  if(busRide){                                                    // OYUNCU otobüste → şehir turu (kamera player.position'ı takip eder)
+    busRide.t+=dt; b.theta+=BUS_SPEED*dt*3.2; if(b.theta>Math.PI*2) b.theta-=Math.PI*2;
+    const rx=ox+BUS_R*Math.cos(b.theta), rz=oz+BUS_R*Math.sin(b.theta);
+    b.g.position.set(rx,0,rz); b.g.rotation.y=-b.theta;
+    if(player) player.position.set(rx,0,rz);                      // oyuncu (gizli) otobüsle taşınır → kamera takip eder
+    if(!busRide.adab && busRide.t>4){ busRide.adab=true; openBusAdab(); }   // yol ortasında îsâr âdâbı
+    if(busRide.t>=busRide.dur && !document.querySelector('.veil.show')) busDisembark();   // süre doldu + açık diyalog yok → in
+    return;
+  }
   if(b.state==='dwell'){ b.dwellT-=dt; if(b.dwellT<=0){ b.state='run'; b.theta+=0.03; } }
   else { b.theta+=BUS_SPEED*dt; if(b.theta>Math.PI*2) b.theta-=Math.PI*2;
     const phase=((b.theta-STOP_ANGLE)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
