@@ -541,7 +541,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.73</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.74</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -1497,6 +1497,7 @@ const UI_STR={ en:{
   disc_sabr:'💪 Your strong, disciplined body resisted the ego — it blessed your patience.',
   disc_haram:'💪 Your strong, disciplined will resisted the forbidden — it blessed your light.',
   fast_home:'🤍 You are fasting — do not sit to eat; be patient until iftar (Maghrib). Eating now would break your fast.',
+  namaz_src:'Source',
   nur_suffix:' nur',
   // --- Faz 3: Umre (renderHac) ---
   hac_ihram_title:'Ihram & Intention',
@@ -1706,6 +1707,7 @@ ar:{
   disc_sabr:'💪 بدنك القويّ المنضبط قاوم هوى النفس — فبارك في صبرك.',
   disc_haram:'💪 إرادتك القويّة المنضبطة قاومت الحرام — فبارك في نورك.',
   fast_home:'🤍 أنت صائم — لا تجلس للطعام؛ اصبِر حتى الإفطار (المغرب). الأكلُ الآن يُفطِرك.',
+  namaz_src:'المصدر',
   // Mescid paneli (m_*) + aksiyonları (ma_*) — Faz 6.15; âyet ASIL Arapça (mushaf lafzı)
   m_next_prayer:'⏳ الصلاة القادمة: ',
   m_cuma_desc:'اليومُ جُمُعة. تُلقى الخطبة — أنصِت بسكينة، ثم صلِّ ركعتين مع الجماعة. <i>﴿إِذَا نُودِيَ لِلصَّلَاةِ مِن يَوْمِ الْجُمُعَةِ فَاسْعَوْا إِلَىٰ ذِكْرِ اللَّهِ﴾</i> (الجمعة ٩)',
@@ -2724,6 +2726,7 @@ function prayNamaz(){
   if(isKerahat(gameTime)){ toast('🕗 Kerahat vakti (güneş doğuş/tepe/batış) — namaz mekruh, biraz bekle'); return; }
   namazRekat=rekatCount(vn);   // vaktin rekat sayısı (Sabah 2, Öğle/İkindi/Yatsı 4, Akşam 3; nafile 2)
   const _preY=player.rotation.y; const _nd=namazDur(namazRekat); laySeccade(); playAction(_nd,'namaz'); player.rotation.y=_preY;   // #2 seccade kıbleye serilir; kıbleye dönüşü tick YUMUŞAK yapsın + rekatlar + her 2 rekatta teşehhüd
+  featureNamazPhase();   // bu namazda bir evreyi öne çıkar (rotasyon): uygun kamera açısı + Elbânî kaynağı
   if(inModern && typeof formModernCongregation==='function'){ const _c=formModernCongregation(_nd); if(_c>0) setTimeout(()=>openCongregationChoice(), _nd*1000+400); }   // SOKAKTA CEMAAT: komşular saf tutar; namaz sonu seccade hediye/al
   if(!S.qiblaLearned){ S.qiblaLearned=true; setTimeout(()=>toast('🧭 Kıbleye yöneldin — kıbleye dönmek namazın şartıdır (Bakara 144)'),700); }
   const farz = FARZ_VAKIT.includes(vn) && !S.done['ev_namaz'];
@@ -3513,7 +3516,7 @@ function activateBldObj(rec){ const k=rec.bldObj;
   else if(k==='hasta') openHastaZiyareti(rec);
   else if(k==='job') openJobBoard(rec);
   else if(k==='work') openWorkHonesty(rec);
-  else if(k==='pray'){ if(typeof playAction==='function') playAction(3,'namaz'); addNur(6); dgBump('pray'); save(); refreshHUD(); sndChime(); banner('🧎 +6'+(tU('nur_suffix')||' nûr')); }
+  else if(k==='pray'){ if(typeof playAction==='function') playAction(3,'namaz'); if(typeof featureNamazPhase==='function') featureNamazPhase(); addNur(6); dgBump('pray'); save(); refreshHUD(); sndChime(); banner('🧎 +6'+(tU('nur_suffix')||' nûr')); }
 }
 function openHomeActionDialog(k){ const H=moHome(); audio();
   openDialog({ ic:'🏠', title:H.t, start:'s0', steps:{ s0:{ who:H[k].who, txt:H[k].x, opts:[
@@ -4142,6 +4145,48 @@ function updateWoolHint(){
 let actionT=0, actionKind='work', actionDur=0.9, namazRekat=2;
 let camFocus=0;   // kamera sinematik odak (0=kuşbakışı … 1=alçak/yakın) — eylem/etkileşim sırasında yükselir
 let namazCamK=0;  // NAMAZ yan-profil kamerası rampası (0=normal arka … 1=yandan profil); kıyam→rükû→secde yandan görünsün
+let namazFeatCam=null;   // bu namazda öne çıkan evrenin kamera preseti {side,R,H,lookY} (featureNamazPhase ayarlar)
+// ---- NAMAZIN EVRELERİ (Sıfatu Salâti'n-Nebî — Muhammed Nâsıruddin el-ELBÂNÎ) ----
+// Her namazda BİR evre öne çıkar (rotasyon): ona uygun kamera açısı + doğru edâsı + KAYNAK (Elbânî + sahih hadîs).
+// NOT: rivayet atıfları meşhur/sahih; yayın öncesi ehlince (kitap bab/sayfa) teyit edilmeli.
+const NAMAZ_PHASES=[
+  {k:'iftitah', cam:{side:0.35,R:6.6,H:3.0,lookY:1.45},
+    tr:{n:'İftitah Tekbiri', f:'Eller omuz/kulak hizasına kaldırılır, "Allâhu ekber" denir; sonra sağ el sol elin üzerine GÖĞÜS üstüne konur.', s:'Elbânî, Sıfatu Salâti\'n-Nebî — Buhârî & Müslim (tekbir/ref-i yedeyn); göğüs üzeri: Ebû Dâvûd'},
+    en:{n:'Opening Takbir', f:'Raise the hands to shoulder/ear level, say "Allahu akbar"; then place the right hand over the left upon the CHEST.', s:'Albani, The Prophet\'s Prayer Described — Bukhari & Muslim; hands on chest: Abu Dawud'},
+    ar:{n:'تكبيرة الإحرام', f:'تُرفع اليدان حذوَ المنكبين/الأذنين ويُقال "الله أكبر"، ثم تُوضع اليمنى على اليسرى على الصدر.', s:'الألباني، صفة صلاة النبي ﷺ — البخاري ومسلم؛ على الصدر: أبو داود'}},
+  {k:'ruku', cam:{side:1.0,R:6.2,H:2.4,lookY:1.0},
+    tr:{n:'Rükû', f:'Sırt yere PARALEL dümdüz tutulur, baş ne kaldırılır ne eğilir; parmaklar açık eller dizlere konur. "Sübhâne Rabbiye\'l-Azîm."', s:'Elbânî — Buhârî & Ebû Dâvûd (sırtın düzlüğü, ellerin diz üzeri)'},
+    en:{n:'Ruku (Bowing)', f:'Keep the back straight, PARALLEL to the ground; head neither raised nor lowered; hands on the knees, fingers spread. "Subhana Rabbiyal-Azim."', s:'Albani — Bukhari & Abu Dawud'},
+    ar:{n:'الركوع', f:'يُسوّى الظهرُ موازيًا للأرض، لا يرفع رأسه ولا يخفضه؛ ويضع يديه على ركبتيه مفرِّجًا أصابعه. "سبحان ربي العظيم."', s:'الألباني — البخاري وأبو داود'}},
+  {k:'itidal', cam:{side:0.5,R:6.6,H:3.0,lookY:1.55},
+    tr:{n:'Kavme (Doğrulma)', f:'Rükûdan "Semiallâhu limen hamideh" ile DİMDİK doğrulup her aza yerine oturana dek durulur. "Rabbenâ ve leke\'l-hamd."', s:'Elbânî — Buhârî (i\'tidalde itmi\'nan)'},
+    en:{n:'Standing (I\'tidal)', f:'Rise fully upright from ruku saying "Sami\'Allahu liman hamidah", until every bone settles. "Rabbana wa lakal-hamd."', s:'Albani — Bukhari'},
+    ar:{n:'الاعتدال', f:'يعتدل قائمًا من الركوع قائلًا "سمع الله لمن حمده" حتى يرجع كلُّ عظمٍ إلى موضعه. "ربنا ولك الحمد."', s:'الألباني — البخاري'}},
+  {k:'secde', cam:{side:0.9,R:5.6,H:1.6,lookY:0.5},
+    tr:{n:'Secde', f:'YEDİ aza üzerine secde edilir: alın+burun, iki avuç, iki diz, iki ayak parmakları. Kollar yanlardan AÇIK, karına değmez. "Sübhâne Rabbiye\'l-A\'lâ."', s:'Elbânî — Buhârî & Müslim (yedi aza); kolların açıklığı: Buhârî'},
+    en:{n:'Sujud (Prostration)', f:'Prostrate on SEVEN limbs: forehead+nose, two palms, two knees, tips of the two feet. Keep the arms raised OFF the ground/belly. "Subhana Rabbiyal-A\'la."', s:'Albani — Bukhari & Muslim (seven limbs)'},
+    ar:{n:'السجود', f:'يُسجد على سبعة أعضاء: الجبهة والأنف، والكفّان، والركبتان، وأطراف القدمين. ويُجافي عضديه عن جنبيه. "سبحان ربي الأعلى."', s:'الألباني — البخاري ومسلم (سبعة أعظم)'}},
+  {k:'celse', cam:{side:0.7,R:5.8,H:2.0,lookY:0.9},
+    tr:{n:'Celse (İki Secde Arası)', f:'Sol ayak yatırılıp üzerine oturulur, sağ ayak dikilir; eller uyluk/diz üzerine konur. "Rabbiğfir lî, Rabbiğfir lî."', s:'Elbânî — Ebû Dâvûd & Nesâî'},
+    en:{n:'Sitting (between prostrations)', f:'Sit on the folded left foot, keeping the right foot upright; hands on the thighs/knees. "Rabbighfir li, Rabbighfir li."', s:'Albani — Abu Dawud & Nasa\'i'},
+    ar:{n:'الجلسة بين السجدتين', f:'يفترش رجله اليسرى ويقعد عليها وينصب اليمنى؛ ويضع يديه على فخذيه. "رب اغفر لي، رب اغفر لي."', s:'الألباني — أبو داود والنسائي'}},
+  {k:'tesehhud', cam:{side:0.22,R:5.0,H:2.15,lookY:1.15},
+    tr:{n:'Teşehhüd (Şehadet Parmağı)', f:'Otururken sağ elin ŞEHADET parmağıyla işaret edilir, göz ondan ayrılmaz; sol el sol uyluk üstünde. Tahiyyât okunur.', s:'Elbânî — Müslim, Ebû Dâvûd, Nesâî (parmakla işaret)'},
+    en:{n:'Tashahhud (Index finger)', f:'While sitting, point with the right INDEX finger, not moving the gaze from it; the left hand rests on the left thigh. Recite the Tashahhud.', s:'Albani — Muslim, Abu Dawud, Nasa\'i'},
+    ar:{n:'التشهد (الإشارة بالسبابة)', f:'وهو جالس يشير بسبّابةِ يده اليمنى ولا يجاوز بصرُه إشارتَه؛ ويده اليسرى على فخذه اليسرى. ويقرأ التحيات.', s:'الألباني — مسلم وأبو داود والنسائي'}},
+  {k:'selam', cam:{side:0.3,R:6.0,H:2.6,lookY:1.4},
+    tr:{n:'Selâm', f:'Baş önce SAĞA, sonra SOLA çevrilerek "es-Selâmü aleyküm ve rahmetullâh" denir.', s:'Elbânî — Müslim (sağa ve sola selâm)'},
+    en:{n:'Salam', f:'Turn the head first to the RIGHT, then to the LEFT, saying "As-salamu alaykum wa rahmatullah".', s:'Albani — Muslim'},
+    ar:{n:'السلام', f:'يلتفت برأسه يمينًا ثم شمالًا قائلًا "السلام عليكم ورحمة الله".', s:'الألباني — مسلم'}},
+];
+function featureNamazPhase(){   // bu namazda öne çıkan evreyi seç (rotasyon) → kamera preseti + öğretici kaynak
+  const idx=(S.namazFeat||0)%NAMAZ_PHASES.length; S.namazFeat=(idx+1)%NAMAZ_PHASES.length; save();
+  const ph=NAMAZ_PHASES[idx]; namazFeatCam=ph.cam;
+  const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; const t=ph[L]||ph.tr;
+  setTimeout(()=>{ banner('🕌 '+t.n); }, 500);
+  setTimeout(()=>{ toast('🕌 '+t.n+' — '+t.f+'  📖 '+(tU('namaz_src')||'Kaynak')+': '+t.s); }, 1200);
+  return ph;
+}
 let SIT_FOLD=-1.0, SIT_CROSS=-1.15;   // bağdaş: bacak ÖNE katlanır (negatif fold=ön) + dizler dışa/ayaklar içe yaw (setSitLegs ile ayarlanabilir)
 // OCCLUSION: kamera ile oyuncu arasında dev palmiye kalırsa kamerayı yukarı kaldır (palmiyenin üstünden bak)
 function occlusionLift(px,pz,cx,cz){
@@ -7160,10 +7205,13 @@ function tick(){
     namazCamK += ((namazActive?1:0) - namazCamK) * Math.min(1, dt*2.2);
     let lookTX=player.position.x, lookTY=player.position.y+lookY, lookTZ=player.position.z;
     if(namazCamK>0.01){
-      const ry=player.rotation.y, R=6.2, H=2.7;                       // yandan, orta mesafe, göğüs hizası
-      const sx=player.position.x+Math.cos(ry)*R, sz=player.position.z-Math.sin(ry)*R;   // kıble yönüne DİK (yan) — forward=(sin,cos) → yan=(cos,−sin)
+      const fc=namazFeatCam||{side:1.0,R:6.2,H:2.7,lookY:1.0};        // öne çıkan evreye göre kamera preseti (yoksa varsayılan yan-profil)
+      const ry=player.rotation.y, R=fc.R, H=fc.H;
+      const b=1-(fc.side!=null?fc.side:1);                            // 0=tam yan (rükû/secde) … artınca ÖNE kayar (teşehhüd parmağı için)
+      const dx=Math.cos(ry)*(1-b)+Math.sin(ry)*b, dz=-Math.sin(ry)*(1-b)+Math.cos(ry)*b;   // yan yön ↔ ön yön karışımı
+      const sx=player.position.x+dx*R, sz=player.position.z+dz*R;
       tmp.x=mix(tmp.x,sx,namazCamK); tmp.y=mix(tmp.y,player.position.y+H,namazCamK); tmp.z=mix(tmp.z,sz,namazCamK);
-      lookTY=mix(lookTY,player.position.y+1.0,namazCamK);             // gövde ortasına bak (secdede alçalır)
+      lookTY=mix(lookTY,player.position.y+(fc.lookY!=null?fc.lookY:1.0),namazCamK);   // evreye göre bakış yüksekliği (secde alçak, kıyam yüksek)
     }
     camera.position.lerp(tmp,0.12);
     camera.lookAt(lookTX,lookTY,lookTZ);
