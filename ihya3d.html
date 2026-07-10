@@ -524,6 +524,7 @@
   <button class="iconbtn" id="cumaBtn" title="Cuma Sünnetleri (gusül · koku · Kehf…)" style="display:none">🌿</button>
   <button class="iconbtn" id="shotBtn" title="Ekran görüntüsü kaydet / paylaş (P)">📷</button>
   <button class="iconbtn" id="helpBtn" title="Nasıl oynanır?">❓</button>
+  <button class="iconbtn" id="remindBtn" title="Hatırlatıcı · Takvim (yapılacaklar)">📅</button>
   <button class="iconbtn" id="settingsBtn" title="Ayarlar (kontroller · ses · dil)">⚙️</button>
 </div>
 
@@ -541,7 +542,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.78</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.79</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -663,6 +664,23 @@
     <div class="setsec" data-i18n="set_prefs_h">Tercihler</div>
     <div id="setPrefs"></div>
     <button class="cl" data-i18n="u_close" id="settingsClose">Kapat</button>
+  </div>
+</div>
+
+<div class="veil" id="remind">
+  <div class="sheet">
+    <div class="grip"></div>
+    <div class="exhead"><h3 id="remindHd">📅 Hatırlatıcı · Takvim</h3></div>
+    <div class="sub" id="remindSub" style="margin-bottom:8px">İyi âdetlerini takvimine ekle; her yeni günde uygun olanlar sana hatırlatılır. «Amellerin Allah'a en sevimlisi, az da olsa devamlı olanıdır.» (Buhârî-Müslim)</div>
+    <div id="remindList"></div>
+    <div class="setsec" id="remindAddH">➕ Ekle</div>
+    <div id="remindPresets" style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 2px 8px"></div>
+    <div style="display:flex;gap:6px;margin:2px">
+      <input id="remindInput" maxlength="40" placeholder="Kendi hatırlatman…" style="flex:1;min-width:0;padding:9px 11px;border-radius:11px;border:1px solid #0002;background:var(--panel);font:600 13px system-ui;color:inherit">
+      <button class="hbuy" id="remindAdd" style="flex-shrink:0">➕</button>
+    </div>
+    <div id="remindRecur" style="display:flex;gap:6px;margin:8px 2px"></div>
+    <button class="cl" data-i18n="u_close" id="remindClose">Kapat</button>
   </div>
 </div>
 
@@ -1855,6 +1873,7 @@ function onNewDay(){
   if(isEyyamBiz() && orucMukellef()) setTimeout(()=>{ banner('🌕 Eyyâm-ı Bîz — Ayın '+lunarDay()+'. günü'); toast('Dolunay günleri (13-14-15) sünnet oruç: «Her aydan üç gün oruç, bütün seneyi oruçlu geçirmek gibidir.» (Buhârî) — 🌙 ile niyet et'); },1700);
   else if(isFastingDay() && orucMukellef()) setTimeout(()=>{ banner('🌙 Bugün '+dayName()); toast('Sünnet oruç günü — gece/öğleden önce niyet et, Akşam iftar (🌙 düğmesi)'); },1300);
   updateFastBtn();
+  if(typeof checkReminders==='function') checkReminders();   // 📅 takvim: bugüne uygun hatırlatmaları bildir
 }
 
 /* ============ THREE SETUP ============ */
@@ -4936,6 +4955,42 @@ function renderSettings(){ const p=document.getElementById('setPrefs'); if(!p) r
 }
 function openSettings(){ audio(); renderSettings(); document.getElementById('settings').classList.add('show'); }
 function closeSettings(){ document.getElementById('settings').classList.remove('show'); }
+// ============ 📅 HATIRLATICI · TAKVİM (yapılacaklar; tekrarlayan; her yeni günde bildirim) ============
+if(!Array.isArray(S.reminders)) S.reminders=[];   // {id,text,recur:'daily'|'weekly'|'once',dow,last}
+let _remRecur='daily';
+const REM_PRESETS={ tr:[['📖 Kur\'an oku','daily'],['🤲 Sadaka ver','daily'],['🧎 Gece namazı (teheccüd)','daily'],['📞 Anne-babanı ara','weekly'],['🌙 Pzt/Prş oruç','weekly'],['🕌 Cuma\'ya erken git','weekly']],
+  en:[['📖 Read Qur\'an','daily'],['🤲 Give charity','daily'],['🧎 Night prayer','daily'],['📞 Call parents','weekly'],['🌙 Mon/Thu fast','weekly'],['🕌 Early to Jumu\'ah','weekly']],
+  ar:[['📖 اقرأ القرآن','daily'],['🤲 تصدَّق','daily'],['🧎 قيام الليل','daily'],['📞 اتّصل بوالديك','weekly'],['🌙 صيام الاثنين/الخميس','weekly'],['🕌 بكِّر إلى الجمعة','weekly']] };
+const REM_L={ tr:{hd:'📅 Hatırlatıcı · Takvim',sub:'İyi âdetlerini takvimine ekle; her yeni günde uygun olanlar hatırlatılır. «Amellerin Allah\'a en sevimlisi, az da olsa devamlı olanıdır.» (Buhârî-Müslim)',daily:'Her gün',weekly:'Haftalık',once:'Bir kez',empty:'Henüz hatırlatman yok — aşağıdan ekle 👇',custom:'Kendi hatırlatman…',fire:'Bugünün hatırlatmaları'},
+  en:{hd:'📅 Reminders · Calendar',sub:'Add your good habits; each new day the due ones are reminded. «The most beloved deeds to Allah are the most constant, even if little.» (Bukhari-Muslim)',daily:'Daily',weekly:'Weekly',once:'Once',empty:'No reminders yet — add below 👇',custom:'Your own reminder…',fire:'Today\'s reminders'},
+  ar:{hd:'📅 المذكّر · التقويم',sub:'أضِف عاداتك الحسنة؛ وكلَّ يومٍ جديد تُذكَّر بالمستحقّ. «أحبُّ الأعمال إلى الله أدومُها وإن قلّ.» (البخاري ومسلم)',daily:'يوميًّا',weekly:'أسبوعيًّا',once:'مرّة',empty:'لا تذكيرات بعد — أضِف أدناه 👇',custom:'تذكيرك الخاص…',fire:'تذكيرات اليوم'} };
+function remL(){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; return REM_L[L]||REM_L.tr; }
+function openReminders(){ audio(); renderReminders(); document.getElementById('remind').classList.add('show'); }
+function closeReminders(){ document.getElementById('remind').classList.remove('show'); }
+function addReminder(text, recur){ text=(text||'').trim(); if(!text) return; if(S.reminders.length>=12){ toast('📅 En fazla 12 hatırlatma'); return; }
+  S.reminders.push({id:'r'+(S.remSeq=(S.remSeq||0)+1), text:text.slice(0,40), recur:recur||'daily', dow:(typeof dow==='function'?dow():0), last:-1}); save(); renderReminders(); }
+function removeReminder(id){ S.reminders=S.reminders.filter(r=>r.id!==id); save(); renderReminders(); }
+function renderReminders(){ const M=remL(), L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr';
+  document.getElementById('remindHd').textContent=M.hd; document.getElementById('remindSub').textContent=M.sub;
+  const lst=document.getElementById('remindList'); lst.innerHTML='';
+  if(!S.reminders.length){ lst.innerHTML='<div class="invempty">'+M.empty+'</div>'; }
+  else for(const r of S.reminders){ const badge={daily:M.daily,weekly:M.weekly,once:M.once}[r.recur]||'';
+    const d=document.createElement('div'); d.className='hcard';
+    d.innerHTML='<div class="hbody"><div class="hnm">'+r.text+' <span class="hcnt">'+badge+'</span></div></div><button class="hbuy" style="background:#c0341f;flex-shrink:0">✕</button>';
+    d.querySelector('.hbuy').onclick=()=>removeReminder(r.id); lst.appendChild(d); }
+  const pw=document.getElementById('remindPresets'); pw.innerHTML='';
+  for(const pr of (REM_PRESETS[L]||REM_PRESETS.tr)){ const b=document.createElement('button'); b.className='hbuy'; b.style.cssText='padding:6px 9px;font-size:12px'; b.textContent=pr[0]; b.onclick=()=>addReminder(pr[0],pr[1]); pw.appendChild(b); }
+  const rw=document.getElementById('remindRecur'); rw.innerHTML='';
+  for(const rc of ['daily','weekly','once']){ const b=document.createElement('button'); b.className='hbuy'; b.style.cssText='flex:1;padding:7px;font-size:12px'+(_remRecur===rc?';background:#2f8f63;color:#fff':''); b.textContent=M[rc]; b.onclick=()=>{ _remRecur=rc; renderReminders(); }; rw.appendChild(b); }
+  document.getElementById('remindInput').placeholder=M.custom;
+}
+function checkReminders(){ if(!Array.isArray(S.reminders)||!S.reminders.length) return; const d=S.dayNum||0, today=(typeof dow==='function'?dow():0), due=[];
+  for(const r of S.reminders){ let fire=false;
+    if(r.recur==='daily') fire=true; else if(r.recur==='weekly') fire=(r.dow===today); else if(r.recur==='once') fire=(r.last<0);
+    if(fire){ due.push(r.text); r.last=d; } }
+  S.reminders=S.reminders.filter(r=>!(r.recur==='once'&&r.last>=0));   // bir-kez'likler ateşlenince silinir
+  if(due.length){ save(); const M=remL(); setTimeout(()=>{ banner('📅 '+M.fire); },2100); setTimeout(()=>{ toast('📅 '+M.fire+': '+due.join(' · ')); },2650); }
+}
 // 🌿 CUMA SÜNNETLERİ — Cuma günü gusül·temizlik·koku·Kehf → bonus nûr (günde bir, iki Cuma arası bağışlanır)
 const CUMA_ACTS={ tr:[
   {id:'ghusl', ic:'🚿', nm:'Gusül abdesti al', nur:6, ref:'«Cuma günü gusletmek bulûğa ermiş herkese (te\'kitli sünnet/vâciptir).» (Buhârî · Müslim)'},
@@ -6885,6 +6940,9 @@ document.getElementById('cumaClose').onclick=closeCuma;
 document.getElementById('cuma').addEventListener('click',e=>{ if(e.target.id==='cuma') closeCuma(); });
 document.getElementById('shotBtn').onclick=captureScreenshot;   // 📷 ekran görüntüsü kaydet/paylaş
 document.getElementById('settingsBtn').onclick=openSettings;   // ⚙️ Ayarlar (kontroller + tercihler)
+document.getElementById('remindBtn').onclick=openReminders;   // 📅 Hatırlatıcı · Takvim
+document.getElementById('remindClose').onclick=closeReminders;
+document.getElementById('remindAdd').onclick=()=>{ const inp=document.getElementById('remindInput'); addReminder(inp.value, _remRecur); inp.value=''; };
 document.getElementById('settingsClose').onclick=closeSettings;
 document.getElementById('settings').addEventListener('click',e=>{ if(e.target.id==='settings') closeSettings(); });
 document.getElementById('modernBtn').onclick=()=>{ if(inModern) exitModern(); else enterModern(); };   // İhya — Bugün (modern şehir) giriş/çıkış
