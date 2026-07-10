@@ -542,7 +542,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.79</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.80</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -2905,7 +2905,25 @@ function buildKaabaScene(){
   hacPilgrim=instance('boy_takke'); hacPilgrim.g.scale.setScalar(1.9); hacPilgrim.g.rotation.order='YXZ';
   hacPilgrim.g.traverse(o=>{ if(o.isMesh){ o.material=o.material.clone(); if(/Tunic|Sleeve|Pant|Hem|Hand/.test(o.name)) o.material.color.setHex(0xf3f2ec); } });   // beyaz ihrâm
   hacPilgrim.g.position.set(cx+Math.cos(Math.PI/4)*MATAF_R,0,cz+Math.sin(Math.PI/4)*MATAF_R); g.add(hacPilgrim.g);
+  buildArafat(g);   // ARAFAT (Cebel-i Rahme): tepe + beyaz sütun anıt + ihrâmlı hacılar (vakfe evresinde kamera oraya kayar)
   scene.add(g);
+}
+// ARAFAT — Cebel-i Rahme: low-poly tepe + tepede BEYAZ SÜTUN anıt + ihrâmlı beyaz hacılar + çöl halka yolları
+const ARAFAT=new THREE.Vector3(KABE_IC.x, 0, KABE_IC.z-54);
+const hacArafatCamPos=new THREE.Vector3(ARAFAT.x, 9.5, ARAFAT.z+17);
+const hacArafatCamLook=new THREE.Vector3(ARAFAT.x, 2.6, ARAFAT.z);
+function buildArafat(g){ const ax=ARAFAT.x, az=ARAFAT.z; const M=(c,r,e)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?1:r,emissive:e||0});
+  const ground=new THREE.Mesh(new THREE.CircleGeometry(42,44), M(0xc06a44,1)); ground.rotation.x=-Math.PI/2; ground.position.set(ax,0.01,az); ground.frustumCulled=false; g.add(ground);   // kırmızımsı çöl
+  for(const rr of [[21,23.5,0x9c5566],[28,30,0xb85a3a]]){ const ring=new THREE.Mesh(new THREE.RingGeometry(rr[0],rr[1],52), M(rr[2],1)); ring.rotation.x=-Math.PI/2; ring.position.set(ax,0.02,az); ring.frustumCulled=false; g.add(ring); }   // eşmerkez halka yollar
+  const hill=new THREE.Mesh(new THREE.SphereGeometry(9,11,8,0,6.2832,0,1.05), M(0xd98a5a,1)); hill.scale.set(1.35,0.5,1.35); hill.position.set(ax,0,az); hill.frustumCulled=false; g.add(hill);   // Cebel-i Rahme mound
+  for(let i=0;i<26;i++){ const a=(i*2.4)%6.283, r=(i%9)*1.0; const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(0.35+(i%4)*0.22,0), M(0xcf8055,1)); const hy=Math.max(0,(1-r/9)*4.2); rk.position.set(ax+Math.cos(a)*r, hy+0.15, az+Math.sin(a)*r); rk.rotation.set(i*0.7,i*1.1,i*0.5); g.add(rk); }   // kayalar
+  const topY=4.3;   // tepe
+  g.add(mkBox(4.0,0.5,4.0,0xbf9a68,ax,topY,az)); g.add(mkBox(3.0,0.5,3.0,0xcaa878,ax,topY+0.5,az));                 // 2 basamak kaide
+  g.add(mkBox(1.5,4.6,1.5,0xf2efe8,ax,topY+0.75+2.3,az));                                                            // BEYAZ SÜTUN (anıt gövdesi)
+  const pk=new THREE.Mesh(new THREE.ConeGeometry(1.15,1.0,4), M(0xf2efe8,0.85)); pk.position.set(ax,topY+0.75+4.6+0.5,az); pk.rotation.y=Math.PI/4; pk.frustumCulled=false; g.add(pk);   // sütunun köşeli tepesi (referans)
+  for(let i=0;i<40;i++){ const a=(i*1.97)%6.283, r=1.3+((i*2.3)%11); const hy=Math.max(0,(1-r/9.5)*4.0); const black=(i%8===0);   // ihrâmlı hacılar (basit beyaz figür — hafif, referans gibi kalabalık)
+    const robe=new THREE.Mesh(new THREE.ConeGeometry(0.26,0.95,7), M(black?0x22222a:0xece9e0,0.95)); robe.position.set(ax+Math.cos(a)*r, hy+0.48, az+Math.sin(a)*r); robe.frustumCulled=false; g.add(robe);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(0.13,7,6), M(black?0x2f2f2e:0xf2efe8,0.9)); head.position.set(robe.position.x, hy+1.0, robe.position.z); head.frustumCulled=false; g.add(head); }
 }
 function hacFade(){ const f=document.getElementById('hacFade'); if(!f)return; f.style.transition='none'; f.style.opacity='1'; requestAnimationFrame(()=>{ f.style.transition='opacity .55s ease'; f.style.opacity='0'; }); }
 function telbiye(){ if(muted) return; try{ const u=new SpeechSynthesisUtterance('لَبَّيْكَ اللَّهُمَّ لَبَّيْك'); u.lang='ar-SA'; u.rate=0.7; u.pitch=0.6; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){} }
@@ -7370,8 +7388,9 @@ function tick(){
       if(hacIntroT<=0){ hacIntroT=0; document.getElementById('hac').classList.add('show'); banner('🕋 Mîkāta vardın — Umre\'ye niyet'); }
     } else {
       const sayNow=hacState.phase==='say';             // sa'y AYRI Mes'â'da → kamera oraya kayar (Kâbe görünmez)
-      camera.position.lerp(sayNow?hacSayCamPos:hacCamPos, 0.1);
-      camera.lookAt(sayNow?hacSayCamLook:hacCamLook);
+      const arafatNow=hacState.phase==='arafat';       // ARAFAT vakfesi → kamera Cebel-i Rahme'ye kayar (tepe+sütun+hacılar)
+      camera.position.lerp(arafatNow?hacArafatCamPos:(sayNow?hacSayCamPos:hacCamPos), 0.1);
+      camera.lookAt(arafatNow?hacArafatCamLook:(sayNow?hacSayCamLook:hacCamLook));
       hacTick(dt);              // tavâf: Kâbe etrafında döner; sa'y: Safâ↔Merve yürür
     }
   } else if(mosqueMode){
