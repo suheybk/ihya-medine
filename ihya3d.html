@@ -541,7 +541,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.65</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.66</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -1360,6 +1360,7 @@ if(typeof S.seccadeType!=='number') S.seccadeType=(S.hasSeccade?1:0);   // 0 yok
 if(typeof S.walletCd!=='number') S.walletCd=0;   // modern 'bulunan cüzdan' olayı cooldown (ms)
 if(typeof S.jobCd!=='number') S.jobCd=0;         // modern iş (helâl kazanç/haram reddi) ödül cooldown (ms)
 if(typeof S.sabirCd!=='number') S.sabirCd=0;     // modern sabır olayı (otobüs/sıra/trafik) ödül cooldown (ms)
+if(typeof S.workCd!=='number') S.workCd=0;       // modern iş/okul DÜRÜSTLÜK (kul hakkı) senaryosu ödül cooldown (ms)
 if(!S.homeCd || typeof S.homeCd!=='object') S.homeCd={};   // modern EV rutini: aksiyon başına ödül cooldown (namaz/aile/ilim/şükür/dinlen)
 if(typeof S.hastaCd!=='number') S.hastaCd=0;     // modern KLİNİK hasta ziyareti ödül cooldown (ms)
 if(typeof S.fitness!=='number') S.fitness=0;     // KONDİSYON/disiplin 0..100 (spor salonu artırır, her gün azıcık düşer)
@@ -3033,6 +3034,7 @@ function openModernBuilding(rec){
   if(rec.modern==='wallet'){ openWalletEvent(rec); return; }    // modern olay: bulunan cüzdan (emanet)
   if(rec.modern==='banka'){ openBankaEvent(rec); return; }      // haramdan kaçınma: faizli banka (uzak dur)
   if(rec.modern==='is'){ openJobBoard(rec); return; }           // İş İlanları: helâl geçimi düşünüp bul (kolay değil)
+  if(rec.modern==='okul'){ openWorkHonesty(rec); return; }       // OKUL: dürüstlük/kul hakkı imtihanı (öğrenci)
   if(rec.modern==='komsu'){ greetModernNeighbor(rec); return; } // modern komşu: selâmlaş (karşılıklı)
   if(rec.modern==='durak'){ openSabirEvent(rec); return; }      // otobüs durağı: rastgele SABIR olayı
   const b=moBld(rec.modern), nur=MO_NUR[rec.modern]||6; audio();
@@ -3165,15 +3167,15 @@ function openBankaEvent(rec){ const M=moBanka();
 }
 // ---- HELÂL GEÇİM: İŞ İLANLARI (düşünüp seç — her iş helâl değil, kolay değil) ----
 const HALAL_JOB_CD=180000;   // ödüllü iş aksiyonu ~3 dk cooldown (kolay/spam olmasın)
-const JOBS={ tr:{ t:'İş İlanları', intro:'Geçimini <b>helâlden</b> ara. Her iş helâl değildir — oku, düşün, sonra karar ver.', back:'‹ Geri', bye:'🚪 Çık',
+const JOBS={ tr:{ t:'İş İlanları', intro:'Geçimini <b>helâlden</b> ara. Her iş helâl değildir — oku, düşün, sonra karar ver.', back:'‹ Geri', bye:'🚪 Çık', honesty:'📋 Bugün işte (dürüstlük imtihanı)',
     courier:{ btn:'📦 Kuryelik', who:'Kurye şirketi', x:'İş var; fakat taşıyacağın paketlerin çoğu <b>boykot edilen markalar</b>. Ne yaparsın?', ref:'«İyilik ve takvâda yardımlaşın; günah ve düşmanlıkta değil.» (Mâide 5/2)', no:'🚫 Boykot markayı taşımam', yes:'Kabul et, taşı', nod:'Zulme aracı olacak taşımadan kaçındın — dik duruş.', yesd:'Kazanırsın ama boykot bir dayanışmadır; vicdanın rahat değil.' },
     bankjob:{ btn:'🏦 Banka memurluğu', who:'Banka İK', x:'Maaşlı, rahat bir iş; ama görevin <b>faizli işlemleri</b> yürütmek. Ne yaparsın?', ref:'«…faizi (ribâyı) haram kıldı.» (Bakara 2/275)', no:'🚫 Faizli işte çalışmam', yes:'Kabul et', nod:'Ribâya aracılıktan kaçındın.', yesd:'Faize aracılık da faizdendir; huzursuzsun.' },
     halal:{ btn:'🔨 Dürüst esnaflık / zanaat', who:'Usta', x:'Alın teriyle, hilesiz bir zanaat. Emek ve sabır ister — ama tertemiz helâldir.', ref:'«Kişinin yediği en helâl şey, kendi elinin emeğidir.» (Buhârî)', do:'💪 Emek ver, helâlden kazan', done:'Alın teriyle kazandın (+8 dirhem, +6 nûr).', cd:'Bugünkü emeğini verdin — biraz dinlen, sonra devam.' } },
-  en:{ t:'Job Listings', intro:'Seek your livelihood <b>lawfully</b>. Not every job is lawful — read, reflect, then decide.', back:'‹ Back', bye:'🚪 Leave',
+  en:{ t:'Job Listings', intro:'Seek your livelihood <b>lawfully</b>. Not every job is lawful — read, reflect, then decide.', back:'‹ Back', bye:'🚪 Leave', honesty:'📋 On the job today (honesty test)',
     courier:{ btn:'📦 Courier work', who:'Courier company', x:'There is work; but most parcels are <b>boycotted brands</b>. What do you do?', ref:'«Cooperate in righteousness and piety, not in sin and aggression.» (al-Maida 5/2)', no:'🚫 I will not carry boycotted brands', yes:'Accept and carry', nod:'You refused to be a means to injustice — a firm stand.', yesd:'You earn, but a boycott is solidarity; your conscience is uneasy.' },
     bankjob:{ btn:'🏦 Bank clerk', who:'Bank HR', x:'A salaried, easy job; but your duty is to process <b>interest (riba) transactions</b>. What do you do?', ref:'«…and forbidden interest (riba).» (al-Baqara 2/275)', no:'🚫 I will not work in interest', yes:'Accept', nod:'You avoided facilitating riba.', yesd:'Facilitating interest is part of it too; you feel uneasy.' },
     halal:{ btn:'🔨 Honest trade / craft', who:'Master craftsman', x:'An honest craft, by the sweat of the brow, without deceit. It takes effort and patience — but it is purely lawful.', ref:'«The most lawful food is what one earns with his own hand.» (Bukhari)', do:'💪 Work and earn lawfully', done:'You earned by honest toil (+8 dirham, +6 nur).', cd:'You gave your labor for today — rest a little, then continue.' } },
-  ar:{ t:'إعلانات العمل', intro:'اطلُب رزقك من <b>الحلال</b>. ليس كلُّ عملٍ حلالًا — اقرأ، وتفكّر، ثم قرِّر.', back:'‹ رجوع', bye:'🚪 خروج',
+  ar:{ t:'إعلانات العمل', intro:'اطلُب رزقك من <b>الحلال</b>. ليس كلُّ عملٍ حلالًا — اقرأ، وتفكّر، ثم قرِّر.', back:'‹ رجوع', bye:'🚪 خروج', honesty:'📋 اليومَ في العمل (اختبار الأمانة)',
     courier:{ btn:'📦 عمل التوصيل', who:'شركة التوصيل', x:'هناك عمل؛ لكنّ أكثر الطرود <b>ماركات مقاطَعة</b>. ماذا تفعل؟', ref:'«وتعاونوا على البرِّ والتقوى ولا تعاونوا على الإثم والعدوان.» (المائدة ٥/٢)', no:'🚫 لن أحمل الماركات المقاطَعة', yes:'اقبل واحمِل', nod:'رفضتَ أن تكون وسيلةً للظلم — موقفٌ ثابت.', yesd:'تكسِب، لكنّ المقاطعة تضامن؛ وضميرك غير مرتاح.' },
     bankjob:{ btn:'🏦 موظّف مصرف', who:'موارد المصرف', x:'عملٌ مريحٌ برَاتب؛ لكنّ مهمّتك تنفيذ <b>معاملات ربوية</b>. ماذا تفعل؟', ref:'«وحرَّمَ الربا.» (البقرة ٢/٢٧٥)', no:'🚫 لن أعمل في الربا', yes:'اقبل', nod:'تجنّبتَ الإعانة على الربا.', yesd:'الإعانةُ على الربا منه؛ وأنت غيرُ مرتاح.' },
     halal:{ btn:'🔨 تجارة/حرفة أمينة', who:'المُعلّم', x:'حرفةٌ أمينةٌ بعرق الجبين، بلا غش. تحتاج جهدًا وصبرًا — لكنها حلالٌ طيّب.', ref:'«ما أكل أحدٌ طعامًا أطيبَ من عمل يده.» (البخاري)', do:'💪 اعمل واكسِب من الحلال', done:'كسبتَ بعرق الجبين (+٨ دراهم، +٦ نور).', cd:'بذلتَ جهدك لهذا اليوم — استرِح قليلًا ثم تابع.' } } };
@@ -3183,7 +3185,7 @@ function openJobBoard(rec){ const J=moJobs(); const onCd=()=>S.jobCd&&Date.now()
   const sub=(k)=>({ who:J[k].who, txt:J[k].x, ref:J[k].ref, opts:[
     { l:J[k].no, act:refuse(k), go:'s0' }, { l:J[k].yes, act:()=>{ toast(J[k].yesd); if(typeof dismissGuardian==='function') dismissGuardian(); }, go:'s0' }, { l:J.back, go:'s0' } ] });   // haram işi kabul → melek ayrılır
   openDialog({ ic:'💼', title:J.t, start:'s0', steps:{
-    s0:{ who:J.t, txt:J.intro, opts:[ {l:J.courier.btn,go:'courier'}, {l:J.bankjob.btn,go:'bankjob'}, {l:J.halal.btn,go:'halal'}, {l:J.bye} ] },
+    s0:{ who:J.t, txt:J.intro, opts:[ {l:J.courier.btn,go:'courier'}, {l:J.bankjob.btn,go:'bankjob'}, {l:J.halal.btn,go:'halal'}, {l:J.honesty,act:()=>openWorkHonesty(rec)}, {l:J.bye} ] },
     courier:sub('courier'), bankjob:sub('bankjob'),
     halal:{ who:J.halal.who, txt:J.halal.x, ref:J.halal.ref, opts:[
       { l:J.halal.do, act:()=>{ if(onCd()){ toast(J.halal.cd); return; } S.dirhem=(S.dirhem||0)+8; addNur(6); dgBump('m_work'); S.jobCd=Date.now()+HALAL_JOB_CD; save(); refreshHUD(); sndChime(); banner('🔨 +8 💰 · +6'+(tU('nur_suffix')||' nûr')); setTimeout(()=>toast(J.halal.done),400); }, go:'s0' },
@@ -3481,6 +3483,35 @@ function openSabirEvent(rec){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'
   openDialog({ ic:ev.ic, title:(tU('mo_durak')||'Otobüs Durağı')+' · '+ev.who, start:'s0', steps:{ s0:{ who:ev.who, txt:ev.x, ref:ev.ref, opts:[
     { l:ev.p, act:()=>{ if(!(S.sabirCd&&Date.now()<S.sabirCd)){ const disc=discBonus(); addNur(15+disc); S.sabirCd=Date.now()+SABIR_CD; save(); refreshHUD(); sndChime(); banner('⏳ +'+(15+disc)+(tU('nur_suffix')||' nûr')+(disc>0?' · 💪':'')); if(disc>0) setTimeout(()=>toast((tU('disc_sabr')||'💪 Güçlü/disiplinli bedenin nefse direndi — sabrına bereket kattı')),700); } setTimeout(()=>toast(ev.pd),350); if(typeof closeDialog==='function') closeDialog(); } },
     { l:ev.i, act:()=>{ toast(ev.id); if(typeof dismissGuardian==='function') dismissGuardian(); if(typeof closeDialog==='function') closeDialog(); } }   // sabırsızlık/öfke → melek ayrılır
+  ] } }});
+}
+// ---- İŞ/OKUL DÜRÜSTLÜĞÜ + KUL HAKKI: tekrarlanabilir rastgele senaryo (dürüst→nûr+disiplin+m_work; hıyanet→melek ayrılır) ----
+const WORK_CD=150000;   // dürüstlük senaryosu ödül cooldown (~2.5 dk)
+let _workLast=-1;
+const WORK_EVENTS={ tr:{ t:'İş / Okul — Dürüstlük', ev:[
+  {ic:'💰', who:'Hesapta…', x:'Kasada/maaşta sana <b>fazla para</b> verildi; kimse fark etmedi. Ne yaparsın?', ref:'«Emanetleri ehline verin.» (Nisâ 4/58)', p:'Fazlayı sahibine geri ver', pd:'Haksız bir kuruşa dokunmadın — emaneti iade ettin; kul hakkı temiz.', i:'Sesini çıkarma, cebe at', id:'Haksız bir kuruş bile kul hakkıdır; koruyucu melek üzülür.'},
+  {ic:'🏷️', who:'Tezgâhta…', x:'Patronun, satılık malın <b>kusurunu müşteriden gizlemeni</b> istiyor. Ne yaparsın?', ref:'«Bizi aldatan bizden değildir.» (Müslim)', p:'Kusuru dürüstçe söyle', pd:'Aldatmadın — dürüst tüccarın bereketi seninle.', i:'Gizle, öyle sat', id:'Aldatma, kazancın bereketini götürür; melek üzülür.'},
+  {ic:'🛠️', who:'İş başında…', x:'Kimse görmüyor; işi <b>yarım yapıp</b> kaytarabilirsin. Ne yaparsın?', ref:'«Hepiniz çobansınız ve güttüğünüzden sorumlusunuz.» (Buhârî-Müslim)', p:'İşi hakkıyla, sağlam yap', pd:'Emanete riayet ettin — işini sağlam yaptın (sorumluluk).', i:'Baştan savuştur, kaytar', id:'Yarım bırakılan iş, sahibinin hakkıdır; melek üzülür.'},
+  {ic:'🎖️', who:'Terfi öncesi…', x:'Arkadaşının emeğini <b>kendine mal edip</b> terfi alabilirsin. Ne yaparsın?', ref:'«Kime kardeşinin hakkından bir parça kesersem, ona ateşten bir parça kesmiş olurum.» (Buhârî-Müslim)', p:'Hakkı sahibine teslim et', pd:'Kul hakkını yemedin — emeği sahibine iade ettin.', i:'Emeği sahiplen, terfi al', id:'Başkasının hakkı ateşten bir parçadır; melek ayrılır.'},
+  {ic:'🤐', who:'Molada…', x:'Herkes, orada <b>olmayan bir arkadaşı çekiştiriyor</b>; sana da katıl diyorlar. Ne yaparsın?', ref:'«Birbirinizin gıybetini etmeyin.» (Hucurât 49/12)', p:'Katılma, arkadaşını savun', pd:'Gıybete karışmadın — kardeşinin ırzını korudun.', i:'Sen de çekiştir', id:'Gıybet, kardeşinin etini yemek gibidir; melek üzülür.'} ] },
+  en:{ t:'Work / School — Honesty', ev:[
+  {ic:'💰', who:'At the till…', x:'You were given <b>too much money</b> in change/pay; no one noticed. What do you do?', ref:'«Render the trusts to whom they are due.» (an-Nisa 4/58)', p:'Return the extra to its owner', pd:'You did not touch an unjust penny — you returned the trust; the right is clean.', i:'Stay quiet, pocket it', id:'Even an unjust penny is a violated right; the guardian angel is saddened.'},
+  {ic:'🏷️', who:'At the stall…', x:'Your boss wants you to <b>hide a defect</b> in the goods from the customer. What do you do?', ref:'«Whoever deceives us is not one of us.» (Muslim)', p:'Disclose the defect honestly', pd:'You did not deceive — the blessing of the honest trader is with you.', i:'Hide it, sell it as is', id:'Deception strips the blessing from earnings; the angel is saddened.'},
+  {ic:'🛠️', who:'On the job…', x:'No one is watching; you could <b>do the work halfway</b> and slack off. What do you do?', ref:'«Each of you is a shepherd and responsible for his flock.» (Bukhari-Muslim)', p:'Do the work properly and well', pd:'You honored the trust — you did your work soundly (responsibility).', i:'Cut corners, slack off', id:'Work left half-done is the owner\'s right; the angel is saddened.'},
+  {ic:'🎖️', who:'Before a promotion…', x:'You could <b>take credit</b> for your colleague\'s work and get promoted. What do you do?', ref:'«Whoever I award a portion of his brother\'s right, I cut for him a piece of the Fire.» (Bukhari-Muslim)', p:'Give the credit to its owner', pd:'You did not consume another\'s right — you returned the effort to its owner.', i:'Claim the work, get promoted', id:'Another\'s right is a piece of the Fire; the angel departs.'},
+  {ic:'🤐', who:'On break…', x:'Everyone is <b>backbiting an absent colleague</b>; they urge you to join. What do you do?', ref:'«Do not backbite one another.» (al-Hujurat 49/12)', p:'Do not join; defend your friend', pd:'You kept out of backbiting — you guarded your brother\'s honor.', i:'Join in the gossip', id:'Backbiting is like eating your brother\'s flesh; the angel is saddened.'} ] },
+  ar:{ t:'العمل / المدرسة — الأمانة', ev:[
+  {ic:'💰', who:'عند الحساب…', x:'أُعطيتَ <b>مالًا زائدًا</b> في الباقي/الراتب؛ ولم ينتبه أحد. ماذا تفعل؟', ref:'«إنَّ اللهَ يأمرُكم أن تُؤدُّوا الأماناتِ إلى أهلها.» (النساء ٤/٥٨)', p:'رُدَّ الزائدَ إلى صاحبه', pd:'لم تمسَّ قرشًا بغير حق — رددتَ الأمانة؛ الحقُّ نظيف.', i:'اسكُت وضَعْه في جيبك', id:'حتى القرشُ بغير حقٍّ حقُّ عبد؛ يحزن الملَكُ الحارس.'},
+  {ic:'🏷️', who:'عند التجارة…', x:'يطلب منك ربُّ العمل أن <b>تُخفي عيبَ السلعة</b> عن الزبون. ماذا تفعل؟', ref:'«مَن غشَّنا فليس منّا.» (مسلم)', p:'بيِّن العيبَ بصدق', pd:'لم تغُشَّ — بركةُ التاجر الصدوق معك.', i:'أخفِه وبِعْه هكذا', id:'الغشُّ يمحقُ بركةَ الكسب؛ يحزن الملَك.'},
+  {ic:'🛠️', who:'في العمل…', x:'لا أحدَ يراك؛ يمكنك أن <b>تُنجز العملَ ناقصًا</b> وتتهرَّب. ماذا تفعل؟', ref:'«كلُّكم راعٍ وكلُّكم مسؤولٌ عن رعيته.» (البخاري ومسلم)', p:'أنجِز العملَ بحقِّه وإتقان', pd:'رعيتَ الأمانة — أتقنتَ عملك (المسؤولية).', i:'تهاوَن وتهرَّب', id:'العملُ الناقصُ حقُّ صاحبه؛ يحزن الملَك.'},
+  {ic:'🎖️', who:'قبل الترقية…', x:'يمكنك أن <b>تنسبَ جهدَ زميلك</b> لنفسك وتُرقَّى. ماذا تفعل؟', ref:'«فمَن قضيتُ له بحقِّ أخيه فإنما أقطعُ له قطعةً من النار.» (البخاري ومسلم)', p:'سلِّم الحقَّ لصاحبه', pd:'لم تأكل حقَّ غيرك — رددتَ الجهدَ لصاحبه.', i:'انسِب الجهدَ لنفسك وارتقِ', id:'حقُّ الغير قطعةٌ من النار؛ يُفارقُك الملَك.'},
+  {ic:'🤐', who:'في الاستراحة…', x:'الجميعُ <b>يغتابون زميلًا غائبًا</b>؛ ويحثُّونك على المشاركة. ماذا تفعل؟', ref:'«ولا يغتَبْ بعضُكم بعضًا.» (الحجرات ٤٩/١٢)', p:'لا تشارك؛ دافِعْ عن أخيك', pd:'لم تدخُل في الغيبة — صُنتَ عرضَ أخيك.', i:'اغتَبْ معهم', id:'الغيبةُ كأكلِ لحمِ أخيك؛ يحزن الملَك.'} ] } };
+function moWork(){ const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; return WORK_EVENTS[L]||WORK_EVENTS.tr; }
+function openWorkHonesty(rec){ const P=moWork(); const pool=P.ev;
+  let i; do{ i=Math.floor(Math.random()*pool.length); }while(pool.length>1 && i===_workLast); _workLast=i; const ev=pool[i];
+  openDialog({ ic:ev.ic, title:P.t, start:'s0', steps:{ s0:{ who:ev.who, txt:ev.x, ref:ev.ref, opts:[
+    { l:ev.p, act:()=>{ if(!(S.workCd&&Date.now()<S.workCd)){ const d=discBonus(); addNur(15+d); dgBump('m_work'); S.workCd=Date.now()+WORK_CD; save(); refreshHUD(); sndChime(); banner('✅ +'+(15+d)+(tU('nur_suffix')||' nûr')+(d>0?' · 💪':'')); if(d>0) setTimeout(()=>toast(tU('disc_haram')||'💪 Güçlü/disiplinli iraden harama direndi — nûruna bereket kattı'),950); } setTimeout(()=>toast(ev.pd),350); if(typeof closeDialog==='function') closeDialog(); } },
+    { l:ev.i, act:()=>{ toast(ev.id); if(typeof dismissGuardian==='function') dismissGuardian(); if(typeof closeDialog==='function') closeDialog(); } }   // hıyanet/kul hakkı → melek ayrılır
   ] } }});
 }
 // ---- SOKAKTA CEMAAT: modern'de seccadede namaza durunca komşular gelip saf tutar ----
