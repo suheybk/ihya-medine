@@ -542,7 +542,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.87</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.88</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -3008,8 +3008,8 @@ const hacKurCamPos=new THREE.Vector3(KURBAN.x+2, 4.6, KURBAN.z+9);
 const hacKurCamLook=new THREE.Vector3(KURBAN.x, 1.0, KURBAN.z);
 // ── MAKĀM-I İBRÂHÎM: tavâf namazı burada (Kâbe'nin ön köşesinde küçük altın kubbeli mahfaza) + kamera ──
 const MAKAM=new THREE.Vector3(KABE_IC.x+3.2, 0, KABE_IC.z+3.2);
-const hacNamazCamPos=new THREE.Vector3(KABE_IC.x+7.5, 3.0, KABE_IC.z+6.0);
-const hacNamazCamLook=new THREE.Vector3(MAKAM.x, 1.1, MAKAM.z);
+const hacNamazCamPos=new THREE.Vector3(-142, 3.5, -113);    // cihaz-ayarlı (kullanıcı 2026-07-11): kamera konumu
+const hacNamazCamLook=new THREE.Vector3(-147, 1.1, -117);   // cihaz-ayarlı: bakış hedefi (Makām-ı İbrâhîm namaz)
 function buildMuzdelife(g){ const M=(c,r,e)=>new THREE.MeshStandardMaterial({color:c,roughness:r==null?1:r,emissive:e||0});
   const ground=new THREE.Mesh(new THREE.CircleGeometry(11,36), M(0x4b4a52,1)); ground.rotation.x=-Math.PI/2; ground.position.set(MUZ.x,0.02,MUZ.z); ground.frustumCulled=false; g.add(ground);   // gece düzlüğü (soğuk gri)
   muzGlow=new THREE.PointLight(0xfff0c0,0.9,14,2); muzGlow.position.set(MUZ.x,3.2,MUZ.z+2); g.add(muzGlow);   // fener ışığı (gece)
