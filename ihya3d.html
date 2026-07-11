@@ -542,7 +542,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.81</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.82</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -1880,6 +1880,8 @@ function onNewDay(){
   else if(isFastingDay() && orucMukellef()) setTimeout(()=>{ banner('🌙 Bugün '+dayName()); toast('Sünnet oruç günü — gece/öğleden önce niyet et, Akşam iftar (🌙 düğmesi)'); },1300);
   updateFastBtn();
   if(typeof checkReminders==='function') checkReminders();   // 📅 takvim: bugüne uygun hatırlatmaları bildir
+  if(S.hairShaved && isFriday()){ S.hairFridays=(S.hairFridays||0)+1;   // tıraştan sonra 3 Cuma → saç yeniden uzar
+    if(S.hairFridays>=3){ S.hairShaved=false; save(); if(typeof updatePlayerHair==='function') updatePlayerHair(); setTimeout(()=>toast('💈 '+(tU('hair_grown')||'Saçların yeniden uzadı')),900); } }
 }
 
 /* ============ THREE SETUP ============ */
@@ -2879,6 +2881,37 @@ function exitMosque(){
 
 /* ============ UMRE — Mekke: Kâbe, tavâf (7 şavt), sa'y (7 şavt), tıraş (Faz 11.21) ============ */
 let hacMode=false, hacGroup=null, hacPilgrim=null;
+let bsGlow=null, bsOrb=null, bsGlowT=0;   // Hacer-i Esved YEŞİL ışığı (istilâm/selâm anında yanar)
+// TAVAF ŞAVT DUALARI — her şavtta bir zikir/duâ (Hacer-i Esved istilâmı: «Bismillâh, Allâhu ekber»)
+const TAVAF_DUA={ tr:[
+  '🖐️ «Bismillâh, Allâhu ekber» — Hacerü\'l-Esved\'i selâmladın (istilâm).',
+  '«Sübhânallâhi ve\'l-hamdü lillâhi, ve lâ ilâhe illallâhu vallâhu ekber.»',
+  '«Rabbenâ âtinâ fi\'d-dünyâ haseneten ve fi\'l-âhireti haseneten ve kınâ azâbe\'n-nâr.» (Bakara 201)',
+  '«Lâ ilâhe illallâhu vahdehû lâ şerîke leh; lehü\'l-mülkü ve lehü\'l-hamdü ve hüve alâ külli şey\'in kadîr.»',
+  '«Allâhümme innî es\'elüke\'l-afve ve\'l-âfiyete fi\'d-dünyâ ve\'l-âhira.»',
+  '«Estağfirullâhe\'l-azîm ve etûbü ileyh.»',
+  '«Elhamdü lillâhi Rabbi\'l-âlemîn — tavâfın kabul olsun.»'],
+  en:[ '🖐️ «Bismillah, Allahu akbar» — you saluted the Black Stone (istilam).',
+  '«Subhanallahi wal-hamdu lillahi, wa la ilaha illallahu wallahu akbar.»',
+  '«Our Lord, give us good in this world and good in the Hereafter, and save us from the Fire.» (al-Baqara 201)',
+  '«There is no god but Allah alone, no partner; His is the dominion and praise, and He is over all things capable.»',
+  '«O Allah, I ask You for pardon and well-being in this world and the Hereafter.»',
+  '«I seek forgiveness of Allah the Mighty and repent to Him.»',
+  '«All praise to Allah, Lord of the worlds — may your tawaf be accepted.»'],
+  ar:[ '🖐️ «بسم الله، والله أكبر» — استلمتَ الحجر الأسود.',
+  '«سبحان الله والحمد لله، ولا إله إلا الله والله أكبر.»',
+  '«ربنا آتنا في الدنيا حسنة وفي الآخرة حسنة وقنا عذاب النار.» (البقرة ٢٠١)',
+  '«لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير.»',
+  '«اللهم إني أسألك العفو والعافية في الدنيا والآخرة.»',
+  '«أستغفر الله العظيم وأتوب إليه.»',
+  '«الحمد لله رب العالمين — تُقبَّل طوافُك.»'] };
+function saluteBlackStone(n){ bsGlowT=1.8;   // YEŞİL ışık yanar + istilâm banner + o şavtın duası
+  const L=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; const arr=TAVAF_DUA[L]||TAVAF_DUA.tr;
+  banner('🖐️ '+(tU('tavaf_salute')||'Bismillâh, Allâhu ekber'));
+  setTimeout(()=>toast(arr[Math.max(0,Math.min(arr.length-1,(n||1)-1))]),500);
+}
+function updateBsGlow(dt){ if(bsGlowT>0){ bsGlowT=Math.max(0,bsGlowT-dt); const k=bsGlowT/1.8;
+  if(bsGlow) bsGlow.intensity=k*3.2; if(bsOrb&&bsOrb.material){ bsOrb.material.emissiveIntensity=k*0.9; bsOrb.scale.setScalar(1+k*0.5); } } }
 let _hajjFull=false;   // enterHac(true) → tam Hac menâsiki (Umre değil); startHacScene'de hacState.full'e geçer
 const HAJJ_FEE=300;    // Hacca gitmek için ücret (dirhem) — "imkânı olana farz"; bitiş ekranından ödenir
 const KABE_IC=new THREE.Vector3(-150,0,-120);       // gizli Mekke sahnesi (uzakta, ada dünyasının dışı)
@@ -2902,6 +2935,8 @@ function buildKaabaScene(){
   const KH=2.6, kabe=new THREE.Mesh(new THREE.BoxGeometry(2.2,KH,2.2),M(0x121212,0.85)); kabe.position.set(cx,KH/2,cz); kabe.frustumCulled=false; g.add(kabe);
   const band=new THREE.Mesh(new THREE.BoxGeometry(2.26,0.32,2.26),M(0xceac4e,0.45,0x4a3a08)); band.position.set(cx,KH*0.74,cz); band.frustumCulled=false; g.add(band);
   const hes=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.34,10),M(0x9a9a9a,0.4,0x1a1a1a)); hes.position.set(cx+1.12,1.15,cz+1.12); hes.frustumCulled=false; g.add(hes);   // Hacerü'l-Esved köşesi (başlangıç)
+  bsGlow=new THREE.PointLight(0x33e07a,0,7,2); bsGlow.position.set(cx+1.12,1.5,cz+1.12); g.add(bsGlow);   // YEŞİL ışık — istilâm anında yanar (Hacer-i Esved hizası)
+  bsOrb=new THREE.Mesh(new THREE.SphereGeometry(0.2,12,10), new THREE.MeshStandardMaterial({color:0x33e07a,emissive:0x1f8f4f,emissiveIntensity:0,transparent:true,opacity:0.85})); bsOrb.position.copy(bsGlow.position); bsOrb.frustumCulled=false; g.add(bsOrb);
   // ── SA'Y ALANI: Kâbe'den UZAKTA ayrı Mes'â (Safâ ↔ Merve) ──
   for(const sx of [-1,1]){ const h=new THREE.Mesh(new THREE.SphereGeometry(1.1,16,10,0,6.2832,0,1.25),M(0xc3b389,0.95)); h.position.set(MESA_X+sx*SAY_HALF,0,cz); h.scale.y=0.6; h.frustumCulled=false; g.add(h);
     const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.2,0.5,8),M(0x2f8f63,0.6,0x1f6b3f)); cap.position.set(MESA_X+sx*SAY_HALF,0.75,cz); cap.frustumCulled=false; g.add(cap); }   // Safâ & Merve tepeleri + yeşil işaret
@@ -2980,7 +3015,8 @@ function renderHac(){
     h+='<div class="sub" style="margin-bottom:8px">'+(tU('hj_kurban_sub')||'Şükür için kurbanını kes; etini fakirlere ve komşulara dağıt. <i>«Rabbin için namaz kıl ve kurban kes.»</i> (Kevser 108/2) — Allah\'a ulaşan, takvânızdır. (Hac 22/37)')+'</div>';
     h+='<button class="do" onclick="__hacAct(\'kurban\')">'+(tU('hj_kurban_btn')||'🐑 Kurban kes, etini dağıt (+20 nûr)')+'</button>'; }
   else if(P.phase==='tavaf'){ title=(tU('hac_tavaf_title')||'Tavâf ')+P.tavaf+'/7';
-    h+='<div class="sub" style="margin-bottom:8px">'+(tU('hac_tavaf_sub')||'Hacerü\'l-Esved hizasından başlayarak Kâbe\'yi <b>sola alarak</b> yedi kez dön; her şavtta zikret ve duâ et.')+'</div>';
+    h+='<div class="sub" style="margin-bottom:8px">'+(tU('hac_tavaf_sub')||'Hacerü\'l-Esved hizasından başlayarak Kâbe\'yi <b>sola alarak</b> yedi kez dön; her şavtta zikret ve duâ et. Her köşeye (🟢 yeşil ışık) gelince elini kaldırıp «Bismillâh, Allâhu ekber» de.')+'</div>';
+    { const _tl=(S.lang==='en'||S.lang==='ar')?S.lang:'tr'; const _da=(TAVAF_DUA[_tl]||TAVAF_DUA.tr); if(P.tavaf<7) h+='<div class="sub" style="margin:0 0 8px;opacity:.85;font-size:.95em">'+_da[Math.min(_da.length-1,P.tavaf)]+'</div>'; }   // sıradaki şavtın duası (kalıcı panelde)
     h+= P.tavaf>=7 ? '<button class="do" onclick="__hacAct(\'toNamaz\')">'+(tU('hac_tavaf_done')||'✅ Tavâf tamam — 2 rekât namaz')+'</button>'
       : '<button class="do" onclick="__hacAct(\'tavaf\')">'+(tU('hac_tavaf_btn_a')||'🕋 Bir şavt tavâf et (')+(P.tavaf+1)+(tU('hac_tavaf_btn_b')||'/7)')+'</button>'; }
   else if(P.phase==='namaz'){ title=tU('hac_namaz_title')||'Tavâf Namazı (2 rekât)';
@@ -3008,7 +3044,7 @@ window.__hacAct=function(kind){
   if(kind==='toKurban'){ P.phase='kurban'; renderHac(); return; }
   if(kind==='kurban'){ addNur(20); sndFanfare(); banner(tU('hj_kurban_banner')||'🐑 Kurban kabul olsun'); P.phase='tavaf';
     setTimeout(()=>toast(tU('hj_kurban_toast')||'«Onların ne etleri ne kanları Allah\'a ulaşır; O\'na ulaşan takvânızdır.» (Hac 22/37)'),400); renderHac(); return; }
-  if(kind==='tavaf'){ if(P.tavaf<7){ P.tavaf++; P.angT-=Math.PI*2; addNur(2); sndChime(); } renderHac(); return; }
+  if(kind==='tavaf'){ if(P.tavaf<7){ P.tavaf++; P.angT-=Math.PI*2; addNur(2); sndChime(); saluteBlackStone(P.tavaf); } renderHac(); return; }   // her şavtta Hacer-i Esved YEŞİL selâmı + duâ
   if(kind==='toNamaz'){ P.phase='namaz'; renderHac(); return; }
   if(kind==='namaz'){ addNur(6); sndChime(); banner(tU('hac_namaz_banner')||'🧎 İki rekât tamam'); P.phase='say'; P.sayPos=-1; P.sayT=-1; renderHac();
     setTimeout(()=>banner('﴿إِنَّ الصَّفَا وَالْمَرْوَةَ مِنْ شَعَائِرِ اللَّهِ﴾'),400);
@@ -3016,6 +3052,8 @@ window.__hacAct=function(kind){
   if(kind==='say'){ if(P.say<7){ P.say++; P.sayT=(P.say%2===1)?1:-1; addNur(2); sndChime(); } renderHac(); return; }
   if(kind==='toTiras'){ P.phase='tiras'; renderHac(); return; }
   if(kind==='tiras'){
+    shaveHair();   // ✂️ saç GERÇEKTEN kesilir (mesh gizlenir) — 3 Cuma geçene kadar uzamaz
+    setTimeout(()=>{ banner('✂️ '+(tU('hj_shaved')||'Saçın tıraş edildi — ihrâmdan çıktın')); },300);
     if(P.full){ S.hajjCount=(S.hajjCount||0)+1; addNur(60);
       const firstHajj=!S.modernUnlocked; S.modernUnlocked=true; S.startInModern=true;   // Hac tamam → İHYA BUGÜN (Seviye 2) açılır + bundan sonra orada başla
       save(); refreshHUD(); if(typeof updateModernBtn==='function') updateModernBtn(); sndFanfare(); banner(tU('hj_done_banner')||'🕋 Hac mübârek olsun — hac kabul');
@@ -3025,8 +3063,13 @@ window.__hacAct=function(kind){
       setTimeout(()=>toast(tU('hac_done_toast')||'"Bir umre, diğer umreye kadar aralarındaki (küçük) günahlara keffârettir." (Buhârî, Umre 1)'),1200); }
     setTimeout(()=>exitHac(),700); return; }
 };
+// SAÇ TIRAŞI (Hac/Umre tıraş) — saç mesh'leri gizlenir; 3 Cuma geçince yeniden uzar
+function updatePlayerHair(){ if(!player) return; const hide=!!S.hairShaved;
+  player.traverse(o=>{ if(o.isMesh && /^(Hair_|Bang_)/.test(o.name||'')) o.visible=!hide; }); }
+function shaveHair(){ S.hairShaved=true; S.hairFridays=0; save(); updatePlayerHair(); }   // tıraş → saç kesildi
 function hacTick(dt){
   if(!hacMode||!hacPilgrim) return;
+  updateBsGlow(dt);   // Hacer-i Esved yeşil ışık sönümü (istilâm sonrası)
   const cx=KABE_IC.x, cz=KABE_IC.z, g=hacPilgrim.g, bob=Math.abs(Math.sin(clock.elapsedTime*8))*0.03;
   if(hacState.phase==='say'){
     hacState.sayPos += (hacState.sayT-hacState.sayPos)*Math.min(1,dt*1.6);
@@ -6404,6 +6447,7 @@ function buildWorld(){
   buildGatherNodes();   // Medine: Hurma Bahçesi'nde toplanabilir ağaçlar + arı kovanı
   spawnSilkworms();     // dut ağaçlarında ipek böceği döngüsü (yumurta→larva→koza→güve → ipek)
   spawnAnts();          // ağaç diplerinde karınca kolonisi (models/ant.glb)
+  if(typeof updatePlayerHair==='function') updatePlayerHair();   // kalıcı tıraş durumunu uygula (3 Cuma dolmadıysa saç gizli)
   buildAnimals();       // Medine: dolaşan hayvanlar (çobanlık)
   buildMarket();        // Medine: Şehir'de Sûk (pazar)
   buildNpcs();          // Medine: tekrarlanan hayır NPC'leri (yetim/komşu/misafir)
