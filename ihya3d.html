@@ -542,7 +542,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.88</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.89</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -4554,7 +4554,7 @@ function featureNamazPhase(){   // bu namazda öne çıkan evreyi seç (rotasyon
 // Her namazda öne çıkan evrenin zaman penceresine (t0..t0+td) seek edilir → o evre yakından, uygun açıdan görünür.
 // FALLBACK: GLB yüklü değilse (ilk namaz / hata) prosedürel namaz (namazPoseN) devreye girer — namaz HER ZAMAN çalışır.
 let prayerScene=null, prayerMixer=null, prayerAction=null, prayerLoading=false, prayerModel=null, prayerActive=false, prayerScale=0.01, prayerGlbEnd=0;
-let PRAYER_YAW=Math.PI;   // GLB modelinin kıbleye hizası (ince ayar — cihazda düzeltilebilir: __ihya3d.setPrayerYaw)
+let PRAYER_YAW=6.342;   // GLB modelinin kıbleye hizası — CİHAZ-AYARLI (kullanıcı 2026-07-11; ≈0.059 rad, eski π yanlıştı). Hac (Makām) + normal namaz ortak. __ihya3d.setPrayerYaw ile değişir
 function loadPrayerModel(){
   if(prayerScene||prayerLoading) return;
   prayerLoading=true;
