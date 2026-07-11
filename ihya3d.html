@@ -542,7 +542,7 @@
   </div>
 </div>
 
-<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.85</div>
+<div id="verBadge" style="position:fixed;left:50%;transform:translateX(-50%);bottom:5px;z-index:40;font:700 10px system-ui,sans-serif;color:#8fce58;opacity:.42;pointer-events:none;text-shadow:0 1px 2px #000;letter-spacing:.08em">İhya · Faz 6.86</div>
 <div id="animDbg" style="position:fixed;left:8px;top:120px;z-index:60;max-width:280px;display:none;background:#c0142088;color:#fff;font:700 11px system-ui,monospace;padding:6px 9px;border-radius:8px;pointer-events:none;white-space:pre-line;box-shadow:0 2px 8px #0006"></div>
 
 <div id="prompt"></div>
@@ -2892,6 +2892,7 @@ let hacMode=false, hacGroup=null, hacPilgrim=null;
 let bsGlow=null, bsOrb=null, bsGlowT=0;   // Hacer-i Esved YEŞİL ışığı (istilâm/selâm anında yanar)
 let jamPillars=[], kurbanSheep=null, kurbanMeatMesh=null, makamMesh=null, muzGlow=null;   // Mina cemreleri · kurbanlık · Makām-ı İbrâhîm · Müzdelife fener
 let hacPraying=false, hacThrowT=0;   // Hac tavâf-namazı (GLB oynuyor) · cemre atış jesti sönümü
+let hacPrayerBaseYaw=0;   // Makām-ı İbrâhîm namazında modelin Kâbe'ye taban açısı (canlı kıble ayarı: PRAYER_YAW eklenir)
 // TAVAF ŞAVT DUALARI — her şavtta bir zikir/duâ (Hacer-i Esved istilâmı: «Bismillâh, Allâhu ekber»)
 const TAVAF_DUA={ tr:[
   '🖐️ «Bismillâh, Allâhu ekber» — Hacerü\'l-Esved\'i selâmladın (istilâm).',
@@ -3167,17 +3168,19 @@ window.__hacAct=function(kind){
     setTimeout(()=>exitHac(),700); return; }
 };
 // TAVÂF NAMAZI (Hac/Umre) — GERÇEK GLB namaz animasyonu Makām-ı İbrâhîm'de (yoksa anında/prosedürel fallback)
-function startHacPrayer(){
+function startHacPrayer(hold){   // hold=true → tuning modu: model kıyamda SABİT durur (otomatik bitmez), cihazda kıble/kamera ayarı için
   if(typeof loadPrayerModel==='function') loadPrayerModel();
   if(prayerModel && prayerAction && prayerMixer){
+    hacPrayerBaseYaw = Math.atan2(KABE_IC.x-MAKAM.x, KABE_IC.z-MAKAM.z);   // Kâbe yönü (kıble) — hacTick her kare PRAYER_YAW ekler → canlı ayar
     prayerModel.position.set(MAKAM.x,0,MAKAM.z);
-    prayerModel.rotation.y = Math.atan2(KABE_IC.x-MAKAM.x, KABE_IC.z-MAKAM.z) + PRAYER_YAW;   // Kâbe'ye (kıbleye) dön
+    prayerModel.rotation.y = hacPrayerBaseYaw + PRAYER_YAW;   // Kâbe'ye (kıbleye) dön
     prayerModel.scale.setScalar(prayerScale); prayerModel.visible=true;
     if(hacPilgrim) hacPilgrim.g.visible=false;                                                 // umreci gizlenir, GLB oynar
-    prayerAction.paused=false; prayerAction.time=0; prayerMixer.update(0);
-    hacPraying=true; banner(tU('hac_namaz_wait')||'🧎 Namaz kılınıyor…');
-    setTimeout(finishHacNamaz, 12000);                                                          // ~12 sn 2 rekât
-  } else { finishHacNamaz(); }                                                                   // GLB yoksa: anında
+    prayerAction.time=0; prayerMixer.update(0);
+    hacPraying=true;
+    if(hold){ prayerAction.paused=true; }                                                       // TUNING: kıyam pozunda dur, otomatik bitme yok
+    else { prayerAction.paused=false; banner(tU('hac_namaz_wait')||'🧎 Namaz kılınıyor…'); setTimeout(finishHacNamaz, 12000); }   // normal: ~12 sn 2 rekât
+  } else if(!hold){ finishHacNamaz(); }                                                          // GLB yoksa: anında (tuning'de bekle)
 }
 function finishHacNamaz(){ const P=hacState; hacPraying=false;
   if(prayerModel) prayerModel.visible=false; if(prayerAction) prayerAction.paused=true;
@@ -3206,7 +3209,7 @@ function hacTick(dt){
   }
   if(ph==='kurban'){ g.rotation.x=0; g.visible=true; g.position.set(KURBAN.x+1.6, bob, KURBAN.z+1.2); g.rotation.y=-Math.PI/2; return; }   // koyuna dönük
   if(ph==='namaz'){ g.rotation.x=0;
-    if(hacPraying){ if(prayerMixer) prayerMixer.update(dt); if(prayerModel){ prayerModel.position.set(MAKAM.x,0,MAKAM.z); } g.visible=false; }
+    if(hacPraying){ if(prayerMixer) prayerMixer.update(dt); if(prayerModel){ prayerModel.position.set(MAKAM.x,0,MAKAM.z); prayerModel.rotation.y=hacPrayerBaseYaw+PRAYER_YAW; } g.visible=false; }   // her kare kıbleyi uygula → __ihya3d.setPrayerYaw canlı etki eder
     else g.visible=true;
     return;
   }
@@ -7953,6 +7956,16 @@ console.log('%cİHYA sürüm: Faz 11.30 — SENARYO MEKANİĞİ: 13 model diyalo
     enterMosque:()=>enterMosque(), exitMosque:()=>exitMosque(), mosqueAct:(k)=>window.__mosqueAct(k),
     enterHac:(full)=>enterHac(full), exitHac:()=>exitHac(), hacAct:(k)=>window.__hacAct(k), hacState:()=>({mode:hacMode, ...hacState}), startFullHajj:()=>{ _hajjFull=true; startHacScene(); hacIntroT=0; document.getElementById('hac').classList.add('show'); return hacState.phase; }, openHacReg:()=>openHacReg(), hajjReg:()=>S.hajjReg,
     setPrayerYaw:(r)=>{ PRAYER_YAW=r; return PRAYER_YAW; }, prayerState:()=>({loaded:!!prayerModel, active:prayerActive, scale:+prayerScale.toFixed(4), yaw:+PRAYER_YAW.toFixed(2), end:prayerGlbEnd}), loadPrayer:()=>loadPrayerModel(),
+    // ── HAC NAMAZ (Makām-ı İbrâhîm) CİHAZ İNCE AYARI ── kıble + kamera CANLI ayarlanır; güzel değerleri bulunca söyleyin, varsayılan yaparım
+    hacPrayerTest:()=>{ if(!hacMode){ _hajjFull=true; startHacScene(); hacIntroT=0; document.getElementById('hac').classList.add('show'); } hacState.phase='namaz'; hacPraying=false;
+      if(typeof loadPrayerModel==='function') loadPrayerModel();
+      const tryStart=()=>{ if(!hacMode||hacState.phase!=='namaz') return; if(prayerModel&&prayerAction&&prayerMixer){ startHacPrayer(true); } else { setTimeout(tryStart,600); } };   // model yüklenene kadar bekle → kıyamda SABİT tut
+      tryStart();
+      return {hint:'Model yüklenince kıyamda durur. AYARLA: nudgeYaw(±0.1) kıble · setHacNamazCam(px,py,pz,lx,ly,lz) kamera · hacPrayerInfo() değerleri oku · hacPrayerEnd() bitir. Güzel değerleri bana söyle, varsayılan yaparım.'}; },
+    hacPrayerEnd:()=>{ hacPraying=false; if(prayerModel)prayerModel.visible=false; if(prayerAction)prayerAction.paused=true; if(hacPilgrim)hacPilgrim.g.visible=true; return 'bitti'; },
+    setHacNamazCam:(px,py,pz,lx,ly,lz)=>{ if(px!=null)hacNamazCamPos.set(px,py,pz); if(lx!=null)hacNamazCamLook.set(lx,ly,lz); return {pos:hacNamazCamPos.toArray().map(v=>+v.toFixed(2)), look:hacNamazCamLook.toArray().map(v=>+v.toFixed(2))}; },
+    nudgeYaw:(d)=>{ PRAYER_YAW+=(d||0.1); return +PRAYER_YAW.toFixed(3); },   // kıbleyi adım adım çevir (küçük dokunuşlarla hizala)
+    hacPrayerInfo:()=>({praying:hacPraying, PRAYER_YAW:+PRAYER_YAW.toFixed(3), baseYaw:+hacPrayerBaseYaw.toFixed(3), modelYaw:prayerModel?+prayerModel.rotation.y.toFixed(3):null, camPos:hacNamazCamPos.toArray().map(v=>+v.toFixed(2)), camLook:hacNamazCamLook.toArray().map(v=>+v.toFixed(2)), makam:MAKAM.toArray(), kabe:KABE_IC.toArray()}),
     enterModern:()=>enterModern(), exitModern:()=>exitModern(), unlockModern:()=>{ S.modernUnlocked=true; save(); updateModernBtn(); return true; }, modernState:()=>({unlocked:S.modernUnlocked, inModern, built:modernBuilt, job:S.modernJob, recs:modernRecs.map(r=>r.modern)}), openModern:(k)=>{ const r=modernRecs.find(x=>x.modern===k); if(r) openModernBuilding(r); return !!r; },
     busState:()=>modernBus?{theta:+modernBus.theta.toFixed(2), state:modernBus.state, pos:[Math.round(modernBus.g.position.x),Math.round(modernBus.g.position.z)], passenger:!!modernBus.passenger}:null,
     mosqueState:()=>({mode:mosqueMode, cumaDone:S.cumaDone, sat:S.mosqueSat, interiorNodes:mosqueGroup?mosqueGroup.children.length:0}),
